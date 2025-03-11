@@ -8,7 +8,6 @@ import HowItWorks from "../components/HomePage/HowItWorks";
 import HeroSection from "../components/HomePage/HeroSection";
 import FeaturedEvents from "../components/HomePage/FeaturedEvents";
 
-
 // Main NewHome Component
 function NewHome() {
   return (
