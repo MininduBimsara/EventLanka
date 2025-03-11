@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import EventCard from "../components/EventCard"; // Using your existing component
+import EventCard from "../../components/EventCard"; // Using your existing component
 
 const EventBrowsingPage = () => {
   // Sample event data
