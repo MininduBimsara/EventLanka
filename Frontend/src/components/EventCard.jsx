@@ -1,17 +1,8 @@
 import React from "react";
 
-const EventCard = () => {
-  // Example event data
-  const event = {
-    name: "Summer Beats Festival",
-    date: "August 15-17, 2025",
-    time: "12:00 PM - 11:00 PM",
-    venue: "Riverside Park, Downtown",
-    price: "$89.99",
-    discount: true,
-    trending: true,
-    featuredArtists: ["The Groove Collective", "Neon Pulse", "Rhythm Republic"],
-  };
+// Modified to accept event as a prop
+const EventCard = ({ event }) => {
+  // No longer defining hardcoded event data here
 
   return (
     <div className="max-w-md overflow-hidden transition duration-300 transform bg-gray-900 shadow-lg rounded-xl hover:-translate-y-1 hover:shadow-xl">
@@ -19,7 +10,7 @@ const EventCard = () => {
       <div className="relative h-48 overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-800">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-5xl font-bold tracking-wider text-white opacity-20">
-            SUMMER BEATS
+            {event.name.toUpperCase()}
           </div>
         </div>
 
