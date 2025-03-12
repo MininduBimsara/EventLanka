@@ -121,6 +121,7 @@ const EventBrowsingPage = () => {
   const categories = [...new Set(eventsData.map((event) => event.category))];
   const locations = [...new Set(eventsData.map((event) => event.location))];
 
+
   // Handle filter changes
   const handleCategoryChange = (category) => {
     setFilters((prev) => {
@@ -131,6 +132,7 @@ const EventBrowsingPage = () => {
     });
   };
 
+  
   const handleLocationChange = (location) => {
     setFilters((prev) => {
       const newLocations = prev.locations.includes(location)
@@ -169,6 +171,18 @@ const EventBrowsingPage = () => {
       if (sortOption === "popular") {
         // Sort by trending first
         return b.trending - a.trending;
+      } 
+      if (sortOption === "price-low") {
+        return (
+          parseFloat(a.price.replace("$", "")) -
+          parseFloat(b.price.replace("$", ""))
+        );
+      }
+      if (sortOption === "price-high") {
+        return (
+          parseFloat(b.price.replace("$", "")) -
+          parseFloat(a.price.replace("$", ""))
+        );
       } else {
         // Sort by date (simplified)
         return new Date(a.date) - new Date(b.date);
@@ -176,7 +190,7 @@ const EventBrowsingPage = () => {
     });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-800">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white shadow-sm">
         <div className="container px-4 py-4 mx-auto md:px-6 lg:px-8">
@@ -228,7 +242,7 @@ const EventBrowsingPage = () => {
       <main className="container px-4 py-8 mx-auto md:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           {/* Sidebar filters */}
-          <aside className="p-6 bg-white shadow-sm rounded-xl">
+          <aside className="p-6 shadow-sm bg-gradient-to-b from-gray-300 via-gray-500 to-gray-700 rounded-xl">
             <h2 className="mb-4 text-lg font-bold text-gray-800">Filters</h2>
 
             {/* Date filter */}
