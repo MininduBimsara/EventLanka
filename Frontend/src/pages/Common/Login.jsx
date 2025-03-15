@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import axios from "axios";
 
 const LoginRegistrationUI = () => {
   const [activeForm, setActiveForm] = useState("login");
@@ -19,19 +20,46 @@ const LoginRegistrationUI = () => {
     }));
   };
 
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    // Add login logic here
-    console.log("Login submitted", {
+const handleLoginSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const response = await axios.post("/api/login", {
       email: formData.email,
       password: formData.password,
     });
-  };
 
-  const handleRegistrationSubmit = (e) => {
-    e.preventDefault();
-    // Add registration logic here
-    console.log("Registration submitted", formData);
+    console.log("Login successful", response.data);
+    // Handle successful login (e.g., redirect to dashboard, store token, etc.)
+
+    // Reset form data
+    setFormData({
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+  } catch (error) {
+    console.error(
+      "Login failed",
+      error.response ? error.response.data : error.message
+    );
+    // Handle login failure (e.g., show error message to user)
+  }
+};
+
+const handleRegistrationSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const response = await axios.post("/api/register", {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+    });
+
+    console.log("Registration successful", response.data);
     setSuccessMessage("Registration successful!");
 
     // Reset form data
@@ -47,7 +75,14 @@ const LoginRegistrationUI = () => {
       setSuccessMessage("");
       setActiveForm("login");
     }, 2000);
-  };
+  } catch (error) {
+    console.error(
+      "Registration failed",
+      error.response ? error.response.data : error.message
+    );
+    // Handle registration failure (e.g., show error message to user)
+  }
+};
 
   const switchForm = (form) => {
     setSuccessMessage("");

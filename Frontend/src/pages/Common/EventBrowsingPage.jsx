@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import EventCard from "../../components/EventCard"; // Using your existing component
+import NavBar from "../../components/NavBar"; // Using your existing component
+
 
 const EventBrowsingPage = () => {
   // Sample event data
@@ -20,6 +22,7 @@ const EventBrowsingPage = () => {
         "Neon Pulse",
         "Rhythm Republic",
       ],
+      bookingAvailable: true,
     },
     {
       id: 2,
@@ -37,6 +40,7 @@ const EventBrowsingPage = () => {
         "Startup Founders",
         "Industry Experts",
       ],
+      bookingAvailable: false,
     },
     {
       id: 3,
@@ -54,6 +58,7 @@ const EventBrowsingPage = () => {
         "Pastry Expert Lisa",
         "Wine Sommelier John",
       ],
+      bookingAvailable: true,
     },
     {
       id: 4,
@@ -71,6 +76,7 @@ const EventBrowsingPage = () => {
         "Fitness Influencers",
         "Nutrition Experts",
       ],
+      bookingAvailable: false,
     },
     {
       id: 5,
@@ -88,6 +94,7 @@ const EventBrowsingPage = () => {
         "Digital Designers",
         "Sculptors Guild",
       ],
+      bookingAvailable: true,
     },
     {
       id: 6,
@@ -105,8 +112,31 @@ const EventBrowsingPage = () => {
         "Leadership Coaches",
         "Industry Pioneers",
       ],
+      bookingAvailable: true,
     },
   ];
+
+const [isVisible, setIsVisible] = useState(true);
+
+useEffect(() => {
+  const handleScroll = () => {
+    // Only show the header when at the top of the page
+    // You can adjust the threshold (20) if needed
+    if (window.scrollY <= 20) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  };
+
+  window.addEventListener("scroll", handleScroll);
+
+  // Clean up
+  return () => {
+    window.removeEventListener("scroll", handleScroll);
+  };
+}, []);
+  
 
   // Filter and sort state
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,7 +151,6 @@ const EventBrowsingPage = () => {
   const categories = [...new Set(eventsData.map((event) => event.category))];
   const locations = [...new Set(eventsData.map((event) => event.location))];
 
-
   // Handle filter changes
   const handleCategoryChange = (category) => {
     setFilters((prev) => {
@@ -132,7 +161,6 @@ const EventBrowsingPage = () => {
     });
   };
 
-  
   const handleLocationChange = (location) => {
     setFilters((prev) => {
       const newLocations = prev.locations.includes(location)
@@ -171,7 +199,7 @@ const EventBrowsingPage = () => {
       if (sortOption === "popular") {
         // Sort by trending first
         return b.trending - a.trending;
-      } 
+      }
       if (sortOption === "price-low") {
         return (
           parseFloat(a.price.replace("$", "")) -
@@ -191,21 +219,25 @@ const EventBrowsingPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-800">
+      <NavBar />
+
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white shadow-sm">
+      <header
+        className={`fixed z-10 bg-white bg-opacity-80 backdrop-blur-sm border-b top-20 left-0 right-0 transition-all duration-300 ${
+          isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 -translate-y-full pointer-events-none"
+        }`}
+      >
         <div className="container px-4 py-4 mx-auto md:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
-            <h1 className="text-2xl font-bold text-gray-800">
-              Discover Events
-            </h1>
-
-            <div className="flex flex-col w-full space-y-4 md:flex-row md:w-auto md:space-y-0 md:space-x-4">
+            <div className="flex flex-col w-full space-y-4 md:flex-row md:w-auto md:space-y-0 md:space-x-4 md:ml-auto">
               {/* Search bar */}
               <div className="relative w-full md:w-64 lg:w-80">
                 <input
                   type="text"
                   placeholder="Search events..."
-                  className="w-full px-4 py-2 pl-10 text-gray-700 transition duration-150 bg-gray-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+                  className="w-full px-4 py-2 pl-10 text-gray-700 bg-gray-100 border-none rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -224,7 +256,7 @@ const EventBrowsingPage = () => {
 
               {/* Sort dropdown */}
               <select
-                className="w-full px-4 py-2 text-gray-700 transition duration-150 bg-gray-100 border-none rounded-lg appearance-none md:w-48 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+                className="w-full px-4 py-2 text-gray-700 bg-gray-100 border-none rounded-md appearance-none md:w-48 focus:outline-none focus:ring-1 focus:ring-gray-300"
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
               >
@@ -238,8 +270,11 @@ const EventBrowsingPage = () => {
         </div>
       </header>
 
+      {/* Spacer to prevent content overlap with fixed header */}
+      <div className="h-40"></div>
+
       {/* Main content */}
-      <main className="container px-4 py-8 mx-auto md:px-6 lg:px-8">
+      <main className="container px-4 py-10 mx-auto md:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           {/* Sidebar filters */}
           <aside className="p-6 shadow-sm bg-gradient-to-b from-gray-300 via-gray-500 to-gray-700 rounded-xl">
