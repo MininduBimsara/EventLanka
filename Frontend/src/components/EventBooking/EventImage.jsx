@@ -2,12 +2,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-const EventImage = ({ eventDetails }) => {
+const EventImage = ({ image , title }) => {
   return (
     <div className="relative">
       <img
-        src={eventDetails.image}
-        alt={eventDetails.title}
+        src={image}
+        alt={title}
         className="object-cover w-full h-96"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-purple-900 to-transparent opacity-70"></div>
@@ -28,7 +28,7 @@ const EventImage = ({ eventDetails }) => {
           transition={{ duration: 0.5 }}
           className="text-4xl font-extrabold text-white drop-shadow-lg"
         >
-          {eventDetails.title}
+          {title}
         </motion.h1>
         <div className="flex items-center mt-2">
           <div className="flex items-center px-3 py-1 text-sm font-bold text-purple-900 bg-yellow-400 rounded-full">
