@@ -5,6 +5,7 @@ import {
   FaTicketAlt,
   FaSearch,
   FaArrowRight,
+  FaUser, // Add this for the login icon
 } from "react-icons/fa";
 
 // Navbar Component
@@ -37,10 +38,13 @@ const Navbar = () => {
         </div>
 
         <div className="hidden space-x-8 md:flex">
-          <a href="#" className="transition-colors hover:text-amber-400">
+          <a href="/" className="transition-colors hover:text-amber-400">
             Home
           </a>
-          <a href="#" className="transition-colors hover:text-amber-400">
+          <a
+            href="/eventbrowsing"
+            className="transition-colors hover:text-amber-400"
+          >
             Events
           </a>
           <a href="#" className="transition-colors hover:text-amber-400">
@@ -51,7 +55,7 @@ const Navbar = () => {
           </a>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center space-x-4">
           <div className="relative hidden md:block">
             <input
               type="text"
@@ -60,6 +64,13 @@ const Navbar = () => {
             />
             <FaSearch className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2" />
           </div>
+
+          {/* Login Button */}
+          <button className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-amber-500 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <FaUser className="mr-2" />
+            Login
+          </button>
+
           <button className="text-2xl md:hidden">
             <svg
               xmlns="http://www.w3.org/2000/svg"

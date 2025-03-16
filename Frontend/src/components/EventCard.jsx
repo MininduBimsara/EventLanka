@@ -9,7 +9,7 @@ const EventCard = ({ event }) => {
 
   const handleButtonClick = () => {
     if (event.bookingAvailable) {
-      navigate("/event-browsing");
+      navigate(`/event/${event.id}`, { state: { eventData: event } });
     } else {
       alert("Ticket booking is not available yet!");
     }
