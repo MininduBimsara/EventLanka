@@ -223,7 +223,7 @@ useEffect(() => {
 
       {/* Header */}
       <header
-        className={`fixed z-10 bg-white bg-opacity-80 backdrop-blur-sm border-b top-20 left-0 right-0 transition-all duration-300 ${
+        className={`fixed z-10 bg-transparent bg-opacity-80 backdrop-blur-sm border-b top-20 left-0 right-0 transition-all duration-300 ${
           isVisible
             ? "opacity-100 translate-y-0"
             : "opacity-0 -translate-y-full pointer-events-none"
