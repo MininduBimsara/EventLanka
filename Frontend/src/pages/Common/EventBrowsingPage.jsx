@@ -5,6 +5,8 @@ import SearchBar from "../../components/EventBrowsing/SearchBar"; // Using your 
 import SortDropdown from "../../components/EventBrowsing/SortDropdown";
 import FilterSidebar from "../../components/EventBrowsing/FilterSidebar";
 import viewToggle from "../../components/EventBrowsing/ViewToggle";
+import NoEventsFound from "../../components/EventBrowsing/NoEventsFound";
+import Pagination from "../../components/EventBrowsing/Pagination";
 
 const EventBrowsingPage = () => {
   // Sample event data
@@ -236,11 +238,16 @@ useEffect(() => {
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="flex flex-col w-full space-y-4 md:flex-row md:w-auto md:space-y-0 md:space-x-4 md:ml-auto">
               {/* Search bar */}
-              <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+              <SearchBar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+              />
 
               {/* Sort dropdown */}
-              <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
-              
+              <SortDropdown
+                sortOption={sortOption}
+                setSortOption={setSortOption}
+              />
             </div>
           </div>
         </div>
@@ -272,7 +279,6 @@ useEffect(() => {
 
               {/* View toggle - could be implemented */}
               <viewToggle />
-              
             </div>
 
             {/* Grid of event cards */}
@@ -285,75 +291,12 @@ useEffect(() => {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 bg-white rounded-xl">
-                <svg
-                  className="w-16 h-16 mb-4 text-gray-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <h3 className="mb-1 text-lg font-medium text-gray-700">
-                  No events found
-                </h3>
-                <p className="text-gray-500">
-                  Try adjusting your filters or search criteria
-                </p>
-              </div>
+              // No events found message
+              <NoEventsFound />
             )}
 
             {/* Pagination */}
-            {filteredEvents.length > 0 && (
-              <div className="flex justify-center mt-8">
-                <nav className="flex items-center space-x-2">
-                  <button className="px-3 py-2 text-gray-500 rounded-md hover:bg-gray-100">
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                  <button className="px-3 py-2 font-medium text-white bg-indigo-600 rounded-md">
-                    1
-                  </button>
-                  <button className="px-3 py-2 rounded-md hover:bg-gray-100">
-                    2
-                  </button>
-                  <button className="px-3 py-2 rounded-md hover:bg-gray-100">
-                    3
-                  </button>
-                  <span className="px-3 py-2 text-gray-500">...</span>
-                  <button className="px-3 py-2 rounded-md hover:bg-gray-100">
-                    8
-                  </button>
-                  <button className="px-3 py-2 text-gray-500 rounded-md hover:bg-gray-100">
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </nav>
-              </div>
-            )}
+            {filteredEvents.length > 0 && <Pagination />}
           </div>
         </div>
       </main>
