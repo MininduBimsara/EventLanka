@@ -3,7 +3,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import OrganizerInfo from "../../components/EventBooking/OrganizerInfo";
 import OrderSummary from "../../components/EventBooking/OrderSummary";
-import TicketSelecton from "../../components/EventBooking/TicketSelection";
+import TicketSelection from "../../components/EventBooking/TicketSelection";
 import EventDetails from "../../components/EventBooking/EventDetails";
 import EventImage from "../../components/EventBooking/EventImage";
 import ColorDivider from "../../components/EventBooking/ColorDivider";
@@ -133,7 +133,7 @@ useEffect(() => {
       <NavBar />
       <div className="min-h-screen pt-20 bg-gradient-to-b from-purple-500 via-pink-500 to-orange-400">
         <div className="container px-4 py-8 mx-auto">
-          <div className="w-full max-w-4xl mx-auto overflow-hidden bg-white shadow-xl rounded-2xl">
+          <div className="w-full max-w-4xl p-2 mx-auto overflow-hidden bg-white shadow-xl rounded-2xl">
             {/* Event Image and Title */}
             <EventImage image={eventData.image} title={eventData.title} />
 
@@ -168,10 +168,10 @@ useEffect(() => {
             />
 
             {/* Ticket Selection Component */}
-            <TicketSelecton
+            <TicketSelection
               tickets={tickets}
               ticketPrices={ticketPrices}
-              onTicketChange={handleTicketChange}
+              handleTicketChange={handleTicketChange}
             />
 
             {/* Order Summary Component */}
