@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
 import EventCard from "../../components/EventCard"; // Using your existing component
-import NavBar from "../../components/NavBar"; // Using your existing component
-
+import NavBar from "../../components/NavBar";
+import SearchBar from "../../components/EventBrowsing/SearchBar"; // Using your existing component
+import SortDropdown from "../../components/EventBrowsing/SortDropdown";
+import FilterSidebar from "../../components/EventBrowsing/FilterSidebar";
+import viewToggle from "../../components/EventBrowsing/ViewToggle";
+import NoEventsFound from "../../components/EventBrowsing/NoEventsFound";
+import Pagination from "../../components/EventBrowsing/Pagination";
 
 const EventBrowsingPage = () => {
   // Sample event data
@@ -233,38 +238,16 @@ useEffect(() => {
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="flex flex-col w-full space-y-4 md:flex-row md:w-auto md:space-y-0 md:space-x-4 md:ml-auto">
               {/* Search bar */}
-              <div className="relative w-full md:w-64 lg:w-80">
-                <input
-                  type="text"
-                  placeholder="Search events..."
-                  className="w-full px-4 py-2 pl-10 text-gray-700 bg-gray-100 border-none rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <svg
-                  className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
+              <SearchBar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+              />
 
               {/* Sort dropdown */}
-              <select
-                className="w-full px-4 py-2 text-gray-700 bg-gray-100 border-none rounded-md appearance-none md:w-48 focus:outline-none focus:ring-1 focus:ring-gray-300"
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-              >
-                <option value="upcoming">Upcoming</option>
-                <option value="popular">Most Popular</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-              </select>
+              <SortDropdown
+                sortOption={sortOption}
+                setSortOption={setSortOption}
+              />
             </div>
           </div>
         </div>
@@ -277,125 +260,14 @@ useEffect(() => {
       <main className="container px-4 py-10 mx-auto md:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           {/* Sidebar filters */}
-          <aside className="p-6 shadow-sm bg-gradient-to-b from-gray-300 via-gray-500 to-gray-700 rounded-xl">
-            <h2 className="mb-4 text-lg font-bold text-gray-800">Filters</h2>
-
-            {/* Date filter */}
-            <div className="mb-6">
-              <h3 className="mb-2 text-sm font-medium text-gray-500">DATE</h3>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="date"
-                    className="w-4 h-4 text-indigo-600"
-                    checked={filters.date === "all"}
-                    onChange={() => setFilters({ ...filters, date: "all" })}
-                  />
-                  <span className="ml-2 text-gray-700">All Events</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="date"
-                    className="w-4 h-4 text-indigo-600"
-                    checked={filters.date === "upcoming"}
-                    onChange={() =>
-                      setFilters({ ...filters, date: "upcoming" })
-                    }
-                  />
-                  <span className="ml-2 text-gray-700">Upcoming</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="date"
-                    className="w-4 h-4 text-indigo-600"
-                    checked={filters.date === "today"}
-                    onChange={() => setFilters({ ...filters, date: "today" })}
-                  />
-                  <span className="ml-2 text-gray-700">Today</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="date"
-                    className="w-4 h-4 text-indigo-600"
-                    checked={filters.date === "weekend"}
-                    onChange={() => setFilters({ ...filters, date: "weekend" })}
-                  />
-                  <span className="ml-2 text-gray-700">This Weekend</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Category filter */}
-            <div className="mb-6">
-              <h3 className="mb-2 text-sm font-medium text-gray-500">
-                CATEGORY
-              </h3>
-              <div className="space-y-2">
-                {categories.map((category) => (
-                  <label key={category} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-indigo-600 rounded"
-                      checked={filters.categories.includes(category)}
-                      onChange={() => handleCategoryChange(category)}
-                    />
-                    <span className="ml-2 text-gray-700">{category}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Location filter */}
-            <div className="mb-6">
-              <h3 className="mb-2 text-sm font-medium text-gray-500">
-                LOCATION
-              </h3>
-              <div className="space-y-2">
-                {locations.map((location) => (
-                  <label key={location} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-indigo-600 rounded"
-                      checked={filters.locations.includes(location)}
-                      onChange={() => handleLocationChange(location)}
-                    />
-                    <span className="ml-2 text-gray-700">{location}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Price range filter */}
-            <div className="mb-6">
-              <h3 className="mb-2 text-sm font-medium text-gray-500">PRICE</h3>
-              <div className="px-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="300"
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none"
-                />
-                <div className="flex justify-between mt-2 text-xs text-gray-500">
-                  <span>$0</span>
-                  <span>$300+</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Reset filters button */}
-            <button
-              className="w-full px-4 py-2 text-sm font-medium text-indigo-600 transition duration-150 rounded-lg bg-indigo-50 hover:bg-indigo-100"
-              onClick={() =>
-                setFilters({ categories: [], locations: [], date: "all" })
-              }
-            >
-              Reset Filters
-            </button>
-          </aside>
+          <FilterSidebar
+            categories={categories}
+            locations={locations}
+            filters={filters}
+            setFilters={setFilters}
+            handleCategoryChange={handleCategoryChange}
+            handleLocationChange={handleLocationChange}
+          />
 
           {/* Events grid */}
           <div className="lg:col-span-3">
@@ -406,30 +278,7 @@ useEffect(() => {
               </h2>
 
               {/* View toggle - could be implemented */}
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-indigo-600 rounded-md bg-indigo-50">
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-                <button className="p-2 text-gray-400 bg-white rounded-md">
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </button>
-              </div>
+              <viewToggle />
             </div>
 
             {/* Grid of event cards */}
@@ -442,75 +291,12 @@ useEffect(() => {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 bg-white rounded-xl">
-                <svg
-                  className="w-16 h-16 mb-4 text-gray-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <h3 className="mb-1 text-lg font-medium text-gray-700">
-                  No events found
-                </h3>
-                <p className="text-gray-500">
-                  Try adjusting your filters or search criteria
-                </p>
-              </div>
+              // No events found message
+              <NoEventsFound />
             )}
 
             {/* Pagination */}
-            {filteredEvents.length > 0 && (
-              <div className="flex justify-center mt-8">
-                <nav className="flex items-center space-x-2">
-                  <button className="px-3 py-2 text-gray-500 rounded-md hover:bg-gray-100">
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                  <button className="px-3 py-2 font-medium text-white bg-indigo-600 rounded-md">
-                    1
-                  </button>
-                  <button className="px-3 py-2 rounded-md hover:bg-gray-100">
-                    2
-                  </button>
-                  <button className="px-3 py-2 rounded-md hover:bg-gray-100">
-                    3
-                  </button>
-                  <span className="px-3 py-2 text-gray-500">...</span>
-                  <button className="px-3 py-2 rounded-md hover:bg-gray-100">
-                    8
-                  </button>
-                  <button className="px-3 py-2 text-gray-500 rounded-md hover:bg-gray-100">
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </nav>
-              </div>
-            )}
+            {filteredEvents.length > 0 && <Pagination />}
           </div>
         </div>
       </main>
