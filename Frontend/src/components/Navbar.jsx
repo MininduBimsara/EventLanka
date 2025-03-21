@@ -55,7 +55,7 @@ const Navbar = () => {
           >
             Events
           </a>
-          <a href="#" className="transition-colors hover:text-amber-400">
+          <a href="/about" className="transition-colors hover:text-amber-400">
             About
           </a>
           <a href="#" className="transition-colors hover:text-amber-400">
