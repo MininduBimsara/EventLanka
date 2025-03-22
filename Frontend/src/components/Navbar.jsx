@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaMapMarkerAlt,
   FaCalendarAlt,
@@ -11,6 +12,7 @@ import {
 // Navbar Component
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +26,12 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleButtonClick = () => {
+    
+      navigate(`/login`);
+    
+  };
 
   return (
     <nav
@@ -47,7 +55,7 @@ const Navbar = () => {
           >
             Events
           </a>
-          <a href="#" className="transition-colors hover:text-amber-400">
+          <a href="/about" className="transition-colors hover:text-amber-400">
             About
           </a>
           <a href="#" className="transition-colors hover:text-amber-400">
@@ -66,7 +74,10 @@ const Navbar = () => {
           </div>
 
           {/* Login Button */}
-          <button className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-amber-500 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400">
+          <button
+            onClick={handleButtonClick}
+            className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-amber-500 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          >
             <FaUser className="mr-2" />
             Login
           </button>

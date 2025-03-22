@@ -42,3 +42,13 @@ a {
 a:hover {
   color: #388e3c; /* Darker green for hover state */
 }
+
+@keyframes float {
+  0% { transform: translateY(0px); opacity: 0.7; }
+  50% { transform: translateY(-20px); opacity: 1; }
+  100% { transform: translateY(0px); opacity: 0.7; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
