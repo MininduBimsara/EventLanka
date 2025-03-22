@@ -18,6 +18,7 @@ import { Features } from "../../components/AboutUs/Features";
 import { Testimonials } from "../../components/AboutUs/Testimonials";
 import { Team } from "../../components/AboutUs/Team";
 import { CalltoAction } from "../../components/AboutUs/CalltoAction";
+import Navbar from "../../components/Navbar";
 
 const AboutPage = () => {
   const [animateCounter, setAnimateCounter] = useState(false);
@@ -171,6 +172,9 @@ const AboutPage = () => {
 
   return (
     <div className="relative overflow-hidden font-sans">
+
+      <Navbar />
+      
       {/* Decorative elements */}
       <div className="absolute hidden w-64 h-64 bg-purple-500 rounded-full md:block top-40 left-20 opacity-10 blur-3xl"></div>
       <div className="absolute hidden bg-pink-500 rounded-full md:block top-96 right-20 w-80 h-80 opacity-10 blur-3xl"></div>
