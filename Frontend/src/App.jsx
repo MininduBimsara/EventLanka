@@ -6,6 +6,7 @@ import EventBookingPage from './pages/Common/EventBookingPage';
 import LoginRegistrationUI from './pages/Common/Login'; 
 import NewEventBookingUI from './pages/Common/NewEventBookingUI';
 import AboutPage from './pages/Common/AboutUs';
+import ContactUsPage from './pages/Common/ContactUs';
 function App() {
 
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/neweventbooking" element={<NewEventBookingUI />} />
           <Route path="/event/:id" element={<EventBookingPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactUsPage />} />
           {/* <Route path="/home" element={<Home />} /> */}
         </Routes>
       </Router>
