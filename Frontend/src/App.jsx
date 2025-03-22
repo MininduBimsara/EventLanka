@@ -1,21 +1,24 @@
 import './App.css'
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from './pages/Common/Home';
 import NewHome from './pages/Common/NewHome';
 import EventBrowsingPage from './pages/Common/EventBrowsingPage';
-import EventBookingUI from './pages/Common/EventDescription';
+import EventBookingPage from './pages/Common/EventBookingPage';
 import LoginRegistrationUI from './pages/Common/Login'; 
+import NewEventBookingUI from './pages/Common/NewEventBookingUI';
+import AboutPage from './pages/Common/AboutUs';
 function App() {
 
   return (
     <>
       <Router>
         <Routes>
-          \ <Route path="/" element={<Home />} />
+          \ <Route path="/" element={<NewHome />} />
           <Route path="/newhome" element={<NewHome />} />
           <Route path="/eventbrowsing" element={<EventBrowsingPage />} />
-          <Route path="/eventbooking" element={<EventBookingUI />} />
           <Route path="/login" element={<LoginRegistrationUI />} />
+          <Route path="/neweventbooking" element={<NewEventBookingUI />} />
+          <Route path="/event/:id" element={<EventBookingPage />} />
+          <Route path="/about" element={<AboutPage />} />
           {/* <Route path="/home" element={<Home />} /> */}
         </Routes>
       </Router>

@@ -1,8 +1,19 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 // Modified to accept event as a prop
 const EventCard = ({ event }) => {
   // No longer defining hardcoded event data here
+
+  const navigate = useNavigate();
+
+  const handleButtonClick = () => {
+    if (event.bookingAvailable) {
+      navigate(`/event/${event.id}`, { state: { eventData: event } });
+    } else {
+      alert("Ticket booking is not available yet!");
+    }
+  };
 
   return (
     <div className="max-w-md overflow-hidden transition duration-300 transform bg-gray-900 shadow-lg rounded-xl hover:-translate-y-1 hover:shadow-xl">
@@ -117,7 +128,10 @@ const EventCard = ({ event }) => {
         </div>
 
         {/* CTA Button */}
-        <button className="w-full py-3 font-bold text-center text-gray-900 transition duration-200 transform rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 hover:scale-105">
+        <button
+          onClick={handleButtonClick}
+          className="w-full py-3 font-bold text-center text-gray-900 transition duration-200 transform rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 hover:scale-105"
+        >
           GET TICKETS
         </button>
       </div>

@@ -98,4 +98,4 @@ Feel free to contribute by following these steps:
 This project is licensed under the MIT License.
 
 ## Contact
-For any inquiries, reach out to [your-email@example.com] or create an issue in the repository.
+For any inquiries, reach out to minindubim@gmail.com or create an issue in the repository.
