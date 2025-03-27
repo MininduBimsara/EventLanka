@@ -1,6 +1,6 @@
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 
-const ticketSchema = new mongoose.Schema({
+const paymentSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
@@ -11,32 +11,29 @@ const ticketSchema = new mongoose.Schema({
     required: true,
     ref: "Event",
   },
-  ticket_type: {
-    type: String,
-    required: true,
-  },
-  price: {
+  amount: {
     type: Number,
     required: true,
     min: 0,
   },
-  payment_status: {
-    type: String,
-    enum: ["pending", "paid", "refunded"],
-    default: "pending",
-  },
-  qr_code: {
+  payment_method: {
     type: String,
     required: true,
   },
-  issued_at: {
+  status: {
+    type: String,
+    enum: ["pending", "completed", "failed", "refunded"],
+    default: "pending",
+  },
+  transaction_id: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  createdAt: {
     type: Date,
     default: Date.now,
   },
-  validated: {
-    type: Boolean,
-    default: false,
-  },
 });
 
-module.exports = mongoose.model("Ticket", ticketSchema);
+module.exports = mongoose.model("Payment", paymentSchema);
