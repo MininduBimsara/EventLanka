@@ -40,6 +40,7 @@ exports.buyTicket = asyncHandler(async (req, res) => {
     ticket_type: ticketType,
     quantity: quantity,
     price: ticketOption.price * quantity,
+    qr_code: "112233", // Ensure QR code is included
     payment_status: "pending", // Change to "paid" after successful payment integration
   });
 
