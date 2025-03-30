@@ -1,20 +1,18 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // Ensure User model is correctly imported
+const User = require("../models/User");
 const asyncHandler = require("express-async-handler");
 
 exports.protect = asyncHandler(async (req, res, next) => {
-  let token = req.header("Authorization");
+  // Extract token from cookies instead of headers
+  const token = req.cookies.token;
 
-  if (!token || !token.startsWith("Bearer ")) {
+  if (!token) {
     return res
       .status(401)
       .json({ message: "Access denied. No token provided." });
   }
 
   try {
-    // Extract token (removing "Bearer ")
-    token = token.split(" ")[1];
-
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
