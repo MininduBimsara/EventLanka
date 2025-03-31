@@ -5,13 +5,14 @@ const {
   updateEvent,
   deleteEvent,
 } = require("../controllers/eventController");
-const { authenticateUser } = require("../middlewares/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 // Middleware to authenticate users
-router.use(authenticateUser);
+router.use(protect);
 
+// RESTful routes for events
 router.post("/", createEvent); // Create an event
 router.get("/", getEvents); // Get events (based on role)
 router.put("/:id", updateEvent); // Update an event
