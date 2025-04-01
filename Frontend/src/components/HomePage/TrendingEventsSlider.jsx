@@ -7,7 +7,6 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 
-
 //Trending Events Slider Component
 const TrendingEventsSlider = () => {
   // Sample trending events data
@@ -54,12 +53,12 @@ const TrendingEventsSlider = () => {
   };
 
   return (
-    <div className="w-full overflow-hidden bg-gray-800 rounded-lg shadow-lg">
+    <div className="w-full overflow-hidden bg-[#6622cc] rounded-lg shadow-lg">
       <div className="p-6">
-        <h2 className="mb-2 text-3xl font-bold text-center text-amber-400">
+        <h2 className="mb-2 text-3xl font-bold text-center text-[#d2a1b8]">
           Trending Events
         </h2>
-        <p className="mb-10 text-center text-gray-300 ">
+        <p className="mb-10 text-center text-[#b59194]">
           Discover the hottest concerts and festivals happening near you
         </p>
 
@@ -82,16 +81,16 @@ const TrendingEventsSlider = () => {
                       <h3 className="mb-3 text-xl font-bold text-white">
                         {event.title}
                       </h3>
-                      <p className="text-gray-200">{event.description}</p>
-                      <button className="px-4 py-2 mt-6 text-white transition rounded bg-amber-500 hover:bg-amber-600 w-fit">
+                      <p className="text-[#d2a1b8]">{event.description}</p>
+                      <button className="px-4 py-2 mt-6 text-white transition rounded bg-[#a755c2] hover:bg-[#b07c9e] w-fit">
                         Learn More
                       </button>
                     </div>
                   </div>
-                  <div className="w-1/2 bg-gray-300 rounded-lg">
+                  <div className="w-1/2 bg-[#b07c9e] rounded-lg">
                     {/* Placeholder for event image */}
-                    <div className="flex items-center justify-center h-full bg-gray-200 rounded-lg">
-                      <span className="text-gray-800">Event Image</span>
+                    <div className="flex items-center justify-center h-full bg-[#b59194] rounded-lg">
+                      <span className="text-white">Event Image</span>
                     </div>
                   </div>
                 </div>
@@ -107,7 +106,7 @@ const TrendingEventsSlider = () => {
               key={index}
               onClick={() => goToSlide(index)}
               className={`w-3 h-3 rounded-full transition-colors duration-300 
-                ${index === currentSlide ? "bg-amber-400" : "bg-gray-500"}`}
+                ${index === currentSlide ? "bg-[#a755c2]" : "bg-[#b07c9e]"}`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}

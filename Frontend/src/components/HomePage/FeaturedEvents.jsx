@@ -54,7 +54,7 @@ const FeaturedEvents = () => {
   };
 
   return (
-    <section className="py-20 bg-gray-900">
+    <section className="py-20 bg-[#6622cc]">
       <div className="container px-4 mx-auto">
         <h2 className="mb-16 text-3xl font-bold text-center text-white">
           Featured Events
@@ -79,14 +79,14 @@ const FeaturedEvents = () => {
                         key={event.id}
                         className="flex flex-col items-center transition-all duration-300 transform cursor-pointer group hover:-translate-y-2"
                       >
-                        <div className="flex items-center justify-center w-24 h-24 mb-4 overflow-visible text-4xl bg-gray-200 rounded-full">
+                        <div className="flex items-center justify-center w-24 h-24 mb-4 overflow-visible text-4xl bg-[#d2a1b8] rounded-full">
                           {event.emoji}
                         </div>
                         <h3 className="mb-1 text-xl font-semibold text-white">
                           {event.title}
                         </h3>
-                        <p className="mb-2 text-gray-400">{event.date}</p>
-                        <p className="text-xl font-medium text-amber-400">
+                        <p className="mb-2 text-[#b59194]">{event.date}</p>
+                        <p className="text-xl font-medium text-[#a755c2]">
                           {event.location}
                         </p>
                       </div>
@@ -104,7 +104,9 @@ const FeaturedEvents = () => {
                   key={index}
                   onClick={() => goToSlide(index)}
                   className={`w-3 h-3 rounded-full transition-colors duration-300 
-                    ${index === currentSlide ? "bg-amber-400" : "bg-gray-600"}`}
+                    ${
+                      index === currentSlide ? "bg-[#a755c2]" : "bg-[#b07c9e]"
+                    }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}

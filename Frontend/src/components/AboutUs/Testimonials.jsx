@@ -1,6 +1,6 @@
-export const Testimonials = ({ testimonials , activeTestimonial}) => {
+export const Testimonials = ({ testimonials, activeTestimonial }) => {
   return (
-    <section className="px-4 py-24 text-white bg-gradient-to-r from-indigo-900 to-purple-900">
+    <section className="px-4 py-24 text-white bg-gradient-to-r from-[#B07C9E] to-[#6622CC]">
       <div className="max-w-6xl mx-auto">
         <h2 className="mb-16 text-4xl font-bold text-center md:text-5xl">
           What Our Users Say
@@ -19,7 +19,7 @@ export const Testimonials = ({ testimonials , activeTestimonial}) => {
               <div className="p-8 text-center bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm rounded-xl">
                 <p className="mb-6 text-xl italic">"{testimonial.quote}"</p>
                 <div className="text-lg font-bold">{testimonial.name}</div>
-                <div className="text-indigo-200">{testimonial.event}</div>
+                <div className="text-[#D2A1B8]">{testimonial.event}</div>
               </div>
             </div>
           ))}

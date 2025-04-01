@@ -22,7 +22,7 @@ const Testimonials = () => {
           <svg
             key={i}
             className={`w-4 h-4 ${
-              i < rating ? "text-amber-400" : "text-gray-300"
+              i < rating ? "text-[#a755c2]" : "text-[#b59194]"
             }`}
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -35,9 +35,9 @@ const Testimonials = () => {
   };
 
   return (
-    <section className="py-20 bg-gray-900">
+    <section className="py-20 bg-[#6622cc]">
       <div className="container px-4 mx-auto">
-        <h2 className="mb-16 text-3xl font-bold text-center">
+        <h2 className="mb-16 text-3xl font-bold text-center text-white">
           User Testimonials
         </h2>
 
@@ -45,14 +45,16 @@ const Testimonials = () => {
           {testimonials.map((testimonial) => (
             <div
               key={testimonial.id}
-              className="p-6 transition-transform duration-300 bg-gray-700 rounded-lg hover:transform hover:scale-105"
+              className="p-6 transition-transform duration-300 bg-[#a755c2] rounded-lg hover:transform hover:scale-105"
             >
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 mr-3 bg-gray-300 rounded-full"></div>
-                <span className="font-medium">{testimonial.name}</span>
+                <div className="w-10 h-10 mr-3 bg-[#d2a1b8] rounded-full"></div>
+                <span className="font-medium text-white">
+                  {testimonial.name}
+                </span>
                 <div className="ml-auto">{renderStars(testimonial.rating)}</div>
               </div>
-              <p className="text-gray-300">{testimonial.comment}</p>
+              <p className="text-[#d2a1b8]">{testimonial.comment}</p>
             </div>
           ))}
         </div>
