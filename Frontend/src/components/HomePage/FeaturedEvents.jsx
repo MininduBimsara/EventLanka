@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-// Featured Events Component
+// Featured Events Component with Synchronized Animated Gradient
 const FeaturedEvents = () => {
   const events = [
     {
@@ -8,14 +8,14 @@ const FeaturedEvents = () => {
       title: "Music Festival",
       date: "June 20",
       location: "New York",
-      emoji: "😀",
+      emoji: "🎵",
     },
     {
       id: 2,
       title: "Comedy Show",
       date: "July 5",
       location: "Los Angeles",
-      emoji: "🎉",
+      emoji: "😂",
     },
     {
       id: 3,
@@ -54,8 +54,32 @@ const FeaturedEvents = () => {
   };
 
   return (
-    <section className="py-20 bg-[#6622cc]">
-      <div className="container px-4 mx-auto">
+    <section
+      className="relative py-20 overflow-hidden mt-[-2px]"
+      id="gradient-sync-featured"
+    >
+      {/* Animated gradient background - same colors as footer & hero */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-500 animate-gradient-x"></div>
+
+      {/* Animated particles overlay */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
+            style={{
+              width: `${Math.random() * 8 + 4}px`,
+              height: `${Math.random() * 8 + 4}px`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${Math.random() * 10 + 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="container relative z-10 px-4 mx-auto">
         <h2 className="mb-16 text-3xl font-bold text-center text-white">
           Featured Events
         </h2>
@@ -79,14 +103,14 @@ const FeaturedEvents = () => {
                         key={event.id}
                         className="flex flex-col items-center transition-all duration-300 transform cursor-pointer group hover:-translate-y-2"
                       >
-                        <div className="flex items-center justify-center w-24 h-24 mb-4 overflow-visible text-4xl bg-[#d2a1b8] rounded-full">
+                        <div className="flex items-center justify-center w-24 h-24 mb-4 overflow-visible text-4xl rounded-full bg-white/20 backdrop-blur-sm group-hover:animate-pulse">
                           {event.emoji}
                         </div>
                         <h3 className="mb-1 text-xl font-semibold text-white">
                           {event.title}
                         </h3>
-                        <p className="mb-2 text-[#b59194]">{event.date}</p>
-                        <p className="text-xl font-medium text-[#a755c2]">
+                        <p className="mb-2 text-white/70">{event.date}</p>
+                        <p className="text-xl font-medium text-white/90">
                           {event.location}
                         </p>
                       </div>
@@ -104,9 +128,7 @@ const FeaturedEvents = () => {
                   key={index}
                   onClick={() => goToSlide(index)}
                   className={`w-3 h-3 rounded-full transition-colors duration-300 
-                    ${
-                      index === currentSlide ? "bg-[#a755c2]" : "bg-[#b07c9e]"
-                    }`}
+                    ${index === currentSlide ? "bg-white" : "bg-white/50"}`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}
@@ -114,6 +136,44 @@ const FeaturedEvents = () => {
           )}
         </div>
       </div>
+
+      {/* Animation styles - same timing as footer & hero */}
+      <style jsx>{`
+        @keyframes gradient-x {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        .animate-gradient-x {
+          background-size: 400% 400%;
+          animation: gradient-x 15s ease infinite;
+        }
+        @keyframes float {
+          0% {
+            transform: translateY(0) translateX(0) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) translateX(20px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        .animate-float {
+          animation: float 10s ease-in-out infinite;
+        }
+      `}</style>
     </section>
   );
 };

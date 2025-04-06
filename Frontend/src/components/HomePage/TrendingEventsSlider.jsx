@@ -53,7 +53,7 @@ const TrendingEventsSlider = () => {
   };
 
   return (
-    <div className="w-full overflow-hidden bg-[#6622cc] rounded-lg shadow-lg">
+    <div className="w-full overflow-hidden bg-gradient-to-b from-[#5E17EB] from-0% to-[#6a11cb] rounded-lg shadow-lg">
       <div className="p-6">
         <h2 className="mb-2 text-3xl font-bold text-center text-[#d2a1b8]">
           Trending Events

@@ -13,20 +13,25 @@ import Testimonials from "../../components/HomePage/Testimonials";
 import HowItWorks from "../../components/HomePage/HowItWorks";
 import HeroSection from "../../components/HomePage/HeroSection";
 import FeaturedEvents from "../../components/HomePage/FeaturedEvents";
+import GradientSync from "../../components/HomePage/GradientSync";
 
 // Main NewHome Component
 function NewHome() {
   return (
-    <div className="min-h-screen text-white bg-gray-900">
-      <Navbar />
-      <HeroSection />
-      <FeaturedEvents />
-      <TrendingEventsSlider />
-      <Testimonials />
-      <HowItWorks />
-      <Newsletter />
-      <Footer />
-    </div>
+    <>
+      {" "}
+      <div className="min-h-screen text-white ">
+        <Navbar />
+        <GradientSync />
+        <HeroSection />
+        <FeaturedEvents />
+        <TrendingEventsSlider />
+        <Testimonials />
+        <HowItWorks />
+        <Newsletter />
+        <Footer />
+      </div>
+    </>
   );
 }
 

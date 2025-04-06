@@ -33,7 +33,7 @@ const InfoFaqSection = () => {
 
   return (
     <div className="p-6 bg-white border border-white bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20">
-      <h2 className="mb-6 text-3xl font-bold text-white">
+      <h2 className="mb-6 text-3xl font-bold text-[#2a2e60]">
         Frequently Asked Questions
       </h2>
       <div className="space-y-4">
@@ -44,7 +44,7 @@ const InfoFaqSection = () => {
           >
             <button
               onClick={() => toggleFaq(index)}
-              className="flex items-center justify-between w-full p-4 font-medium text-left text-white"
+              className="flex items-center justify-between w-full p-4 font-medium text-left text-[#2a2e60]"
             >
               <span>{faq.question}</span>
               <span
@@ -62,7 +62,7 @@ const InfoFaqSection = () => {
                   : "max-h-0 opacity-0"
               }`}
             >
-              <div className="p-4 pt-0 text-white text-opacity-80">
+              <div className="p-4 pt-0 text-[#2a2e60] text-opacity-80">
                 {faq.answer}
               </div>
             </div>

@@ -13,10 +13,10 @@ const ContactInfoSection = () => {
   return (
     <div>
       <div className="p-6 mb-8 bg-white border border-white bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20">
-        <h2 className="mb-6 text-3xl font-bold text-white">Get In Touch</h2>
+        <h2 className="mb-6 text-3xl font-bold text-[#2a2e60]">Get In Touch</h2>
 
         <div className="space-y-4">
-          <div className="flex items-center text-white transition-colors duration-300 group hover:text-yellow-300">
+          <div className="flex items-center text-[#2a2e60] transition-colors duration-300 group hover:text-yellow-300">
             <div className="flex items-center justify-center w-12 h-12 mr-4 transition-all duration-300 bg-white rounded-full bg-opacity-10 group-hover:bg-white group-hover:bg-opacity-20">
               <Phone size={22} />
             </div>
@@ -28,7 +28,7 @@ const ContactInfoSection = () => {
             </div>
           </div>
 
-          <div className="flex items-center text-white transition-colors duration-300 group hover:text-yellow-300">
+          <div className="flex items-center text-[#2a2e60] transition-colors duration-300 group hover:text-yellow-300">
             <div className="flex items-center justify-center w-12 h-12 mr-4 transition-all duration-300 bg-white rounded-full bg-opacity-10 group-hover:bg-white group-hover:bg-opacity-20">
               <Mail size={22} />
             </div>
@@ -43,7 +43,7 @@ const ContactInfoSection = () => {
             </div>
           </div>
 
-          <div className="flex items-center text-white transition-colors duration-300 group hover:text-yellow-300">
+          <div className="flex items-center text-[#2a2e60] transition-colors duration-300 group hover:text-yellow-300">
             <div className="flex items-center justify-center w-12 h-12 mr-4 transition-all duration-300 bg-white rounded-full bg-opacity-10 group-hover:bg-white group-hover:bg-opacity-20">
               <MapPin size={22} />
             </div>
@@ -58,29 +58,29 @@ const ContactInfoSection = () => {
 
         {/* Social Media Links */}
         <div className="mt-8">
-          <h3 className="mb-4 text-lg text-white">Connect With Us</h3>
+          <h3 className="mb-4 text-lg text-[#2a2e60]">Connect With Us</h3>
           <div className="flex space-x-4">
             <a
               href="#"
-              className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-gradient-to-br from-purple-600 to-pink-500 hover:rotate-6"
+              className="flex items-center justify-center w-12 h-12 text-[#2a2e60] transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-gradient-to-br from-purple-600 to-pink-500 hover:rotate-6"
             >
               <Instagram />
             </a>
             <a
               href="#"
-              className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-blue-500 hover:rotate-6"
+              className="flex items-center justify-center w-12 h-12 text-[#2a2e60] transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-blue-500 hover:rotate-6"
             >
               <Twitter />
             </a>
             <a
               href="#"
-              className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-blue-600 hover:rotate-6"
+              className="flex items-center justify-center w-12 h-12 text-[#2a2e60] transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-blue-600 hover:rotate-6"
             >
               <Facebook />
             </a>
             <a
               href="#"
-              className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-black hover:rotate-6"
+              className="flex items-center justify-center w-12 h-12 text-[#2a2e60] transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-black hover:rotate-6"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -1,7 +1,7 @@
 // Newsletter Component
 const Newsletter = () => {
   return (
-    <section className="py-16 bg-[#6622cc]">
+    <section className="py-16 bg-gradient-to-b from-[#5E17EB] from-0% to-[#8244fe] to-100% mt-[-2px]">
       <div className="container px-4 mx-auto">
         <div className="max-w-4xl p-8 mx-auto text-center bg-[#a755c2] rounded-lg">
           <h3 className="mb-4 text-2xl font-bold text-white">

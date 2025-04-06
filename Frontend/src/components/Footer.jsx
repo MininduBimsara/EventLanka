@@ -50,7 +50,7 @@ const FestiveFooter = () => {
   };
 
   return (
-    <footer className="relative w-full mt-10 overflow-hidden text-white">
+    <footer className="relative w-full overflow-hidden text-white">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-500 animate-gradient-x"></div>
 
