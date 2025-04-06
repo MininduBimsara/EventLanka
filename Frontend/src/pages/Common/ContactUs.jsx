@@ -55,7 +55,7 @@ const ContactUsPage = () => {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-purple-600 via-pink-500 to-orange-400">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#D0A2F7] via-[#8ECAE6] to-[#023E8A]">
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-20 h-20 bg-yellow-300 rounded-full top-20 left-10 opacity-20 animate-pulse"></div>

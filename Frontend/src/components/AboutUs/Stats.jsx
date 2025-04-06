@@ -1,6 +1,9 @@
 const Stats = ({ counters }) => {
   return (
-    <section id="stats-section" className="px-4 py-16 text-white bg-[#B07C9E]">
+    <section
+      id="stats-section"
+      className="px-4 py-16 text-white bg-gradient-to-b from-[#6c36bd] from-0% to-[#06a9f5]"
+    >
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 gap-8 text-center md:grid-cols-3">
           <div className="p-8 transition-all duration-300 bg-[#B07C9E] bg-opacity-50 rounded-xl hover:transform hover:scale-105">

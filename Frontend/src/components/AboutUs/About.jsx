@@ -1,6 +1,6 @@
 const About = () => {
   return (
-    <section className="px-4 py-24 bg-gradient-to-b from-[#D2A1B8] to-white">
+    <section className="px-4 py-24 bg-gradient-to-b from-[#023E8A] from-0% to-[#6c36bd] to-70% mt-[-2px]">
       <div className="max-w-6xl mx-auto">
         <h2 className="mb-12 text-4xl font-bold text-center text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-[#6622CC] to-[#A755C2]">
           Where Memories Begin
@@ -8,14 +8,14 @@ const About = () => {
 
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div className="order-2 md:order-1">
-            <p className="mb-6 text-lg leading-relaxed text-gray-700">
+            <p className="mb-6 text-lg leading-relaxed text-white">
               Welcome to{" "}
-              <span className="font-bold text-[#6622CC]">Festiva!</span> – where
+              <span className="font-bold text-[#D0A2F7]">Festiva!</span> – where
               every ticket opens the door to unforgettable experiences. We're
               not just an event platform; we're your personal guide to a world
               of entertainment, culture, and celebration.
             </p>
-            <p className="mb-6 text-lg leading-relaxed text-gray-700">
+            <p className="mb-6 text-lg leading-relaxed text-white">
               Born from a passion for bringing people together, we've created a
               vibrant marketplace where event lovers and organizers connect.
               From intimate gallery openings to stadium-filling concerts, our

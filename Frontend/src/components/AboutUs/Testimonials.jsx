@@ -1,6 +1,6 @@
 export const Testimonials = ({ testimonials, activeTestimonial }) => {
   return (
-    <section className="px-4 py-24 text-white bg-gradient-to-r from-[#B07C9E] to-[#6622CC]">
+    <section className="px-4 py-24 text-white bg-gradient-to-b from-[#935de4] via-[#B07C9E] to-[#935de4]">
       <div className="max-w-6xl mx-auto">
         <h2 className="mb-16 text-4xl font-bold text-center md:text-5xl">
           What Our Users Say

@@ -1,6 +1,6 @@
 const Hero = () => {
   return (
-    <section className="relative flex items-center justify-center min-h-screen p-4 overflow-hidden bg-gradient-to-br from-[#6622CC] via-[#A755C2] to-[#D2A1B8]">
+    <section className="relative flex items-center justify-center min-h-screen p-4 overflow-hidden bg-gradient-to-b from-[#D0A2F7] from-0% via-[#8ECAE6] via-60% to-[#023E8A] to-100%">
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(50)].map((_, i) => (
           <div

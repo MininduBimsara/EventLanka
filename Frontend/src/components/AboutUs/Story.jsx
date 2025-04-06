@@ -1,6 +1,6 @@
 export const Story = () => {
   return (
-    <section className="px-4 py-24 bg-gradient-to-b from-white to-[#D2A1B8]">
+    <section className="px-4 py-24 bg-gradient-to-b from-[#D0A2F7] from-0% to-[#D2A1B8]">
       <div className="max-w-6xl mx-auto">
         <h2 className="mb-16 text-4xl font-bold text-center text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-[#6622CC] to-[#A755C2]">
           Our Story
