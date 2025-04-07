@@ -1,8 +1,34 @@
+import React from "react";
+
 // Newsletter Component
 const Newsletter = () => {
   return (
-    <section className="py-16 bg-gradient-to-b from-[#5E17EB] from-0% to-[#8244fe] to-100% mt-[-2px]">
-      <div className="container px-4 mx-auto">
+    <section
+      className="py-16 relative overflow-hidden mt-[-2px]"
+      id="gradient-sync-newsletter"
+    >
+      {/* Animated gradient background - using EXACT same gradient as Featured Events */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-500 animate-gradient-x"></div>
+
+      {/* Adding particles like in Featured Events */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
+            style={{
+              width: `${Math.random() * 8 + 4}px`,
+              height: `${Math.random() * 8 + 4}px`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${Math.random() * 10 + 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="container relative z-10 px-4 mx-auto">
         <div className="max-w-4xl p-8 mx-auto text-center bg-[#a755c2] rounded-lg">
           <h3 className="mb-4 text-2xl font-bold text-white">
             Join us to experience the thrill of live events and entertainment!
@@ -19,6 +45,44 @@ const Newsletter = () => {
           </div>
         </div>
       </div>
+
+      {/* Animation styles */}
+      <style jsx>{`
+        @keyframes gradient-x {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        .animate-gradient-x {
+          background-size: 400% 400%;
+          animation: gradient-x 15s ease infinite;
+        }
+        @keyframes float {
+          0% {
+            transform: translateY(0) translateX(0) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) translateX(20px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        .animate-float {
+          animation: float 10s ease-in-out infinite;
+        }
+      `}</style>
     </section>
   );
 };

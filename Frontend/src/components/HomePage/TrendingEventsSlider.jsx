@@ -53,12 +53,36 @@ const TrendingEventsSlider = () => {
   };
 
   return (
-    <div className="w-full overflow-hidden bg-gradient-to-b from-[#5E17EB] from-0% to-[#6a11cb] rounded-lg shadow-lg">
-      <div className="p-6">
-        <h2 className="mb-2 text-3xl font-bold text-center text-[#d2a1b8]">
+    <div
+      className="relative w-full overflow-hidden rounded-lg shadow-lg"
+      id="gradient-sync-trending"
+    >
+      {/* Animated gradient background - using EXACT same gradient as Featured Events */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-500 animate-gradient-x"></div>
+
+      {/* Optional: Adding particle animation like in Featured Events */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
+            style={{
+              width: `${Math.random() * 8 + 4}px`,
+              height: `${Math.random() * 8 + 4}px`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${Math.random() * 10 + 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 p-6">
+        <h2 className="mb-2 text-3xl font-bold text-center text-white">
           Trending Events
         </h2>
-        <p className="mb-10 text-center text-[#b59194]">
+        <p className="mb-10 text-center text-[#d2a1b8]">
           Discover the hottest concerts and festivals happening near you
         </p>
 
@@ -106,12 +130,50 @@ const TrendingEventsSlider = () => {
               key={index}
               onClick={() => goToSlide(index)}
               className={`w-3 h-3 rounded-full transition-colors duration-300 
-                ${index === currentSlide ? "bg-[#a755c2]" : "bg-[#b07c9e]"}`}
+                ${index === currentSlide ? "bg-white" : "bg-white/50"}`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
       </div>
+
+      {/* Animation styles */}
+      <style jsx>{`
+        @keyframes gradient-x {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        .animate-gradient-x {
+          background-size: 400% 400%;
+          animation: gradient-x 15s ease infinite;
+        }
+        @keyframes float {
+          0% {
+            transform: translateY(0) translateX(0) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) translateX(20px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        .animate-float {
+          animation: float 10s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };

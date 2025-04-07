@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 
 const FestiveFooter = () => {
@@ -50,8 +50,11 @@ const FestiveFooter = () => {
   };
 
   return (
-    <footer className="relative w-full overflow-hidden text-white">
-      {/* Animated gradient background */}
+    <footer
+      id="gradient-sync-footer"
+      className="relative w-full overflow-hidden text-white"
+    >
+      {/* Animated gradient background - using EXACT same gradient as other sections */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-500 animate-gradient-x"></div>
 
       {/* Animated confetti overlay */}

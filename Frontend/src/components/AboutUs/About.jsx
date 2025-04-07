@@ -2,7 +2,7 @@ const About = () => {
   return (
     <section className="px-4 py-24 bg-gradient-to-b from-[#023E8A] from-0% to-[#6c36bd] to-70% mt-[-2px]">
       <div className="max-w-6xl mx-auto">
-        <h2 className="mb-12 text-4xl font-bold text-center text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-[#6622CC] to-[#A755C2]">
+        <h2 className="mb-12 text-4xl font-bold leading-normal pb-2 text-center text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-[#6622CC] to-[#A755C2]">
           Where Memories Begin
         </h2>
 

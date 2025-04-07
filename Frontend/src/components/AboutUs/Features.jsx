@@ -4,7 +4,7 @@ export const Features = ({ features }) => {
   return (
     <section className="px-4 py-24 bg-gradient-to-b from-[#D2A1B8] to-[#935de4]">
       <div className="max-w-6xl mx-auto">
-        <h2 className="mb-16 text-4xl font-bold text-center text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-[#6622CC] to-[#A755C2]">
+        <h2 className="mb-16 text-4xl font-bold leading-normal pb-2 text-center text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-[#6622CC] to-[#A755C2]">
           Why Choose Festiva
         </h2>
 

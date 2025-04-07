@@ -7,15 +7,25 @@ const GradientSync = () => {
     // Function to synchronize animation timings
     const synchronizeGradients = () => {
       // Select all gradient elements by their IDs
-      const footer = document.querySelector("footer");
+      const footer = document.getElementById("gradient-sync-footer");
       const hero = document.getElementById("gradient-sync-hero");
       const featured = document.getElementById("gradient-sync-featured");
+      const testimonials = document.getElementById(
+        "gradient-sync-testimonials"
+      );
+      const trending = document.getElementById("gradient-sync-trending");
+      const newsletter = document.getElementById("gradient-sync-newsletter");
+      const howitworks = document.getElementById("gradient-sync-howitworks");
 
       // Get all gradient backgrounds
       const gradientElements = [
         footer?.querySelector(".animate-gradient-x"),
         hero?.querySelector(".animate-gradient-x"),
         featured?.querySelector(".animate-gradient-x"),
+        testimonials?.querySelector(".animate-gradient-x"),
+        trending?.querySelector(".animate-gradient-x"),
+        newsletter?.querySelector(".animate-gradient-x"),
+        howitworks?.querySelector(".animate-gradient-x"),
       ].filter(Boolean);
 
       // Reset animations to start at the same time
@@ -39,7 +49,7 @@ const GradientSync = () => {
 
     return () => {
       window.removeEventListener("resize", synchronizeGradients);
-      document.addEventListener("visibilitychange", synchronizeGradients);
+      document.removeEventListener("visibilitychange", synchronizeGradients);
     };
   }, []);
 
