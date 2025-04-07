@@ -42,7 +42,7 @@ const Testimonials = () => {
       id="gradient-sync-testimonials"
     >
       {/* Animated gradient background - using EXACT same gradient as Featured Events */}
-      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-500 animate-gradient-x"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-[#D0A2F7] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
 
       {/* Adding particles like in Featured Events */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
