@@ -29,7 +29,7 @@ const HowItWorks = () => {
       id="gradient-sync-howitworks"
     >
       {/* Animated gradient background - using EXACT same gradient as Featured Events */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#D0A2F7] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-[#a034ff] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
 
       {/* Adding particles like in Featured Events */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
