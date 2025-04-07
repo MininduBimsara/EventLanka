@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import EventCard from "../../components/EventCard"; // Using your existing component
+import EventCard from "../../components/EventBrowsing/EventCard"; // Using your existing component
 import NavBar from "../../components/NavBar";
 import SearchBar from "../../components/EventBrowsing/SearchBar"; // Using your existing component
 import SortDropdown from "../../components/EventBrowsing/SortDropdown";
 import FilterSidebar from "../../components/EventBrowsing/FilterSidebar";
-import viewToggle from "../../components/EventBrowsing/ViewToggle";
+import ViewToggle from "../../components/EventBrowsing/ViewToggle";
 import NoEventsFound from "../../components/EventBrowsing/NoEventsFound";
 import Pagination from "../../components/EventBrowsing/Pagination";
+import EventBrowsingGradientSync from "../../components/EventBrowsing/EventBrowsingGradientSync";
 
 const EventBrowsingPage = () => {
   // Sample event data
@@ -121,27 +122,26 @@ const EventBrowsingPage = () => {
     },
   ];
 
-const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(true);
 
-useEffect(() => {
-  const handleScroll = () => {
-    // Only show the header when at the top of the page
-    // You can adjust the threshold (20) if needed
-    if (window.scrollY <= 20) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      // Only show the header when at the top of the page
+      // You can adjust the threshold (20) if needed
+      if (window.scrollY <= 20) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
 
-  window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll);
 
-  // Clean up
-  return () => {
-    window.removeEventListener("scroll", handleScroll);
-  };
-}, []);
-  
+    // Clean up
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   // Filter and sort state
   const [searchTerm, setSearchTerm] = useState("");
@@ -223,83 +223,148 @@ useEffect(() => {
     });
 
   return (
-    <div className="min-h-screen bg-gray-800">
-      <NavBar />
+    <div className="relative min-h-screen">
+      {/* Main background gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] animate-gradient-event"></div>
 
-      {/* Header */}
-      <header
-        className={`fixed z-10 bg-transparent bg-opacity-80 backdrop-blur-sm border-b top-20 left-0 right-0 transition-all duration-300 ${
-          isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 -translate-y-full pointer-events-none"
-        }`}
-      >
-        <div className="container px-4 py-4 mx-auto md:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
-            <div className="flex flex-col w-full space-y-4 md:flex-row md:w-auto md:space-y-0 md:space-x-4 md:ml-auto">
-              {/* Search bar */}
-              <SearchBar
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-              />
+      {/* Overlay for better text contrast */}
+      <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
 
-              {/* Sort dropdown */}
-              <SortDropdown
-                sortOption={sortOption}
-                setSortOption={setSortOption}
-              />
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Add gradient sync component */}
+      <EventBrowsingGradientSync />
 
-      {/* Spacer to prevent content overlap with fixed header */}
-      <div className="h-40"></div>
+      {/* Content container */}
+      <div className="relative z-10">
+        <NavBar />
 
-      {/* Main content */}
-      <main className="container px-4 py-10 mx-auto md:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-          {/* Sidebar filters */}
-          <FilterSidebar
-            categories={categories}
-            locations={locations}
-            filters={filters}
-            setFilters={setFilters}
-            handleCategoryChange={handleCategoryChange}
-            handleLocationChange={handleLocationChange}
-          />
+        {/* Header */}
+        <header
+          id="event-browsing-header"
+          className={`fixed z-10 w-full border-b top-20 left-0 right-0 transition-all duration-300 ${
+            isVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-full pointer-events-none"
+          }`}
+        >
+          
+          <div className="container relative z-10 px-4 py-4 mx-auto md:px-6 lg:px-8">
+            <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
+              <div className="flex flex-col w-full space-y-4 md:flex-row md:w-auto md:space-y-0 md:space-x-4 md:ml-auto">
+                {/* Search bar */}
+                <SearchBar
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                />
 
-          {/* Events grid */}
-          <div className="lg:col-span-3">
-            {/* Results count */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-800">
-                {filteredEvents.length} Events Found
-              </h2>
-
-              {/* View toggle - could be implemented */}
-              <viewToggle />
-            </div>
-
-            {/* Grid of event cards */}
-            {filteredEvents.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-                {filteredEvents.map((event) => (
-                  <div key={event.id}>
-                    <EventCard event={event} />
-                  </div>
-                ))}
+                {/* Sort dropdown */}
+                <SortDropdown
+                  sortOption={sortOption}
+                  setSortOption={setSortOption}
+                />
               </div>
-            ) : (
-              // No events found message
-              <NoEventsFound />
-            )}
-
-            {/* Pagination */}
-            {filteredEvents.length > 0 && <Pagination />}
+            </div>
           </div>
-        </div>
-      </main>
+        </header>
+
+        {/* Spacer to prevent content overlap with fixed header */}
+        <div className="h-40"></div>
+
+        {/* Main content */}
+        <main className="container px-4 py-10 mx-auto md:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+            {/* Sidebar filters with gradient */}
+            <div
+              id="event-browsing-sidebar"
+              className="relative overflow-hidden rounded-lg"
+            >
+              
+              <div className="relative z-10">
+                <FilterSidebar
+                  categories={categories}
+                  locations={locations}
+                  filters={filters}
+                  setFilters={setFilters}
+                  handleCategoryChange={handleCategoryChange}
+                  handleLocationChange={handleLocationChange}
+                />
+              </div>
+            </div>
+
+            {/* Events grid */}
+            <div className="lg:col-span-3">
+              {/* Results count and view toggle */}
+              <div className="flex items-center justify-between p-4 mb-6 bg-black rounded-lg bg-opacity-30">
+                <h2 className="text-lg font-bold text-white">
+                  {filteredEvents.length} Events Found
+                </h2>
+
+                {/* View toggle - could be implemented */}
+                <div id="event-view-toggle" className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] rounded-lg opacity-90 animate-gradient-event"></div>
+                  <div className="relative z-10">
+                    <ViewToggle />
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid of event cards */}
+              {filteredEvents.length > 0 ? (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+                  {filteredEvents.map((event) => (
+                    <div key={event.id} className="relative event-card-hover">
+                      <div className="absolute inset-0 transition-all duration-300 transform bg-black rounded-lg bg-opacity-40 hover:bg-opacity-20"></div>
+                      <EventCard event={event} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // No events found message
+                <div className="relative overflow-hidden rounded-xl">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] opacity-70 animate-gradient-event"></div>
+                  <div className="relative z-10">
+                    <NoEventsFound />
+                  </div>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {filteredEvents.length > 0 && (
+                <div id="event-pagination" className="relative mt-8">
+
+                  <div className="relative z-10">
+                    <Pagination />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Animation styles */}
+      <style jsx>{`
+        @keyframes gradient-event {
+          0% {
+            background-position: 0% 50%;
+          }
+          25% {
+            background-position: 50% 100%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          75% {
+            background-position: 50% 0%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        .animate-gradient-event {
+          background-size: 300% 300%;
+          animation: gradient-event 20s ease infinite;
+        }
+      `}</style>
     </div>
   );
 };

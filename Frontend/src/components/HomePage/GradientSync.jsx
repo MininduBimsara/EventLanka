@@ -1,0 +1,60 @@
+import React, { useEffect } from "react";
+
+// This component can be imported and used once in your main App/Layout
+// to synchronize gradient animations across components
+const GradientSync = () => {
+  useEffect(() => {
+    // Function to synchronize animation timings
+    const synchronizeGradients = () => {
+      // Select all gradient elements by their IDs
+      const footer = document.getElementById("gradient-sync-footer");
+      const hero = document.getElementById("gradient-sync-hero");
+      const featured = document.getElementById("gradient-sync-featured");
+      const testimonials = document.getElementById(
+        "gradient-sync-testimonials"
+      );
+      const trending = document.getElementById("gradient-sync-trending");
+      const newsletter = document.getElementById("gradient-sync-newsletter");
+      const howitworks = document.getElementById("gradient-sync-howitworks");
+
+      // Get all gradient backgrounds
+      const gradientElements = [
+        footer?.querySelector(".animate-gradient-x"),
+        hero?.querySelector(".animate-gradient-x"),
+        featured?.querySelector(".animate-gradient-x"),
+        testimonials?.querySelector(".animate-gradient-x"),
+        trending?.querySelector(".animate-gradient-x"),
+        newsletter?.querySelector(".animate-gradient-x"),
+        howitworks?.querySelector(".animate-gradient-x"),
+      ].filter(Boolean);
+
+      // Reset animations to start at the same time
+      gradientElements.forEach((element) => {
+        // Force reflow to restart the animation
+        element.style.animation = "none";
+        // Use setTimeout to ensure the style change has been applied
+        setTimeout(() => {
+          element.style.animation = "gradient-x 15s ease infinite";
+        }, 10);
+      });
+    };
+
+    // Run synchronization after a short delay to ensure all components have mounted
+    setTimeout(synchronizeGradients, 100);
+
+    // Optional: synchronize again if window is resized or when visibility changes
+    // This helps keep them in sync when coming back to the tab
+    window.addEventListener("resize", synchronizeGradients);
+    document.addEventListener("visibilitychange", synchronizeGradients);
+
+    return () => {
+      window.removeEventListener("resize", synchronizeGradients);
+      document.removeEventListener("visibilitychange", synchronizeGradients);
+    };
+  }, []);
+
+  // This component doesn't render anything visible
+  return null;
+};
+
+export default GradientSync;

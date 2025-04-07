@@ -1,3 +1,5 @@
+import React from "react";
+
 // Testimonials Component
 const Testimonials = () => {
   const testimonials = [
@@ -22,7 +24,7 @@ const Testimonials = () => {
           <svg
             key={i}
             className={`w-4 h-4 ${
-              i < rating ? "text-amber-400" : "text-gray-300"
+              i < rating ? "text-[#a755c2]" : "text-[#b59194]"
             }`}
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -35,9 +37,33 @@ const Testimonials = () => {
   };
 
   return (
-    <section className="py-20 bg-gray-900">
-      <div className="container px-4 mx-auto">
-        <h2 className="mb-16 text-3xl font-bold text-center">
+    <section
+      className="py-20 mt-[-2px] relative overflow-hidden"
+      id="gradient-sync-testimonials"
+    >
+      {/* Animated gradient background - using EXACT same gradient as Featured Events */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#a034ff] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
+
+      {/* Adding particles like in Featured Events */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
+            style={{
+              width: `${Math.random() * 8 + 4}px`,
+              height: `${Math.random() * 8 + 4}px`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${Math.random() * 10 + 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="container relative z-10 px-4 mx-auto">
+        <h2 className="mb-16 text-3xl font-bold text-center text-white">
           User Testimonials
         </h2>
 
@@ -45,18 +71,58 @@ const Testimonials = () => {
           {testimonials.map((testimonial) => (
             <div
               key={testimonial.id}
-              className="p-6 transition-transform duration-300 bg-gray-700 rounded-lg hover:transform hover:scale-105"
+              className="p-6 transition-transform duration-300 bg-[#a755c2] rounded-lg hover:transform hover:scale-105"
             >
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 mr-3 bg-gray-300 rounded-full"></div>
-                <span className="font-medium">{testimonial.name}</span>
+                <div className="w-10 h-10 mr-3 bg-[#d2a1b8] rounded-full"></div>
+                <span className="font-medium text-white">
+                  {testimonial.name}
+                </span>
                 <div className="ml-auto">{renderStars(testimonial.rating)}</div>
               </div>
-              <p className="text-gray-300">{testimonial.comment}</p>
+              <p className="text-[#d2a1b8]">{testimonial.comment}</p>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Animation styles */}
+      <style jsx>{`
+        @keyframes gradient-x {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        .animate-gradient-x {
+          background-size: 400% 400%;
+          animation: gradient-x 15s ease infinite;
+        }
+        @keyframes float {
+          0% {
+            transform: translateY(0) translateX(0) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) translateX(20px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        .animate-float {
+          animation: float 10s ease-in-out infinite;
+        }
+      `}</style>
     </section>
   );
 };
