@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import axios from "axios";
-import Navbar from "../../components/Navbar";
+import Navbar from "../../components/Common/Navbar";
 
 const LoginRegistrationUI = () => {
   const [activeForm, setActiveForm] = useState("login");

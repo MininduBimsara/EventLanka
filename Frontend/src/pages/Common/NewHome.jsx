@@ -5,15 +5,15 @@ import {
   FaSearch,
   FaArrowRight,
 } from "react-icons/fa";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/HomePage/Footer";
-import TrendingEventsSlider from "../../components/HomePage/TrendingEventsSlider";
-import Newsletter from "../../components/HomePage/Newsletter";
-import Testimonials from "../../components/HomePage/Testimonials";
-import HowItWorks from "../../components/HomePage/HowItWorks";
-import HeroSection from "../../components/HomePage/HeroSection";
-import FeaturedEvents from "../../components/HomePage/FeaturedEvents";
-import GradientSync from "../../components/HomePage/GradientSync";
+import Navbar from "../../components/Common/Navbar";
+import Footer from "../../components/Common/HomePage/Footer";
+import TrendingEventsSlider from "../../components/Common/HomePage/TrendingEventsSlider";
+import Newsletter from "../../components/Common/HomePage/Newsletter";
+import Testimonials from "../../components/Common/HomePage/Testimonials";
+import HowItWorks from "../../components/Common/HomePage/HowItWorks";
+import HeroSection from "../../components/Common/HomePage/HeroSection";
+import FeaturedEvents from "../../components/Common/HomePage/FeaturedEvents";
+import GradientSync from "../../components/Common/HomePage/GradientSync";
 
 // Main NewHome Component
 function NewHome() {

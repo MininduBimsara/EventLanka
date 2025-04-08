@@ -12,6 +12,12 @@ import ContactUsPage from './pages/Common/ContactUs';
 
 //Organizer Pages
 import OrganizerDashboard from './pages/Organizer/OrganizerDashboard';
+import Attendees from './pages/Organizer/Attendees';
+import CreateEvent from './pages/Organizer/CreateEvent';
+import Discounts from "./pages/Organizer/Discounts";
+import ManageEvents from "./pages/Organizer/ManageEvents";
+import OrganizerProfile from "./pages/Organizer/OrganizerProfile";
+import OrganizerSettings from "./pages/Organizer/OrganizerSettings";
 
 function App() {
 

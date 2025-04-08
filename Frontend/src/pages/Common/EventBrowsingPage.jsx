@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import EventCard from "../../components/EventBrowsing/EventCard"; // Using your existing component
-import NavBar from "../../components/NavBar";
-import SearchBar from "../../components/EventBrowsing/SearchBar"; // Using your existing component
-import SortDropdown from "../../components/EventBrowsing/SortDropdown";
-import FilterSidebar from "../../components/EventBrowsing/FilterSidebar";
-import ViewToggle from "../../components/EventBrowsing/ViewToggle";
-import NoEventsFound from "../../components/EventBrowsing/NoEventsFound";
-import Pagination from "../../components/EventBrowsing/Pagination";
-import EventBrowsingGradientSync from "../../components/EventBrowsing/EventBrowsingGradientSync";
+import EventCard from "../../components/Common/EventBrowsing/EventCard"; // Using your existing component
+import NavBar from "../../components/Common/Navbar";
+import SearchBar from "../../components/Common/EventBrowsing/SearchBar"; // Using your existing component
+import SortDropdown from "../../components/Common/EventBrowsing/SortDropdown";
+import FilterSidebar from "../../components/Common/EventBrowsing/FilterSidebar";
+import ViewToggle from "../../components/Common/EventBrowsing/ViewToggle";
+import NoEventsFound from "../../components/Common/EventBrowsing/NoEventsFound";
+import Pagination from "../../components/Common/EventBrowsing/Pagination";
+import EventBrowsingGradientSync from "../../components/Common/EventBrowsing/EventBrowsingGradientSync";
 
 const EventBrowsingPage = () => {
   // Sample event data
@@ -246,7 +246,6 @@ const EventBrowsingPage = () => {
               : "opacity-0 -translate-y-full pointer-events-none"
           }`}
         >
-          
           <div className="container relative z-10 px-4 py-4 mx-auto md:px-6 lg:px-8">
             <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
               <div className="flex flex-col w-full space-y-4 md:flex-row md:w-auto md:space-y-0 md:space-x-4 md:ml-auto">
@@ -277,7 +276,6 @@ const EventBrowsingPage = () => {
               id="event-browsing-sidebar"
               className="relative overflow-hidden rounded-lg"
             >
-              
               <div className="relative z-10">
                 <FilterSidebar
                   categories={categories}
@@ -330,7 +328,6 @@ const EventBrowsingPage = () => {
               {/* Pagination */}
               {filteredEvents.length > 0 && (
                 <div id="event-pagination" className="relative mt-8">
-
                   <div className="relative z-10">
                     <Pagination />
                   </div>
