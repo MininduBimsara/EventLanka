@@ -20,6 +20,7 @@ import MediaManager from "./pages/Organizer/MediaManager";
 import SalesAnalytics from "./pages/Organizer/SalesAnalytics"
 import OrganizerProfile from "./pages/Organizer/OrganizerProfile";
 import OrganizerSettings from "./pages/Organizer/OrganizerSettings";
+// import OrganizerLayout from "./pages/Organizer/OrganizerLayout";
 
 function App() {
 
@@ -38,9 +39,8 @@ function App() {
           <Route path="/contact" element={<ContactUsPage />} />
           {/* <Route path="/home" element={<Home />} /> */}
 
-          {/* Organizer Routes */}
-          <Route path="/organizer" element={<OrganizerLayout />}>
-
+          {/* Organizer Routes element={<OrganizerLayout />}*/}
+          <Route path="/organizer">
             <Route path="dashboard" element={<OrganizerDashboard />} />
             <Route path="profile" element={<OrganizerProfile />} />
             <Route path="settings" element={<OrganizerSettings />} />
@@ -50,9 +50,7 @@ function App() {
             <Route path="manageevents" element={<ManageEvents />} />
             <Route path="media" element={<MediaManager />} />
             <Route path="salesanalytics" element={<SalesAnalytics />} />
-
           </Route>
-          
         </Routes>
       </Router>
     </>
