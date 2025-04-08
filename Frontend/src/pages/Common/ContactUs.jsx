@@ -1,13 +1,13 @@
 // File: ContactUsPage.jsx (Main Component)
 import React, { useState } from "react";
-import HeroSection from "../../components/Contact/HeroSection";
-import ContactTabs from "../../components/Contact/ContactTabs";
-import ContactFormSection from "../../components/Contact/ContactFormSection";
-import InfoFaqSection from "../../components/Contact/InfoFaqSection";
-import ContactInfoSection from "../../components/Contact/ContactInfoSection";
-import LiveChatWidget from "../../components/Contact/LiveChatWidget";
-import DecorativeElements from "../../components/Contact/DecorativeElements";
-import Navbar from "../../components/Navbar";
+import HeroSection from "../../components/Common/Contact/HeroSection";
+import ContactTabs from "../../components/Common/Contact/ContactTabs";
+import ContactFormSection from "../../components/Common/Contact/ContactFormSection";
+import InfoFaqSection from "../../components/Common/Contact/InfoFaqSection";
+import ContactInfoSection from "../../components/Common/Contact/ContactInfoSection";
+import LiveChatWidget from "../../components/Common/Contact/LiveChatWidget";
+import DecorativeElements from "../../components/Common/Contact/DecorativeElements";
+import Navbar from "../../components/Common/Navbar";
 
 const ContactUsPage = () => {
   const [activeTab, setActiveTab] = useState("form");

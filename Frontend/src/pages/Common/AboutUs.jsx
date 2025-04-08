@@ -9,16 +9,16 @@ import {
   Users,
   ArrowRight,
 } from "lucide-react";
-import Hero from "../../components/AboutUs/Hero";
-import About from "../../components/AboutUs/About";
-import Stats from "../../components/AboutUs/Stats"
-import HowItWorks from "../../components/AboutUs/HowItWorks";
-import { Story } from "../../components/AboutUs/Story";
-import { Features } from "../../components/AboutUs/Features";
-import { Testimonials } from "../../components/AboutUs/Testimonials";
-import { Team } from "../../components/AboutUs/Team";
-import { CalltoAction } from "../../components/AboutUs/CalltoAction";
-import Navbar from "../../components/Navbar";
+import Hero from "../../components/Common/AboutUs/Hero";
+import About from "../../components/Common/AboutUs/About";
+import Stats from "../../components/Common/AboutUs/Stats";
+import HowItWorks from "../../components/Common/AboutUs/HowItWorks";
+import { Story } from "../../components/Common/AboutUs/Story";
+import { Features } from "../../components/Common/AboutUs/Features";
+import { Testimonials } from "../../components/Common/AboutUs/Testimonials";
+import { Team } from "../../components/Common/AboutUs/Team";
+import { CalltoAction } from "../../components/Common/AboutUs/CalltoAction";
+import Navbar from "../../components/Common/Navbar";
 
 const AboutPage = () => {
   const [animateCounter, setAnimateCounter] = useState(false);
@@ -172,9 +172,8 @@ const AboutPage = () => {
 
   return (
     <div className="relative overflow-hidden font-sans">
-
       <Navbar />
-      
+
       {/* Decorative elements */}
       <div className="absolute hidden w-64 h-64 bg-purple-500 rounded-full md:block top-40 left-20 opacity-10 blur-3xl"></div>
       <div className="absolute hidden bg-pink-500 rounded-full md:block top-96 right-20 w-80 h-80 opacity-10 blur-3xl"></div>
@@ -199,14 +198,16 @@ const AboutPage = () => {
       <Features features={features} />
 
       {/* Testimonials */}
-      <Testimonials testimonials={testimonials} activeTestimonial={activeTestimonial} />
+      <Testimonials
+        testimonials={testimonials}
+        activeTestimonial={activeTestimonial}
+      />
 
       {/* Team */}
       <Team teamMembers={teamMembers} />
 
       {/* Call to Action */}
       <CalltoAction />
-      
     </div>
   );
 };
