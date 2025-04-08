@@ -16,6 +16,8 @@ import Attendees from './pages/Organizer/Attendees';
 import CreateEvent from './pages/Organizer/CreateEvent';
 import Discounts from "./pages/Organizer/Discounts";
 import ManageEvents from "./pages/Organizer/ManageEvents";
+import MediaManager from "./pages/Organizer/MediaManager";
+import SalesAnalytics from "./pages/Organizer/SalesAnalytics"
 import OrganizerProfile from "./pages/Organizer/OrganizerProfile";
 import OrganizerSettings from "./pages/Organizer/OrganizerSettings";
 
@@ -36,11 +38,21 @@ function App() {
           <Route path="/contact" element={<ContactUsPage />} />
           {/* <Route path="/home" element={<Home />} /> */}
 
-
           {/* Organizer Routes */}
-          <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+          <Route path="/organizer" element={<OrganizerLayout />}>
 
-          {/* Add more routes as needed */}
+            <Route path="dashboard" element={<OrganizerDashboard />} />
+            <Route path="profile" element={<OrganizerProfile />} />
+            <Route path="settings" element={<OrganizerSettings />} />
+            <Route path="attendees" element={<Attendees />} />
+            <Route path="createevent" element={<CreateEvent />} />
+            <Route path="discounts" element={<Discounts />} />
+            <Route path="manageevents" element={<ManageEvents />} />
+            <Route path="media" element={<MediaManager />} />
+            <Route path="salesanalytics" element={<SalesAnalytics />} />
+
+          </Route>
+          
         </Routes>
       </Router>
     </>
