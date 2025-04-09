@@ -65,6 +65,16 @@ function App() {
 
 
           {/* Admin Routes*/}
+          <Route path="/admin">
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="eventapprovals" element={<EventApprovals />} />
+            <Route path="organizers" element={<OrganizersAdmin />} />
+            <Route path="refundrequests" element={<RefundRequests />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="transactions" element={<AdminTransactions />} />
+            <Route path="users" element={<AdminUsers />} />
+          </Route>
 
         </Routes>
       </Router>
