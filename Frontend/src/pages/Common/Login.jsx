@@ -2,8 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import axios from "axios";
 import Navbar from "../../components/Common/Navbar";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser, registerUser } from "../../Redux/Slicers/userSlice";
+import { useNavigate } from "react-router-dom";
 
 const LoginRegistrationUI = () => {
+  const navigate = useNavigate();
   const [activeForm, setActiveForm] = useState("login");
   const [formData, setFormData] = useState({
     username: "",
@@ -14,6 +18,9 @@ const LoginRegistrationUI = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false);
+
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.user);
 
   // Load the Google Sign-In API script
   useEffect(() => {
@@ -110,38 +117,35 @@ const LoginRegistrationUI = () => {
     e.preventDefault();
     setErrorMessage("");
 
-    try {
-      const response = await axios.post("/api/login", {
-        email: formData.email,
-        password: formData.password,
+    // Dispatch the loginUser thunk
+    dispatch(loginUser({ email: formData.email, password: formData.password }))
+      .unwrap()
+      .then((data) => {
+        console.log("Login successful", response.data);
+        setSuccessMessage("Login successful!");
+
+        // Reset form data
+        setFormData({
+          username: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+        // Redirect to dashboard or desired page
+        // window.location.href = "/dashboard";
+        // Optionally, redirect the user or perform further actions here
+      })
+
+      .catch((error) => {
+        console.error(
+          "Login failed",
+          error.response ? error.response.data : error.message
+        );
+        setErrorMessage(
+          error.response?.data?.message ||
+            "Login failed. Please check your credentials."
+        );
       });
-
-      console.log("Login successful", response.data);
-      setSuccessMessage("Login successful!");
-
-      // Store authentication token
-      localStorage.setItem("authToken", response.data.token);
-
-      // Reset form data
-      setFormData({
-        username: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
-
-      // Redirect to dashboard or desired page
-      // window.location.href = "/dashboard";
-    } catch (error) {
-      console.error(
-        "Login failed",
-        error.response ? error.response.data : error.message
-      );
-      setErrorMessage(
-        error.response?.data?.message ||
-          "Login failed. Please check your credentials."
-      );
-    }
   };
 
   const handleRegistrationSubmit = async (e) => {
@@ -155,28 +159,33 @@ const LoginRegistrationUI = () => {
     }
 
     try {
-      const response = await axios.post("/api/register", {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
+      dispatch(
+        registerUser({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+        })
+      )
+        .unwrap()
+        .then((data) => {
+          console.log("Registration successful", data);
+          setSuccessMessage("Registration successful!");
+          // Reset form data and switch to login form after a delay
+          setFormData({
+            username: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+          });
+          setTimeout(() => {
+            setSuccessMessage("");
+            setActiveForm("login");
+          }, 2000);
+        })
+        .catch((err) => {
+          setErrorMessage(err);
+        });
 
-      console.log("Registration successful", response.data);
-      setSuccessMessage("Registration successful!");
-
-      // Reset form data
-      setFormData({
-        username: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
-
-      // Automatically switch to login form after successful registration
-      setTimeout(() => {
-        setSuccessMessage("");
-        setActiveForm("login");
-      }, 2000);
     } catch (error) {
       console.error(
         "Registration failed",

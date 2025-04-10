@@ -2,40 +2,50 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Base URL
-const API_URL = "http://localhost:5000/api/users"; // Change as needed
+const API_URL = "/api"; // Adjust the base URL if needed
 
-// Thunks
+// Thunk for user login
 export const loginUser = createAsyncThunk(
   "user/login",
   async (credentials, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_URL}/login`, credentials);
+      const response = await axios.post(`${API_URL}/login`, {
+        email: credentials.email,
+        password: credentials.password,
+      });
       const { token, user } = response.data;
 
-      // Save token to sessionStorage
+      // Store the JWT in sessionStorage
       sessionStorage.setItem("token", token);
+
       return { token, user };
-    } catch (err) {
+    } catch (error) {
       return thunkAPI.rejectWithValue(
-        err.response.data.message || "Login failed"
+        error.response?.data?.message || "Login failed"
       );
     }
   }
 );
 
+// Thunk for user registration
 export const registerUser = createAsyncThunk(
   "user/register",
   async (userData, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_URL}/register`, userData);
+      const response = await axios.post(`${API_URL}/register`, {
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+      });
       const { token, user } = response.data;
 
+      // Store the JWT in sessionStorage
       sessionStorage.setItem("token", token);
+
       return { token, user };
-    } catch (err) {
+    } catch (error) {
       return thunkAPI.rejectWithValue(
-        err.response.data.message || "Registration failed"
+        error.response?.data?.message || "Registration failed"
       );
     }
   }
@@ -52,6 +62,7 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
+    // For logout functionality
     logout(state) {
       sessionStorage.removeItem("token");
       state.user = null;
@@ -60,7 +71,7 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login
+      // Handle login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -74,7 +85,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Register
+      // Handle registration
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
         state.error = null;
