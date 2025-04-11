@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Image as ImageIcon } from "lucide-react";
 import axios from "axios";
 import Navbar from "../../components/Common/Navbar";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,10 +14,13 @@ const LoginRegistrationUI = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "user", // Default role
+    profileImage: null,
   });
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.user);
@@ -113,6 +116,23 @@ const LoginRegistrationUI = () => {
     }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData((prev) => ({
+        ...prev,
+        profileImage: file,
+      }));
+
+      // Create preview URL for the selected image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -121,7 +141,7 @@ const LoginRegistrationUI = () => {
     dispatch(loginUser({ email: formData.email, password: formData.password }))
       .unwrap()
       .then((data) => {
-        console.log("Login successful", response.data);
+        console.log("Login successful", data);
         setSuccessMessage("Login successful!");
 
         // Reset form data
@@ -130,12 +150,14 @@ const LoginRegistrationUI = () => {
           email: "",
           password: "",
           confirmPassword: "",
+          role: "user",
+          profileImage: null,
         });
+        setImagePreview(null);
         // Redirect to dashboard or desired page
         // window.location.href = "/dashboard";
         // Optionally, redirect the user or perform further actions here
       })
-
       .catch((error) => {
         console.error(
           "Login failed",
@@ -159,13 +181,18 @@ const LoginRegistrationUI = () => {
     }
 
     try {
-      dispatch(
-        registerUser({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-        })
-      )
+      // Create FormData object to handle file upload
+      const registrationData = new FormData();
+      registrationData.append("username", formData.username);
+      registrationData.append("email", formData.email);
+      registrationData.append("password", formData.password);
+      registrationData.append("role", formData.role);
+
+      if (formData.profileImage) {
+        registrationData.append("profileImage", formData.profileImage);
+      }
+
+      dispatch(registerUser(registrationData))
         .unwrap()
         .then((data) => {
           console.log("Registration successful", data);
@@ -176,7 +203,10 @@ const LoginRegistrationUI = () => {
             email: "",
             password: "",
             confirmPassword: "",
+            role: "user",
+            profileImage: null,
           });
+          setImagePreview(null);
           setTimeout(() => {
             setSuccessMessage("");
             setActiveForm("login");
@@ -185,7 +215,6 @@ const LoginRegistrationUI = () => {
         .catch((err) => {
           setErrorMessage(err);
         });
-
     } catch (error) {
       console.error(
         "Registration failed",
@@ -454,6 +483,66 @@ const LoginRegistrationUI = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
+                  />
+                </div>
+              </div>
+
+              {/* Role Selection Dropdown */}
+              <div className="mb-4">
+                <label
+                  className="block mb-2 text-sm font-bold text-gray-700"
+                  htmlFor="register-role"
+                >
+                  Role
+                </label>
+                <div className="relative">
+                  <select
+                    id="register-role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                    required
+                  >
+                    <option value="user">User</option>
+                    <option value="organizer">Organizer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Profile Image Upload */}
+              <div className="mb-4">
+                <label
+                  className="block mb-2 text-sm font-bold text-gray-700"
+                  htmlFor="register-profile-image"
+                >
+                  Profile Image
+                </label>
+                <div className="flex flex-col items-center space-y-2">
+                  {imagePreview && (
+                    <div className="relative w-24 h-24 mb-2 overflow-hidden rounded-full">
+                      <img
+                        src={imagePreview}
+                        alt="Profile preview"
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                  )}
+                  <label
+                    htmlFor="register-profile-image"
+                    className="flex items-center justify-center w-full px-4 py-3 text-gray-700 transition-all duration-300 bg-white border border-gray-200 rounded-md cursor-pointer focus:border-purple-500 hover:bg-gray-50"
+                  >
+                    <ImageIcon size={18} className="mr-2 text-gray-400" />
+                    {formData.profileImage ? "Change Image" : "Upload Image"}
+                  </label>
+                  <input
+                    id="register-profile-image"
+                    name="profileImage"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
                   />
                 </div>
               </div>
