@@ -32,6 +32,13 @@ import Reports from "./pages/Admin/Reports";
 import AdminTransactions from "./pages/Admin/Transactions";
 import AdminUsers from "./pages/Admin/Users";
 
+//User Pages
+import EditProfile from "./pages/User/EditProfile";
+import Support from "./pages/User/HelpCenter";
+import MyBookings from "./pages/User/MyBookings";  
+import Notifications from "./pages/User/Notifications";
+import MyTransactions from "./pages/User/MyTransactions"; 
+import MyReviews from "./pages/User/MyReviews";
 
 function App() {
 
@@ -49,6 +56,9 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
           {/* <Route path="/home" element={<Home />} /> */}
+
+
+
 
           {/* Organizer Routes element={<OrganizerLayout />}*/}
           <Route path="/organizer">
@@ -74,6 +84,16 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="transactions" element={<AdminTransactions />} />
             <Route path="users" element={<AdminUsers />} />
+          </Route>
+
+          {/* User Routes */}
+          <Route path="/user">
+            <Route path="editprofile" element={<EditProfile />} />
+            <Route path="helpcenter" element={<Support />} />
+            <Route path="mybookings" element={<MyBookings />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="transactions" element={<MyTransactions />} />
+            <Route path="myreviews" element={<MyReviews />} />
           </Route>
 
         </Routes>

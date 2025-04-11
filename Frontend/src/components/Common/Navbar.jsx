@@ -9,7 +9,6 @@ import {
   FaUser,
   FaSignOutAlt,
   FaBell,
-  FaTicketAlt,
   FaUserEdit,
   FaChevronDown,
 } from "react-icons/fa";
@@ -141,25 +140,25 @@ const Navbar = () => {
                 <div className="absolute right-0 w-48 mt-2 origin-top-right bg-gray-800 rounded-md shadow-lg">
                   <div className="py-1">
                     <button
-                      onClick={() => navigateTo("/my-bookings")}
+                      onClick={() => navigateTo("/mybookings")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaTicketAlt className="mr-2" /> My Bookings
                     </button>
                     <button
-                      onClick={() => navigateTo("/my-transactions")}
+                      onClick={() => navigateTo("/transactions")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaCalendarAlt className="mr-2" /> Transaction History
                     </button>
                     <button
-                      onClick={() => navigateTo("/edit-profile")}
+                      onClick={() => navigateTo("/editprofile")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaUserEdit className="mr-2" /> Update Info
                     </button>
                     <button
-                      onClick={() => navigateTo("/my-reviews")}
+                      onClick={() => navigateTo("/myreviews")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaUser className="mr-2" /> My Reviews
