@@ -1,8 +1,7 @@
-// src/redux/userSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_URL = "/api"; // Adjust the base URL if needed
+const API_URL = "http://localhost:5000/api"; // Adjust the base URL if needed
 
 // Thunk for user login
 export const loginUser = createAsyncThunk(
@@ -14,10 +13,8 @@ export const loginUser = createAsyncThunk(
         password: credentials.password,
       });
       const { token, user } = response.data;
-
       // Store the JWT in sessionStorage
       sessionStorage.setItem("token", token);
-
       return { token, user };
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -27,21 +24,34 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Thunk for user registration
+// Updated thunk for user registration to handle FormData with file upload
 export const registerUser = createAsyncThunk(
   "user/register",
   async (userData, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_URL}/register`, {
-        username: userData.username,
-        email: userData.email,
-        password: userData.password,
-      });
-      const { token, user } = response.data;
+      // Check if userData is FormData (for file uploads) or regular object
+      let response;
 
+      if (userData instanceof FormData) {
+        // If FormData is provided (with file upload)
+        response = await axios.post(`${API_URL}/register`, userData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else {
+        // For backward compatibility or when no file is uploaded
+        response = await axios.post(`${API_URL}/register`, {
+          username: userData.username,
+          email: userData.email,
+          password: userData.password,
+          role: userData.role || "user", // Default to 'user' if not provided
+        });
+      }
+
+      const { token, user } = response.data;
       // Store the JWT in sessionStorage
       sessionStorage.setItem("token", token);
-
       return { token, user };
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -67,6 +77,10 @@ const userSlice = createSlice({
       sessionStorage.removeItem("token");
       state.user = null;
       state.token = null;
+    },
+    // Clear errors
+    clearErrors(state) {
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -102,5 +116,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { logout } = userSlice.actions;
+export const { logout, clearErrors } = userSlice.actions;
 export default userSlice.reducer;
