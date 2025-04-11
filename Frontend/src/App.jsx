@@ -22,6 +22,17 @@ import OrganizerProfile from "./pages/Organizer/OrganizerProfile";
 import OrganizerSettings from "./pages/Organizer/OrganizerSettings";
 // import OrganizerLayout from "./pages/Organizer/OrganizerLayout";
 
+//Admin Pages
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminSettings from "./pages/Admin/AdminSettings";
+import EventApprovals from "./pages/Admin/EventApprovals";
+import OrganizersAdmin from "./pages/Admin/Organizers";
+import RefundRequests from "./pages/Admin/RefundRequests";
+import Reports from "./pages/Admin/Reports";
+import AdminTransactions from "./pages/Admin/Transactions";
+import AdminUsers from "./pages/Admin/Users";
+
+
 function App() {
 
   return (
@@ -51,6 +62,20 @@ function App() {
             <Route path="media" element={<MediaManager />} />
             <Route path="salesanalytics" element={<SalesAnalytics />} />
           </Route>
+
+
+          {/* Admin Routes*/}
+          <Route path="/admin">
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="eventapprovals" element={<EventApprovals />} />
+            <Route path="organizers" element={<OrganizersAdmin />} />
+            <Route path="refundrequests" element={<RefundRequests />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="transactions" element={<AdminTransactions />} />
+            <Route path="users" element={<AdminUsers />} />
+          </Route>
+
         </Routes>
       </Router>
     </>

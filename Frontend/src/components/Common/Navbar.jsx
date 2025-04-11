@@ -6,12 +6,19 @@ import {
   FaTicketAlt,
   FaSearch,
   FaArrowRight,
-  FaUser, // Add this for the login icon
+  FaUser,
+  FaSignOutAlt,
+  FaBell,
+  FaTicketAlt,
+  FaUserEdit,
+  FaChevronDown,
 } from "react-icons/fa";
 
 // Navbar Component
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock state to toggle between logged in/out
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,10 +34,35 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleButtonClick = () => {
-    
-      navigate(`/login`);
-    
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownOpen && !event.target.closest(".dropdown-container")) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
+
+  const handleLoginClick = () => {
+    navigate(`/login`);
+  };
+
+  const handleLogoutClick = () => {
+    setIsLoggedIn(false);
+    setDropdownOpen(false);
+    // Add actual logout logic here
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const navigateTo = (path) => {
+    navigate(path);
+    setDropdownOpen(false);
   };
 
   return (
@@ -73,15 +105,85 @@ const Navbar = () => {
             <FaSearch className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2" />
           </div>
 
-          {/* Login Button */}
-          <button
-            onClick={handleButtonClick}
-            className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-amber-500 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400"
-          >
-            <FaUser className="mr-2" />
-            Login
-          </button>
+          {/* Conditional rendering based on login state */}
+          {!isLoggedIn ? (
+            <button
+              onClick={handleLoginClick}
+              className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-amber-500 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            >
+              <FaUser className="mr-2" />
+              Login
+            </button>
+          ) : (
+            <div className="relative dropdown-container">
+              <button
+                onClick={toggleDropdown}
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-white transition-colors bg-gray-800 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              >
+                <div className="w-6 h-6 mr-2 overflow-hidden bg-gray-600 rounded-full">
+                  {/* Profile image placeholder */}
+                  <img
+                    src="/api/placeholder/50/50"
+                    alt="Profile"
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                <span className="mr-1">My Account</span>
+                <FaChevronDown
+                  className={`transition-transform ${
+                    dropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
 
+              {/* Dropdown menu */}
+              {dropdownOpen && (
+                <div className="absolute right-0 w-48 mt-2 origin-top-right bg-gray-800 rounded-md shadow-lg">
+                  <div className="py-1">
+                    <button
+                      onClick={() => navigateTo("/my-bookings")}
+                      className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+                    >
+                      <FaTicketAlt className="mr-2" /> My Bookings
+                    </button>
+                    <button
+                      onClick={() => navigateTo("/my-transactions")}
+                      className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+                    >
+                      <FaCalendarAlt className="mr-2" /> Transaction History
+                    </button>
+                    <button
+                      onClick={() => navigateTo("/edit-profile")}
+                      className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+                    >
+                      <FaUserEdit className="mr-2" /> Update Info
+                    </button>
+                    <button
+                      onClick={() => navigateTo("/my-reviews")}
+                      className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+                    >
+                      <FaUser className="mr-2" /> My Reviews
+                    </button>
+                    <button
+                      onClick={() => navigateTo("/notifications")}
+                      className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+                    >
+                      <FaBell className="mr-2" /> Notifications
+                    </button>
+                    <hr className="my-1 border-gray-700" />
+                    <button
+                      onClick={handleLogoutClick}
+                      className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+                    >
+                      <FaSignOutAlt className="mr-2" /> Log Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mobile menu button */}
           <button className="text-2xl md:hidden">
             <svg
               xmlns="http://www.w3.org/2000/svg"
