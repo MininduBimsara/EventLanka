@@ -21,14 +21,17 @@ const Navbar = () => {
   const dispatch = useDispatch();
 
   // Retrieve authentication details from redux
-  const { isAuthenticated, user } = useSelector((state) => state.user);
+  const { isAuthenticated, user, loading } = useSelector((state) => state.user);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Check auth status on component mount
   useEffect(() => {
-    dispatch(verifyAuth());
-  }, [dispatch]);
+    // Add a check to prevent multiple calls if user is already verified
+    if (!isAuthenticated && !loading) {
+      dispatch(verifyAuth());
+    }
+  }, [dispatch, isAuthenticated, loading]);
 
   // Update navbar styling based on scroll position
   useEffect(() => {
@@ -156,31 +159,31 @@ const Navbar = () => {
                 <div className="absolute right-0 w-48 mt-2 origin-top-right bg-gray-800 rounded-md shadow-lg">
                   <div className="py-1">
                     <button
-                      onClick={() => navigateTo("/mybookings")}
+                      onClick={() => navigateTo("/user/mybookings")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaTicketAlt className="mr-2" /> My Bookings
                     </button>
                     <button
-                      onClick={() => navigateTo("/transactions")}
+                      onClick={() => navigateTo("/user/transactions")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaCalendarAlt className="mr-2" /> Transaction History
                     </button>
                     <button
-                      onClick={() => navigateTo("/editprofile")}
+                      onClick={() => navigateTo("/user/editprofile")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaUserEdit className="mr-2" /> Update Info
                     </button>
                     <button
-                      onClick={() => navigateTo("/myreviews")}
+                      onClick={() => navigateTo("/user/myreviews")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaUser className="mr-2" /> My Reviews
                     </button>
                     <button
-                      onClick={() => navigateTo("/notifications")}
+                      onClick={() => navigateTo("/user/notifications")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaBell className="mr-2" /> Notifications
