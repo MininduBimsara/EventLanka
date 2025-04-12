@@ -61,9 +61,40 @@ export const registerUser = createAsyncThunk(
   }
 );
 
+// Add a logout thunk
+export const logoutUser = createAsyncThunk(
+  "user/logout",
+  async (_, thunkAPI) => {
+    try {
+      // Get the token from the Redux state
+      const token = thunkAPI.getState().user.token;
+
+      // Make the API call to logout
+      await axios.post(
+        `${API_URL}/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return { success: true };
+    } catch (error) {
+      console.error("Logout API call failed", error);
+      // Still return success - we'll logout locally regardless
+      // of whether the API call succeeds
+      return { success: true };
+    }
+  }
+);
+
 const initialState = {
   user: null,
   token: sessionStorage.getItem("token") || null,
+  isAuthenticated: !!sessionStorage.getItem("token"), // Add isAuthenticated
   loading: false,
   error: null,
 };
@@ -75,8 +106,10 @@ const userSlice = createSlice({
     // For logout functionality
     logout(state) {
       sessionStorage.removeItem("token");
+      delete axios.defaults.headers.common["Authorization"]; // Clear global header
       state.user = null;
       state.token = null;
+      state.isAuthenticated = false; // Update isAuthenticated
     },
     // Clear errors
     clearErrors(state) {
@@ -94,6 +127,11 @@ const userSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.isAuthenticated = true; // Update isAuthenticated
+        // Set global Authorization header
+        axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${action.payload.token}`;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -108,10 +146,37 @@ const userSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.isAuthenticated = true; // Update isAuthenticated
+        // Set global Authorization header
+        axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${action.payload.token}`;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Add cases for logout thunk
+      .addCase(logoutUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        // Clear auth data
+        sessionStorage.removeItem("token");
+        delete axios.defaults.headers.common["Authorization"];
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false; // Update isAuthenticated
+        state.loading = false;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        // Clear auth data even if API call fails
+        sessionStorage.removeItem("token");
+        delete axios.defaults.headers.common["Authorization"];
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false; // Update isAuthenticated
+        state.loading = false;
       });
   },
 });

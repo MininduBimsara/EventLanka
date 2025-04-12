@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../Slicers/userSlice";
 import {
-  FaMapMarkerAlt,
   FaCalendarAlt,
   FaTicketAlt,
   FaSearch,
-  FaArrowRight,
   FaUser,
   FaSignOutAlt,
   FaBell,
@@ -16,9 +16,13 @@ import {
 // Navbar Component
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock state to toggle between logged in/out
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // Get auth state from Redux store
+  const { user, token } = useSelector((state) => state.user);
+  const isLoggedIn = !!token; // Convert token to boolean
 
   useEffect(() => {
     const handleScroll = () => {
@@ -50,9 +54,20 @@ const Navbar = () => {
   };
 
   const handleLogoutClick = () => {
-    setIsLoggedIn(false);
-    setDropdownOpen(false);
-    // Add actual logout logic here
+    // Dispatch the logout thunk
+    dispatch(logout())
+      .unwrap()
+      .then(() => {
+        // Close dropdown and navigate after successful logout
+        setDropdownOpen(false);
+        navigate("/");
+      })
+      .catch((error) => {
+        console.error("Logout failed", error);
+        // Even on error, we should navigate away since the user state is cleared
+        setDropdownOpen(false);
+        navigate("/");
+      });
   };
 
   const toggleDropdown = () => {
@@ -104,7 +119,7 @@ const Navbar = () => {
             <FaSearch className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2" />
           </div>
 
-          {/* Conditional rendering based on login state */}
+          {/* Conditional rendering based on Redux auth state */}
           {!isLoggedIn ? (
             <button
               onClick={handleLoginClick}
@@ -127,7 +142,7 @@ const Navbar = () => {
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <span className="mr-1">My Account</span>
+                <span className="mr-1">{user?.name || "My Account"}</span>
                 <FaChevronDown
                   className={`transition-transform ${
                     dropdownOpen ? "rotate-180" : ""
