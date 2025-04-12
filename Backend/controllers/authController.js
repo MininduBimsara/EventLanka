@@ -1,38 +1,59 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 
-exports.register = async (req, res) => {
+// Registration handler
+const register = async (req, res) => {
   try {
-    const { name, email, password, role, profileImage } = req.body;
+    const { username, email, password, role } = req.body;
+    const profileImageData = req.file ? req.file.filename : null;
 
-    if (!name || !email || !password || !role) {
+    if (!username || !email || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: "User already exists" });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     user = new User({
-      name,
+      username,
       email,
       password: hashedPassword,
       role,
-      profileImage,
+      profileImage: profileImageData,
     });
 
     await user.save();
+    
+    // Generate a token for newly registered user
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        profileImage: profileImageData
+          ? `/profile-images/${profileImageData}`
+          : null,
+      },
+    });
   } catch (error) {
+    console.error("Registration error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-exports.login = async (req, res) => {
+// Login handler
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -55,7 +76,6 @@ exports.login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    // Set token as HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -70,6 +90,9 @@ exports.login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        profileImage: user.profileImage
+          ? `/profile-images/${user.profileImage}`
+          : null,
       },
     });
   } catch (error) {
@@ -77,8 +100,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// Logout function
-exports.logout = (req, res) => {
-  res.clearCookie("token");
-  res.status(200).json({ message: "Logged out successfully" });
+module.exports = {
+  register,
+  login,
 };
