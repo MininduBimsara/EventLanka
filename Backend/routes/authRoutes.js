@@ -2,7 +2,6 @@ const express = require("express");
 const { register, login } = require("../controllers/authController");
 const multer = require("multer");
 const path = require("path");
-
 const router = express.Router();
 
 // Set up multer for profile image uploads

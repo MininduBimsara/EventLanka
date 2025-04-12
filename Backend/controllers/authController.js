@@ -6,10 +6,10 @@ const path = require("path");
 // Registration handler
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { username, email, password, role } = req.body;
     const profileImageData = req.file ? req.file.filename : null;
 
-    if (!name || !email || !password || !role) {
+    if (!username || !email || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -19,7 +19,7 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     user = new User({
-      name,
+      username,
       email,
       password: hashedPassword,
       role,
@@ -27,11 +27,18 @@ const register = async (req, res) => {
     });
 
     await user.save();
+    
+    // Generate a token for newly registered user
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     res.status(201).json({
       message: "User registered successfully",
       user: {
-        name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role,
         profileImage: profileImageData
