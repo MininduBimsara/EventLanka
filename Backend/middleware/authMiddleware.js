@@ -33,3 +33,25 @@ exports.protect = asyncHandler(async (req, res, next) => {
     res.status(400).json({ message: "Invalid token" });
   }
 });
+
+// exports.isAdmin = (req, res, next) => {
+//   if (req.user && req.user.role === "admin") {
+//     return next(); // User is admin, proceed to the next middleware
+//   } else {
+//     return res.status(403).json({ message: "Access denied. Admins only." });
+//   }
+// };
+// exports.isUser = (req, res, next) => {
+//   if (req.user && req.user.role === "user") {
+//     return next(); // User is a regular user, proceed to the next middleware
+//   } else {
+//     return res.status(403).json({ message: "Access denied. Users only." });
+//   }
+// };
+// exports.isOwner = (req, res, next) => {
+//   if (req.user && req.user._id.toString() === req.params.id) {
+//     return next(); // User is the owner of the resource, proceed to the next middleware
+//   } else {
+//     return res.status(403).json({ message: "Access denied. Not the owner." });
+//   }
+// };
