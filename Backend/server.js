@@ -5,7 +5,7 @@ const connectDB = require("./Config/db");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const passport = require("passport");
-
+const path = require("path");
 
 dotenv.config();
 connectDB();
@@ -28,6 +28,22 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use(
+  "/profile-images",
+  express.static(path.join(__dirname, "uploads/profile-images"))
+);
+// app.use(
+//   "/event-images",
+//   express.static(path.join(__dirname, "uploads/event-images"))
+// );
+// app.use(
+//   "/ticket-images",
+//   express.static(path.join(__dirname, "uploads/ticket-images"))
+// );
+// app.use(
+//   "/uploads",
+//   express.static(path.join(__dirname, "uploads/profile-images"))
+// );
 
 // Routes
 const ticketRoutes = require("./routes/ticketRoutes");

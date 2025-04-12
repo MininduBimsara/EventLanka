@@ -141,7 +141,11 @@ const Navbar = () => {
                 <div className="w-6 h-6 mr-2 overflow-hidden bg-gray-600 rounded-full">
                   {/* Optionally display the user's profile image if available */}
                   <img
-                    src={user?.profileImage || "/api/placeholder/50/50"}
+                    src={
+                      user?.profileImage
+                        ? `http://localhost:5000${user.profileImage}`
+                        : "/api/placeholder/50/50"
+                    }
                     alt="Profile"
                     className="object-cover w-full h-full"
                   />
