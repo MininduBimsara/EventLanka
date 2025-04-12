@@ -1,36 +1,39 @@
+// components/Common/Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../Slicers/userSlice";
 import {
+  FaMapMarkerAlt,
   FaCalendarAlt,
   FaTicketAlt,
   FaSearch,
+  FaArrowRight,
   FaUser,
   FaSignOutAlt,
   FaBell,
   FaUserEdit,
   FaChevronDown,
 } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { verifyAuth, logoutUser } from "../../Redux/Slicers/userSlice";
 
-// Navbar Component
 const Navbar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Get auth state from Redux store
-  const { user, token } = useSelector((state) => state.user);
-  const isLoggedIn = !!token; // Convert token to boolean
+  // Retrieve authentication details from redux
+  const { isAuthenticated, user } = useSelector((state) => state.user);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
+  // Check auth status on component mount
+  useEffect(() => {
+    dispatch(verifyAuth());
+  }, [dispatch]);
+
+  // Update navbar styling based on scroll position
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -50,24 +53,13 @@ const Navbar = () => {
   }, [dropdownOpen]);
 
   const handleLoginClick = () => {
-    navigate(`/login`);
+    navigate("/login");
   };
 
   const handleLogoutClick = () => {
-    // Dispatch the logout thunk
-    dispatch(logout())
-      .unwrap()
-      .then(() => {
-        // Close dropdown and navigate after successful logout
-        setDropdownOpen(false);
-        navigate("/");
-      })
-      .catch((error) => {
-        console.error("Logout failed", error);
-        // Even on error, we should navigate away since the user state is cleared
-        setDropdownOpen(false);
-        navigate("/");
-      });
+    dispatch(logoutUser());
+    setDropdownOpen(false);
+    navigate("/");
   };
 
   const toggleDropdown = () => {
@@ -92,21 +84,30 @@ const Navbar = () => {
         </div>
 
         <div className="hidden space-x-8 md:flex">
-          <a href="/" className="transition-colors hover:text-amber-400">
+          <button
+            onClick={() => navigate("/")}
+            className="transition-colors hover:text-amber-400"
+          >
             Home
-          </a>
-          <a
-            href="/eventbrowsing"
+          </button>
+          <button
+            onClick={() => navigate("/eventbrowsing")}
             className="transition-colors hover:text-amber-400"
           >
             Events
-          </a>
-          <a href="/about" className="transition-colors hover:text-amber-400">
+          </button>
+          <button
+            onClick={() => navigate("/about")}
+            className="transition-colors hover:text-amber-400"
+          >
             About
-          </a>
-          <a href="/contact" className="transition-colors hover:text-amber-400">
+          </button>
+          <button
+            onClick={() => navigate("/contact")}
+            className="transition-colors hover:text-amber-400"
+          >
             Contact
-          </a>
+          </button>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -119,8 +120,8 @@ const Navbar = () => {
             <FaSearch className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2" />
           </div>
 
-          {/* Conditional rendering based on Redux auth state */}
-          {!isLoggedIn ? (
+          {/* If user is not authenticated, show Login button */}
+          {!isAuthenticated ? (
             <button
               onClick={handleLoginClick}
               className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-amber-500 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400"
@@ -135,14 +136,14 @@ const Navbar = () => {
                 className="flex items-center px-3 py-1.5 text-sm font-medium text-white transition-colors bg-gray-800 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
               >
                 <div className="w-6 h-6 mr-2 overflow-hidden bg-gray-600 rounded-full">
-                  {/* Profile image placeholder */}
+                  {/* Optionally display the user's profile image if available */}
                   <img
-                    src="/api/placeholder/50/50"
+                    src={user?.profileImage || "/api/placeholder/50/50"}
                     alt="Profile"
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <span className="mr-1">{user?.name || "My Account"}</span>
+                <span className="mr-1">{user?.username || "My Account"}</span>
                 <FaChevronDown
                   className={`transition-transform ${
                     dropdownOpen ? "rotate-180" : ""

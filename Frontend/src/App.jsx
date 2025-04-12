@@ -1,23 +1,24 @@
-import './App.css'
+import "./App.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import axios from "axios";
 
 // Common Pages
-import NewHome from './pages/Common/NewHome';
-import EventBrowsingPage from './pages/Common/EventBrowsingPage';
-import EventBookingPage from './pages/Common/EventBookingPage';
-import LoginRegistrationUI from './pages/Common/Login'; 
-import NewEventBookingUI from './pages/Common/NewEventBookingUI';
-import AboutPage from './pages/Common/AboutUs';
-import ContactUsPage from './pages/Common/ContactUs';
+import NewHome from "./pages/Common/NewHome";
+import EventBrowsingPage from "./pages/Common/EventBrowsingPage";
+import EventBookingPage from "./pages/Common/EventBookingPage";
+import LoginRegistrationUI from "./pages/Common/Login";
+import NewEventBookingUI from "./pages/Common/NewEventBookingUI";
+import AboutPage from "./pages/Common/AboutUs";
+import ContactUsPage from "./pages/Common/ContactUs";
 
 //Organizer Pages
-import OrganizerDashboard from './pages/Organizer/OrganizerDashboard';
-import Attendees from './pages/Organizer/Attendees';
-import CreateEvent from './pages/Organizer/CreateEvent';
+import OrganizerDashboard from "./pages/Organizer/OrganizerDashboard";
+import Attendees from "./pages/Organizer/Attendees";
+import CreateEvent from "./pages/Organizer/CreateEvent";
 import Discounts from "./pages/Organizer/Discounts";
 import ManageEvents from "./pages/Organizer/ManageEvents";
 import MediaManager from "./pages/Organizer/MediaManager";
-import SalesAnalytics from "./pages/Organizer/SalesAnalytics"
+import SalesAnalytics from "./pages/Organizer/SalesAnalytics";
 import OrganizerProfile from "./pages/Organizer/OrganizerProfile";
 import OrganizerSettings from "./pages/Organizer/OrganizerSettings";
 // import OrganizerLayout from "./pages/Organizer/OrganizerLayout";
@@ -35,12 +36,17 @@ import AdminUsers from "./pages/Admin/Users";
 //User Pages
 import EditProfile from "./pages/User/EditProfile";
 import Support from "./pages/User/HelpCenter";
-import MyBookings from "./pages/User/MyBookings";  
+import MyBookings from "./pages/User/MyBookings";
 import Notifications from "./pages/User/Notifications";
-import MyTransactions from "./pages/User/MyTransactions"; 
+import MyTransactions from "./pages/User/MyTransactions";
 import MyReviews from "./pages/User/MyReviews";
 
 function App() {
+  // Add this code to initialize authentication headers
+  const token = sessionStorage.getItem("token");
+  if (token) {
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
 
   return (
     <>
@@ -56,7 +62,6 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
           {/* <Route path="/home" element={<Home />} /> */}
-          
 
           {/* Organizer Routes element={<OrganizerLayout />}*/}
           <Route path="/organizer">
@@ -70,7 +75,6 @@ function App() {
             <Route path="media" element={<MediaManager />} />
             <Route path="salesanalytics" element={<SalesAnalytics />} />
           </Route>
-
 
           {/* Admin Routes*/}
           <Route path="/admin">
@@ -93,11 +97,10 @@ function App() {
             <Route path="transactions" element={<MyTransactions />} />
             <Route path="myreviews" element={<MyReviews />} />
           </Route>
-
         </Routes>
       </Router>
     </>
   );
 }
 
-export default App
+export default App;

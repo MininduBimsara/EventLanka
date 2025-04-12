@@ -71,7 +71,7 @@ export const logoutUser = createAsyncThunk(
 
       // Make the API call to logout
       await axios.post(
-        `${API_URL}/auth/logout`,
+        `${API_URL}/logout`,
         {},
         {
           withCredentials: true,
@@ -87,6 +87,26 @@ export const logoutUser = createAsyncThunk(
       // Still return success - we'll logout locally regardless
       // of whether the API call succeeds
       return { success: true };
+    }
+  }
+);
+
+// Thunk to verify authentication status using your verify endpoint.
+export const verifyAuth = createAsyncThunk(
+  "user/verifyAuth",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/verify`, {
+        withCredentials: true,
+      });
+      // Expecting response.data.user to be valid if authenticated
+      if (response.data.user) {
+        return response.data.user;
+      } else {
+        return rejectWithValue("No user authenticated");
+      }
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -177,6 +197,22 @@ const userSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false; // Update isAuthenticated
         state.loading = false;
+      })
+      // Verify Authentication
+      .addCase(verifyAuth.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(verifyAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(verifyAuth.rejected, (state, action) => {
+        state.loading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = action.payload || "Authentication verification failed";
       });
   },
 });
