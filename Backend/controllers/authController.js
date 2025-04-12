@@ -27,7 +27,7 @@ const register = async (req, res) => {
     });
 
     await user.save();
-    
+
     // Generate a token for newly registered user
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -35,8 +35,16 @@ const register = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
     res.status(201).json({
       message: "User registered successfully",
+      token,
       user: {
         username: user.username,
         email: user.email,
@@ -87,7 +95,7 @@ const login = async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role,
         profileImage: user.profileImage
@@ -100,7 +108,44 @@ const login = async (req, res) => {
   }
 };
 
+// Verify token handler
+const verifyToken = async (req, res) => {
+  try {
+    // The protect middleware already verified the token
+    // and attached the user to the request
+    if (req.user) {
+      return res.status(200).json({
+        user: {
+          id: req.user._id,
+          username: req.user.username,
+          email: req.user.email,
+          role: req.user.role,
+          profileImage: req.user.profileImage
+            ? `/profile-images/${req.user.profileImage}`
+            : null,
+        },
+      });
+    }
+    return res.status(401).json({ message: "Not authenticated" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Logout handler
+const logout = (req, res) => {
+  res.cookie("token", "", {
+    httpOnly: true,
+    expires: new Date(0),
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
 module.exports = {
   register,
   login,
+  verifyToken,
+  logout,
 };

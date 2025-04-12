@@ -1,5 +1,11 @@
 const express = require("express");
-const { register, login } = require("../controllers/authController");
+const {
+  register,
+  login,
+  verifyToken,
+  logout,
+} = require("../controllers/authController");
+const { protect } = require("../middleware/authMiddleware");
 const multer = require("multer");
 const path = require("path");
 const router = express.Router();
@@ -26,7 +32,11 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({ storage, fileFilter });
 
+// Auth routes
 router.post("/register", upload.single("profileImage"), register);
 router.post("/login", login);
+router.post("/logout", logout);
+router.get("/verify", protect, verifyToken);
 
 module.exports = router;
+  
