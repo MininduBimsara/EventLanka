@@ -1,6 +1,7 @@
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import axios from "axios";
+import { ThemeProvider } from "./Context/ThemeContext";
 
 // Common Pages
 import NewHome from "./pages/Common/NewHome";
@@ -89,14 +90,16 @@ function App() {
           </Route>
 
           {/* User Routes */}
-          <Route path="/user">
-            <Route path="editprofile" element={<EditProfile />} />
-            <Route path="helpcenter" element={<Support />} />
-            <Route path="mybookings" element={<MyBookings />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="transactions" element={<MyTransactions />} />
-            <Route path="myreviews" element={<MyReviews />} />
-          </Route>
+          <ThemeProvider>
+            <Route path="/user">
+              <Route path="editprofile" element={<EditProfile />} />
+              <Route path="helpcenter" element={<Support />} />
+              <Route path="mybookings" element={<MyBookings />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="transactions" element={<MyTransactions />} />
+              <Route path="myreviews" element={<MyReviews />} />
+            </Route>
+          </ThemeProvider>
         </Routes>
       </Router>
     </>

@@ -6,9 +6,14 @@ import {
   FaMoneyBillWave,
   FaBullhorn,
   FaTimes,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
+import { useTheme } from "../../Context/ThemeContext"; // Import the useTheme hook
 
 const Notifications = () => {
+  const { darkMode, toggleTheme } = useTheme(); // Use the theme context
+
   // Mock notifications data - in a real app, this would come from your API
   const [notifications, setNotifications] = useState([
     {
@@ -85,10 +90,23 @@ const Notifications = () => {
 
   return (
     <div className="container px-4 pt-24 pb-16 mx-auto">
-      <div className="flex flex-wrap items-center justify-between pb-8 mb-8 border-b border-gray-700">
+      {/* Theme toggle button */}
+      <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-4 right-4 dark:bg-gray-800">
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? <FaSun /> : <FaMoon />}
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between pb-8 mb-8 border-b border-gray-200 dark:border-gray-700">
         <div>
-          <h1 className="mb-2 text-3xl font-bold">Notifications</h1>
-          <p className="text-gray-500">
+          <h1 className="mb-2 text-3xl font-bold text-gray-800 dark:text-white">
+            Notifications
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400">
             Stay updated with event information and reminders
           </p>
         </div>
@@ -104,10 +122,12 @@ const Notifications = () => {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="p-8 text-center bg-gray-800 rounded-lg shadow">
+        <div className="p-8 text-center bg-white rounded-lg shadow dark:bg-gray-800">
           <FaBell className="mx-auto mb-4 text-gray-500" size={48} />
-          <h3 className="mb-2 text-xl font-medium">No Notifications</h3>
-          <p className="text-gray-500">
+          <h3 className="mb-2 text-xl font-medium text-gray-800 dark:text-white">
+            No Notifications
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
             You don't have any notifications at the moment. We'll notify you
             about upcoming events and important updates.
           </p>
@@ -117,7 +137,7 @@ const Notifications = () => {
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-5 bg-gray-800 rounded-lg shadow flex ${
+              className={`p-5 bg-white rounded-lg shadow dark:bg-gray-800 flex ${
                 !notification.read ? "border-l-4 border-blue-500" : ""
               }`}
               onClick={() => markAsRead(notification.id)}
@@ -128,7 +148,9 @@ const Notifications = () => {
                 <div className="flex justify-between">
                   <h3
                     className={`text-lg font-medium ${
-                      !notification.read ? "text-white" : "text-gray-300"
+                      !notification.read
+                        ? "text-gray-800 dark:text-white"
+                        : "text-gray-600 dark:text-gray-300"
                     }`}
                   >
                     {notification.title}
@@ -140,7 +162,9 @@ const Notifications = () => {
 
                 <p
                   className={`mt-1 ${
-                    !notification.read ? "text-gray-300" : "text-gray-500"
+                    !notification.read
+                      ? "text-gray-600 dark:text-gray-300"
+                      : "text-gray-500"
                   }`}
                 >
                   {notification.message}
@@ -152,7 +176,7 @@ const Notifications = () => {
                   e.stopPropagation();
                   deleteNotification(notification.id);
                 }}
-                className="flex-shrink-0 ml-2 text-gray-500 hover:text-gray-300 focus:outline-none"
+                className="flex-shrink-0 ml-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
               >
                 <FaTimes />
               </button>

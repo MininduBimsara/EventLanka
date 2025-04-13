@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import {
   FaUser,
   FaEnvelope,
@@ -9,30 +9,9 @@ import {
   FaMoon,
   FaSun,
 } from "react-icons/fa";
-
-// Theme context - in a real app, create this in a separate file
-const ThemeContext = React.createContext({
-  darkMode: false,
-  toggleTheme: () => {},
-});
-
-export const ThemeProvider = ({ children }) => {
-  const [darkMode, setDarkMode] = useState(false);
-  const toggleTheme = () => setDarkMode(!darkMode);
-
-  return (
-    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
-      <div className={darkMode ? "dark" : ""}>
-        <div className="min-h-screen text-gray-800 bg-gray-50 dark:bg-gray-900 dark:text-white">
-          {children}
-        </div>
-      </div>
-    </ThemeContext.Provider>
-  );
-};
-
+import { useTheme } from "../../Context/ThemeContext"; // Import the useTheme hook
 const EditProfile = () => {
-  const { darkMode, toggleTheme } = useContext(ThemeContext);
+  const { darkMode, toggleTheme } = useTheme(); // Use the theme context
 
   // Mock user data - in a real app, this would come from your authentication context or API
   const [userData, setUserData] = useState({

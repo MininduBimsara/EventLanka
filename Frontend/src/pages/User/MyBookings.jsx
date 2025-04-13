@@ -1,4 +1,6 @@
+// MyBookings.jsx
 import React, { useState } from "react";
+import { useTheme } from "../../Context/ThemeContext";
 import {
   FaDownload,
   FaTimes,
@@ -8,9 +10,13 @@ import {
   FaClock,
   FaEllipsisV,
   FaCheck,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
 
-const MyBookings = ({ darkMode = false }) => {
+const MyBookings = () => {
+  const { darkMode, toggleTheme } = useTheme();
+
   // Mock data - replace with your API call
   const [bookings, setBookings] = useState([
     {
@@ -124,6 +130,16 @@ const MyBookings = ({ darkMode = false }) => {
     <div
       className={`container px-4 pt-20 pb-16 mx-auto ${themeClasses.background} ${themeClasses.text} min-h-screen`}
     >
+      <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-4 right-4 dark:bg-gray-800">
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? <FaSun /> : <FaMoon />}
+        </button>
+      </div>
+
       <div className={`pb-8 mb-8 border-b ${themeClasses.divider}`}>
         <h1 className="mb-2 text-4xl font-extrabold tracking-tight">
           My Bookings
@@ -182,7 +198,7 @@ const MyBookings = ({ darkMode = false }) => {
         <div
           className={`p-16 text-center ${themeClasses.card} rounded-xl ${themeClasses.cardBorder}`}
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full">
+          <div className="inline-flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full dark:bg-gray-700">
             <FaTicketAlt className="text-gray-500" size={32} />
           </div>
           <h3 className="mb-2 text-xl font-bold">No bookings found</h3>
@@ -272,7 +288,9 @@ const MyBookings = ({ darkMode = false }) => {
                     </div>
 
                     <div
-                      className={`px-3 py-1 mb-4 text-sm inline-block rounded ${themeClasses.subText} bg-gray-100 dark:bg-gray-700`}
+                      className={`px-3 py-1 mb-4 text-sm inline-block rounded ${
+                        darkMode ? "bg-gray-700" : "bg-gray-100"
+                      } ${themeClasses.subText}`}
                     >
                       {booking.id}
                     </div>

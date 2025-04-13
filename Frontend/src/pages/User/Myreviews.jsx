@@ -7,10 +7,11 @@ import {
   FaMoon,
   FaSun,
 } from "react-icons/fa";
+import { useTheme } from "../../Context/ThemeContext";
 
 const MyReviews = () => {
-  // Dark mode state
-  const [darkMode, setDarkMode] = useState(false);
+  // Use theme context instead of local state
+  const { darkMode, toggleTheme } = useTheme();
 
   // Mock reviews data - in a real app, this would come from your API
   const [reviews, setReviews] = useState([
@@ -88,11 +89,6 @@ const MyReviews = () => {
     setEditingReview(null);
   };
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
   // Render stars for ratings
   const renderStars = (rating) => {
     return [...Array(5)].map((_, i) => (
@@ -153,7 +149,7 @@ const MyReviews = () => {
           </div>
 
           <button
-            onClick={toggleDarkMode}
+            onClick={toggleTheme}
             className={`p-3 rounded-full ${
               darkMode
                 ? "bg-gray-800 text-yellow-400"

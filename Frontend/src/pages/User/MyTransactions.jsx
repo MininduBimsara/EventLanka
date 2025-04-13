@@ -9,10 +9,11 @@ import {
   FaSun,
   FaFilter,
 } from "react-icons/fa";
+import { useTheme } from "../../Context/ThemeContext";
 
 const MyTransactions = () => {
-  // Dark mode state
-  const [darkMode, setDarkMode] = useState(false);
+  // Use theme context instead of local state
+  const { darkMode, toggleTheme } = useTheme();
 
   // Filter state
   const [filterOpen, setFilterOpen] = useState(false);
@@ -70,11 +71,6 @@ const MyTransactions = () => {
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
 
   // Sorting function
   const handleSort = (key) => {
@@ -136,7 +132,7 @@ const MyTransactions = () => {
           </div>
 
           <button
-            onClick={toggleDarkMode}
+            onClick={toggleTheme}
             className={`p-3 rounded-full ${
               darkMode
                 ? "bg-gray-800 text-yellow-400"

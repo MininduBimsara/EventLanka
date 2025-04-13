@@ -8,8 +8,12 @@ import {
   FaPhone,
   FaMapMarkerAlt,
 } from "react-icons/fa";
+import { useTheme } from "../../Context/ThemeContext";
 
-const HelpCenter = ({ darkMode = false }) => {
+const HelpCenter = () => {
+  // Use the ThemeContext instead of prop
+  const { darkMode } = useTheme();
+
   // State for contact form
   const [contactForm, setContactForm] = useState({
     name: "",
