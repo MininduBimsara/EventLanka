@@ -90,7 +90,7 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="container px-4 py-8 mx-auto">
+    <div className="container min-h-screen px-4 py-8 mx-auto transition-colors duration-200 bg-white dark:bg-gray-900">
       <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-4 right-4 dark:bg-gray-800">
         <button
           onClick={toggleTheme}
@@ -144,7 +144,7 @@ const EditProfile = () => {
                     className="object-cover w-full h-full"
                   />
                 ) : (
-                  <div className="flex items-center justify-center w-full h-full text-gray-400">
+                  <div className="flex items-center justify-center w-full h-full text-gray-400 dark:text-gray-500">
                     <FaUser size={64} />
                   </div>
                 )}
@@ -161,7 +161,7 @@ const EditProfile = () => {
               {userData.profileImage && (
                 <button
                   type="button"
-                  className="mt-3 text-sm text-red-500 hover:text-red-600"
+                  className="mt-3 text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
                   onClick={() =>
                     setUserData({ ...userData, profileImage: null })
                   }
@@ -195,7 +195,7 @@ const EditProfile = () => {
                       name="firstName"
                       value={userData.firstName}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
@@ -214,7 +214,7 @@ const EditProfile = () => {
                       name="lastName"
                       value={userData.lastName}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
@@ -233,7 +233,7 @@ const EditProfile = () => {
                       name="email"
                       value={userData.email}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
@@ -252,7 +252,7 @@ const EditProfile = () => {
                       name="phone"
                       value={userData.phone}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -270,7 +270,7 @@ const EditProfile = () => {
                       name="address"
                       value={userData.address}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -284,7 +284,7 @@ const EditProfile = () => {
                     name="city"
                     value={userData.city}
                     onChange={handleInputChange}
-                    className="block w-full px-4 py-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="block w-full px-4 py-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -309,7 +309,7 @@ const EditProfile = () => {
                       name="currentPassword"
                       value={userData.currentPassword}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -327,7 +327,7 @@ const EditProfile = () => {
                       name="newPassword"
                       value={userData.newPassword}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -345,7 +345,7 @@ const EditProfile = () => {
                       name="confirmPassword"
                       value={userData.confirmPassword}
                       onChange={handleInputChange}
-                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                 </div>

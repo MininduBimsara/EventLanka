@@ -3,7 +3,7 @@ import { Mail, Lock, User, ArrowRight, Image as ImageIcon } from "lucide-react";
 import axios from "axios";
 import Navbar from "../../components/Common/Navbar";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser, registerUser } from "../../Redux/Slicers/userSlice";
+import { loginUser, registerUser } from "../../Redux/Slicers/AuthSlice";
 import { useNavigate } from "react-router-dom";
 
 const LoginRegistrationUI = () => {

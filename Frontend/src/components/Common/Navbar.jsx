@@ -14,7 +14,7 @@ import {
   FaChevronDown,
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { verifyAuth, logoutUser } from "../../Redux/Slicers/userSlice";
+import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
