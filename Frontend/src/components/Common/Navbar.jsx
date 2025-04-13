@@ -59,10 +59,21 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const handleLogoutClick = () => {
-    dispatch(logoutUser());
-    setDropdownOpen(false);
-    navigate("/");
+  const handleLogoutClick = async () => {
+    try {
+      // Dispatch the logoutUser thunk and wait for it to complete
+      await dispatch(logoutUser()).unwrap();
+
+      // Only navigate after successful logout
+      setDropdownOpen(false);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Fallback: Clear local storage and navigate anyway
+      sessionStorage.removeItem("token");
+      setDropdownOpen(false);
+      navigate("/");
+    }
   };
 
   const toggleDropdown = () => {

@@ -12,9 +12,17 @@ connectDB();
 
 const app = express();
 
-app.use(express.json());
-app.use(cors());
+// Updated CORS configuration to allow credentials and specific origin
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Your frontend URL
+    credentials: true, // Allow credentials (cookies, authorization headers)
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
+app.use(express.json());
 app.use(cookieParser());
 
 app.use(

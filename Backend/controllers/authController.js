@@ -135,13 +135,17 @@ const verifyToken = async (req, res) => {
 
 // Logout handler
 const logout = (req, res) => {
+  // Clear the cookie if you're using cookies as a secondary auth method
   res.cookie("token", "", {
     httpOnly: true,
     expires: new Date(0),
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
   });
-  res.status(200).json({ message: "Logged out successfully" });
+  
+  // Since your frontend is handling token invalidation by removing it from sessionStorage,
+  // just send a successful response
+  res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
 module.exports = {

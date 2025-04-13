@@ -3,6 +3,9 @@ import axios from "axios";
 
 const API_URL = "http://localhost:5000/api/auth"; // Adjust the base URL if needed
 
+// Set axios to always send credentials
+axios.defaults.withCredentials = true;
+
 // Thunk for user login
 export const loginUser = createAsyncThunk(
   "user/login",
@@ -61,7 +64,7 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// Add a logout thunk
+// Improved logout thunk
 export const logoutUser = createAsyncThunk(
   "user/logout",
   async (_, thunkAPI) => {
@@ -69,24 +72,38 @@ export const logoutUser = createAsyncThunk(
       // Get the token from the Redux state
       const token = thunkAPI.getState().user.token;
 
-      // Make the API call to logout
-      await axios.post(
-        `${API_URL}/logout`,
-        {},
-        {
-          withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      // Make the API call to logout with proper credentials and headers
+      if (token) {
+        try {
+          await axios.post(
+            `${API_URL}/logout`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+        } catch (apiError) {
+          console.warn("Logout API call failed:", apiError);
+          // Continue with client-side logout even if API call fails
         }
-      );
+      }
+
+      // Always clear the token from sessionStorage, regardless of API response
+      sessionStorage.removeItem("token");
+      delete axios.defaults.headers.common["Authorization"];
 
       return { success: true };
     } catch (error) {
-      console.error("Logout API call failed", error);
-      // Still return success - we'll logout locally regardless
-      // of whether the API call succeeds
-      return { success: true };
+      console.error("Logout process failed:", error);
+      // Still clear token locally to ensure client-side logout
+      sessionStorage.removeItem("token");
+      delete axios.defaults.headers.common["Authorization"];
+
+      // We're still returning success to ensure the Redux state is cleared
+      return thunkAPI.fulfillWithValue({ success: true });
     }
   }
 );
@@ -96,9 +113,18 @@ export const verifyAuth = createAsyncThunk(
   "user/verifyAuth",
   async (_, { rejectWithValue }) => {
     try {
+      const token = sessionStorage.getItem("token");
+
+      if (!token) {
+        return rejectWithValue("No auth token found");
+      }
+
       const response = await axios.get(`${API_URL}/verify`, {
-        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+
       // Expecting response.data.user to be valid if authenticated
       if (response.data.user) {
         return response.data.user;
@@ -123,14 +149,6 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    // For logout functionality
-    logout(state) {
-      sessionStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"]; // Clear global header
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false; // Update isAuthenticated
-    },
     // Clear errors
     clearErrors(state) {
       state.error = null;
@@ -182,8 +200,6 @@ const userSlice = createSlice({
       })
       .addCase(logoutUser.fulfilled, (state) => {
         // Clear auth data
-        sessionStorage.removeItem("token");
-        delete axios.defaults.headers.common["Authorization"];
         state.user = null;
         state.token = null;
         state.isAuthenticated = false; // Update isAuthenticated
@@ -191,8 +207,6 @@ const userSlice = createSlice({
       })
       .addCase(logoutUser.rejected, (state) => {
         // Clear auth data even if API call fails
-        sessionStorage.removeItem("token");
-        delete axios.defaults.headers.common["Authorization"];
         state.user = null;
         state.token = null;
         state.isAuthenticated = false; // Update isAuthenticated
@@ -217,5 +231,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { logout, clearErrors } = userSlice.actions;
+export const { clearErrors } = userSlice.actions;
 export default userSlice.reducer;

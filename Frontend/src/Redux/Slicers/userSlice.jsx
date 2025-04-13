@@ -6,19 +6,28 @@ const API_URL = "http://localhost:5000/api"; // Base API URL
 // Async thunk for updating user profile
 export const updateUserProfile = createAsyncThunk(
   "user/updateUserProfile",
-  async (userData, { rejectWithValue }) => {
+  async (userData, { getState, rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/user/profile`, userData, {
+      // Get the user ID from Redux state
+      const { user } = getState();
+      const userId = user.user?.id; // Access the MongoDB ID sent from backend
+      
+      if (!userId) {
+        return rejectWithValue("User ID not found. Please log in again.");
+      }
+
+      const response = await axios.put(`${API_URL}/user/${userId}`, userData, {
         headers: {
           "Content-Type": "application/json",
         },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data?.message || "Update failed");
     }
   }
 );
+
 
 // Async thunk for updating profile photo
 export const updateProfilePhoto = createAsyncThunk(
