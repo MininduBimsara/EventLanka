@@ -46,6 +46,7 @@ const register = async (req, res) => {
       message: "User registered successfully",
       token,
       user: {
+        id: user._id, // Add this line to include the MongoDB ID
         username: user.username,
         email: user.email,
         role: user.role,
