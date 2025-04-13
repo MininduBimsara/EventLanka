@@ -6,9 +6,13 @@ import {
   FaMapMarkerAlt,
   FaLock,
   FaCheck,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
-
+import { useTheme } from "../../Context/ThemeContext"; // Import the useTheme hook
 const EditProfile = () => {
+  const { darkMode, toggleTheme } = useTheme(); // Use the theme context
+
   // Mock user data - in a real app, this would come from your authentication context or API
   const [userData, setUserData] = useState({
     firstName: "Malith",
@@ -86,36 +90,53 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="container px-4 pt-24 pb-16 mx-auto">
-      <div className="pb-8 mb-8 border-b border-gray-700">
-        <h1 className="mb-2 text-3xl font-bold">Edit Profile</h1>
-        <p className="text-gray-500">
+    <div className="container px-4 py-8 mx-auto">
+      <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-4 right-4 dark:bg-gray-800">
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? <FaSun /> : <FaMoon />}
+        </button>
+      </div>
+
+      <div className="flex flex-col items-center justify-center mb-8">
+        <h1 className="mb-2 text-3xl font-bold text-gray-800 dark:text-white">
+          Edit Profile
+        </h1>
+        <div className="w-16 h-1 rounded bg-amber-500"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">
           Update your personal information and password
         </p>
       </div>
 
       {successMessage && (
-        <div className="p-4 mb-6 text-green-700 bg-green-100 border border-green-400 rounded">
+        <div className="p-4 mb-6 border border-green-200 rounded-lg bg-green-50 dark:bg-green-900 dark:border-green-700">
           <div className="flex items-center">
-            <FaCheck className="mr-2" />
-            <span>{successMessage}</span>
+            <FaCheck className="mr-2 text-green-500 dark:text-green-300" />
+            <span className="text-green-700 dark:text-green-300">
+              {successMessage}
+            </span>
           </div>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-4 mb-6 text-red-700 bg-red-100 border border-red-400 rounded">
-          <span>{errorMessage}</span>
+        <div className="p-4 mb-6 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900 dark:border-red-700">
+          <span className="text-red-700 dark:text-red-300">{errorMessage}</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {/* Profile Image Upload Section */}
         <div className="md:col-span-1">
-          <div className="p-6 bg-gray-800 rounded-lg shadow">
-            <h3 className="mb-4 text-xl font-semibold">Profile Photo</h3>
+          <div className="p-6 transition-all duration-200 bg-white rounded-lg shadow-md dark:bg-gray-800 hover:shadow-lg">
+            <h3 className="mb-4 text-xl font-semibold text-gray-800 dark:text-white">
+              Profile Photo
+            </h3>
             <div className="flex flex-col items-center">
-              <div className="relative w-32 h-32 mb-4 overflow-hidden bg-gray-700 rounded-full">
+              <div className="relative w-40 h-40 mb-5 overflow-hidden bg-gray-100 rounded-full shadow-md dark:bg-gray-700">
                 {userData.profileImage ? (
                   <img
                     src={userData.profileImage}
@@ -124,11 +145,11 @@ const EditProfile = () => {
                   />
                 ) : (
                   <div className="flex items-center justify-center w-full h-full text-gray-400">
-                    <FaUser size={48} />
+                    <FaUser size={64} />
                   </div>
                 )}
               </div>
-              <label className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md cursor-pointer hover:bg-blue-700">
+              <label className="px-6 py-3 text-sm font-medium text-white transition-colors duration-150 rounded-md cursor-pointer bg-amber-500 hover:bg-amber-600">
                 Change Photo
                 <input
                   type="file"
@@ -155,18 +176,18 @@ const EditProfile = () => {
         {/* Profile Information Form */}
         <div className="md:col-span-2">
           <form onSubmit={handleSubmit}>
-            <div className="p-6 mb-8 bg-gray-800 rounded-lg shadow">
-              <h3 className="mb-6 text-xl font-semibold">
+            <div className="p-6 mb-8 transition-all duration-200 bg-white rounded-lg shadow-md dark:bg-gray-800 hover:shadow-lg">
+              <h3 className="mb-6 text-xl font-semibold text-gray-800 dark:text-white">
                 Personal Information
               </h3>
 
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     First Name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaUser />
                     </div>
                     <input
@@ -174,18 +195,18 @@ const EditProfile = () => {
                       name="firstName"
                       value={userData.firstName}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     Last Name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaUser />
                     </div>
                     <input
@@ -193,18 +214,18 @@ const EditProfile = () => {
                       name="lastName"
                       value={userData.lastName}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     Email Address
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaEnvelope />
                     </div>
                     <input
@@ -212,18 +233,18 @@ const EditProfile = () => {
                       name="email"
                       value={userData.email}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     Phone Number
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaPhone />
                     </div>
                     <input
@@ -231,17 +252,17 @@ const EditProfile = () => {
                       name="phone"
                       value={userData.phone}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     Address
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaMapMarkerAlt />
                     </div>
                     <input
@@ -249,34 +270,38 @@ const EditProfile = () => {
                       name="address"
                       value={userData.address}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium">City</label>
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
+                    City
+                  </label>
                   <input
                     type="text"
                     name="city"
                     value={userData.city}
                     onChange={handleInputChange}
-                    className="block w-full px-3 py-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="block w-full px-4 py-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
               </div>
             </div>
 
             {/* Password Change Section */}
-            <div className="p-6 mb-8 bg-gray-800 rounded-lg shadow">
-              <h3 className="mb-6 text-xl font-semibold">Change Password</h3>
+            <div className="p-6 mb-8 transition-all duration-200 bg-white rounded-lg shadow-md dark:bg-gray-800 hover:shadow-lg">
+              <h3 className="mb-6 text-xl font-semibold text-gray-800 dark:text-white">
+                Change Password
+              </h3>
               <div className="space-y-6">
                 <div>
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     Current Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaLock />
                     </div>
                     <input
@@ -284,17 +309,17 @@ const EditProfile = () => {
                       name="currentPassword"
                       value={userData.currentPassword}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     New Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaLock />
                     </div>
                     <input
@@ -302,17 +327,17 @@ const EditProfile = () => {
                       name="newPassword"
                       value={userData.newPassword}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium">
+                  <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     Confirm New Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
                       <FaLock />
                     </div>
                     <input
@@ -320,7 +345,7 @@ const EditProfile = () => {
                       name="confirmPassword"
                       value={userData.confirmPassword}
                       onChange={handleInputChange}
-                      className="block w-full py-2.5 pl-10 pr-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </div>
@@ -331,7 +356,7 @@ const EditProfile = () => {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="px-6 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-75"
+                className="px-8 py-3 text-white transition-colors duration-200 rounded-md shadow-md disabled:opacity-75 bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Saving..." : "Save Changes"}

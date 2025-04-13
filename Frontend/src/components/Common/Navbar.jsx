@@ -1,3 +1,4 @@
+// components/Common/Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,21 +13,30 @@ import {
   FaUserEdit,
   FaChevronDown,
 } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { verifyAuth, logoutUser } from "../../Redux/Slicers/userSlice";
 
-// Navbar Component
 const Navbar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock state to toggle between logged in/out
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
+  // Retrieve authentication details from redux
+  const { isAuthenticated, user, loading } = useSelector((state) => state.user);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Check auth status on component mount
+  useEffect(() => {
+    // Add a check to prevent multiple calls if user is already verified
+    if (!isAuthenticated && !loading) {
+      dispatch(verifyAuth());
+    }
+  }, [dispatch, isAuthenticated, loading]);
+
+  // Update navbar styling based on scroll position
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -46,13 +56,13 @@ const Navbar = () => {
   }, [dropdownOpen]);
 
   const handleLoginClick = () => {
-    navigate(`/login`);
+    navigate("/login");
   };
 
   const handleLogoutClick = () => {
-    setIsLoggedIn(false);
+    dispatch(logoutUser());
     setDropdownOpen(false);
-    // Add actual logout logic here
+    navigate("/");
   };
 
   const toggleDropdown = () => {
@@ -77,21 +87,30 @@ const Navbar = () => {
         </div>
 
         <div className="hidden space-x-8 md:flex">
-          <a href="/" className="transition-colors hover:text-amber-400">
+          <button
+            onClick={() => navigate("/")}
+            className="transition-colors hover:text-amber-400"
+          >
             Home
-          </a>
-          <a
-            href="/eventbrowsing"
+          </button>
+          <button
+            onClick={() => navigate("/eventbrowsing")}
             className="transition-colors hover:text-amber-400"
           >
             Events
-          </a>
-          <a href="/about" className="transition-colors hover:text-amber-400">
+          </button>
+          <button
+            onClick={() => navigate("/about")}
+            className="transition-colors hover:text-amber-400"
+          >
             About
-          </a>
-          <a href="/contact" className="transition-colors hover:text-amber-400">
+          </button>
+          <button
+            onClick={() => navigate("/contact")}
+            className="transition-colors hover:text-amber-400"
+          >
             Contact
-          </a>
+          </button>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -104,8 +123,8 @@ const Navbar = () => {
             <FaSearch className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2" />
           </div>
 
-          {/* Conditional rendering based on login state */}
-          {!isLoggedIn ? (
+          {/* If user is not authenticated, show Login button */}
+          {!isAuthenticated ? (
             <button
               onClick={handleLoginClick}
               className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-amber-500 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400"
@@ -120,14 +139,18 @@ const Navbar = () => {
                 className="flex items-center px-3 py-1.5 text-sm font-medium text-white transition-colors bg-gray-800 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
               >
                 <div className="w-6 h-6 mr-2 overflow-hidden bg-gray-600 rounded-full">
-                  {/* Profile image placeholder */}
+                  {/* Optionally display the user's profile image if available */}
                   <img
-                    src="/api/placeholder/50/50"
+                    src={
+                      user?.profileImage
+                        ? `http://localhost:5000${user.profileImage}`
+                        : "/api/placeholder/50/50"
+                    }
                     alt="Profile"
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <span className="mr-1">My Account</span>
+                <span className="mr-1">{user?.username || "My Account"}</span>
                 <FaChevronDown
                   className={`transition-transform ${
                     dropdownOpen ? "rotate-180" : ""
@@ -140,31 +163,31 @@ const Navbar = () => {
                 <div className="absolute right-0 w-48 mt-2 origin-top-right bg-gray-800 rounded-md shadow-lg">
                   <div className="py-1">
                     <button
-                      onClick={() => navigateTo("/mybookings")}
+                      onClick={() => navigateTo("/user/mybookings")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaTicketAlt className="mr-2" /> My Bookings
                     </button>
                     <button
-                      onClick={() => navigateTo("/transactions")}
+                      onClick={() => navigateTo("/user/transactions")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaCalendarAlt className="mr-2" /> Transaction History
                     </button>
                     <button
-                      onClick={() => navigateTo("/editprofile")}
+                      onClick={() => navigateTo("/user/editprofile")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaUserEdit className="mr-2" /> Update Info
                     </button>
                     <button
-                      onClick={() => navigateTo("/myreviews")}
+                      onClick={() => navigateTo("/user/myreviews")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaUser className="mr-2" /> My Reviews
                     </button>
                     <button
-                      onClick={() => navigateTo("/notifications")}
+                      onClick={() => navigateTo("/user/notifications")}
                       className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                     >
                       <FaBell className="mr-2" /> Notifications
