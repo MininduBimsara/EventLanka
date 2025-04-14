@@ -14,7 +14,7 @@ import {
   FaChevronDown,
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { verifyAuth, logoutUser } from "../../Redux/Slicers/userSlice";
+import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -25,13 +25,10 @@ const Navbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Check auth status on component mount
+  // Check auth status on component mount - always verify
   useEffect(() => {
-    // Add a check to prevent multiple calls if user is already verified
-    if (!isAuthenticated && !loading) {
-      dispatch(verifyAuth());
-    }
-  }, [dispatch, isAuthenticated, loading]);
+    dispatch(verifyAuth());
+  }, [dispatch]);
 
   // Update navbar styling based on scroll position
   useEffect(() => {
@@ -59,10 +56,15 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const handleLogoutClick = () => {
-    dispatch(logoutUser());
-    setDropdownOpen(false);
-    navigate("/");
+  const handleLogoutClick = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      setDropdownOpen(false);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Optionally show a notification to the user
+    }
   };
 
   const toggleDropdown = () => {
@@ -73,6 +75,9 @@ const Navbar = () => {
     navigate(path);
     setDropdownOpen(false);
   };
+
+  // Add console logs for debugging
+  console.log("Auth state:", { isAuthenticated, user, loading });
 
   return (
     <nav
@@ -158,7 +163,7 @@ const Navbar = () => {
                 />
               </button>
 
-              {/* Dropdown menu */}
+              {/* Dropdown menu - make sure it's visible when dropdownOpen is true */}
               {dropdownOpen && (
                 <div className="absolute right-0 w-48 mt-2 origin-top-right bg-gray-800 rounded-md shadow-lg">
                   <div className="py-1">

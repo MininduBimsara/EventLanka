@@ -51,46 +51,47 @@ function App() {
 
   return (
     <>
-      <Router>
-        <Routes>
-          {/* Common Routes */}
-          <Route path="/" element={<NewHome />} />
-          <Route path="/newhome" element={<NewHome />} />
-          <Route path="/eventbrowsing" element={<EventBrowsingPage />} />
-          <Route path="/login" element={<LoginRegistrationUI />} />
-          <Route path="/neweventbooking" element={<NewEventBookingUI />} />
-          <Route path="/event/:id" element={<EventBookingPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactUsPage />} />
-          {/* <Route path="/home" element={<Home />} /> */}
+      <ThemeProvider>
+        <Router>
+          <Routes>
+            {/* Common Routes */}
+            <Route path="/" element={<NewHome />} />
+            <Route path="/newhome" element={<NewHome />} />
+            <Route path="/eventbrowsing" element={<EventBrowsingPage />} />
+            <Route path="/login" element={<LoginRegistrationUI />} />
+            <Route path="/neweventbooking" element={<NewEventBookingUI />} />
+            <Route path="/event/:id" element={<EventBookingPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactUsPage />} />
+            {/* <Route path="/home" element={<Home />} /> */}
 
-          {/* Organizer Routes element={<OrganizerLayout />}*/}
-          <Route path="/organizer">
-            <Route path="dashboard" element={<OrganizerDashboard />} />
-            <Route path="profile" element={<OrganizerProfile />} />
-            <Route path="settings" element={<OrganizerSettings />} />
-            <Route path="attendees" element={<Attendees />} />
-            <Route path="createevent" element={<CreateEvent />} />
-            <Route path="discounts" element={<Discounts />} />
-            <Route path="manageevents" element={<ManageEvents />} />
-            <Route path="media" element={<MediaManager />} />
-            <Route path="salesanalytics" element={<SalesAnalytics />} />
-          </Route>
+            {/* Organizer Routes element={<OrganizerLayout />}*/}
+            <Route path="/organizer">
+              <Route path="dashboard" element={<OrganizerDashboard />} />
+              <Route path="profile" element={<OrganizerProfile />} />
+              <Route path="settings" element={<OrganizerSettings />} />
+              <Route path="attendees" element={<Attendees />} />
+              <Route path="createevent" element={<CreateEvent />} />
+              <Route path="discounts" element={<Discounts />} />
+              <Route path="manageevents" element={<ManageEvents />} />
+              <Route path="media" element={<MediaManager />} />
+              <Route path="salesanalytics" element={<SalesAnalytics />} />
+            </Route>
 
-          {/* Admin Routes*/}
-          <Route path="/admin">
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="eventapprovals" element={<EventApprovals />} />
-            <Route path="organizers" element={<OrganizersAdmin />} />
-            <Route path="refundrequests" element={<RefundRequests />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="transactions" element={<AdminTransactions />} />
-            <Route path="users" element={<AdminUsers />} />
-          </Route>
+            {/* Admin Routes*/}
+            <Route path="/admin">
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="eventapprovals" element={<EventApprovals />} />
+              <Route path="organizers" element={<OrganizersAdmin />} />
+              <Route path="refundrequests" element={<RefundRequests />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="transactions" element={<AdminTransactions />} />
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
 
-          {/* User Routes */}
-          <ThemeProvider>
+            {/* User Routes */}
+
             <Route path="/user">
               <Route path="editprofile" element={<EditProfile />} />
               <Route path="helpcenter" element={<Support />} />
@@ -99,9 +100,9 @@ function App() {
               <Route path="transactions" element={<MyTransactions />} />
               <Route path="myreviews" element={<MyReviews />} />
             </Route>
-          </ThemeProvider>
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </ThemeProvider>
     </>
   );
 }
