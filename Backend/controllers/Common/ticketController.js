@@ -1,5 +1,5 @@
-const Ticket = require("../models/Ticket"); // Import the Ticket model
-const Event = require("../models/Event"); // Import the Event model (to check event validity)
+const Ticket = require("../../models/Ticket"); // Import the Ticket model
+const Event = require("../../models/Event"); // Import the Event model (to check event validity)
 const asyncHandler = require("express-async-handler");
 
 // ===========================

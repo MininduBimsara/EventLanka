@@ -1,4 +1,4 @@
-const Event = require("../models/Event");
+const Event = require("../../models/Event");
 
 // Create a new event (Only Organizer)
 exports.createEvent = async (req, res) => {
@@ -21,7 +21,14 @@ exports.createEvent = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!title || !description || !location || !date) {
+    if (
+      !title ||
+      !description ||
+      !location ||
+      !date ||
+      !ticket_types ||
+      !banner
+    ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
@@ -77,10 +84,17 @@ exports.updateEvent = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    if (event.organizer_id.toString() !== req.user.id) {
+    if (
+      event.organizer_id.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
       return res.status(403).json({
         message: "Access Denied. You can only update your own events.",
       });
+    }
+
+    if (req.user.role === "organizer") {
+      req.body.event_status = "pending"; // Re-review after changes
     }
 
     const updatedEvent = await Event.findByIdAndUpdate(
