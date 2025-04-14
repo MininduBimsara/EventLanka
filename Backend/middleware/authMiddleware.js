@@ -42,7 +42,30 @@ exports.protect = asyncHandler(async (req, res, next) => {
         .json({ message: "Session expired. Please log in again." });
     }
     res.status(400).json({ message: "Invalid token" });
-  }
+  } 
 });
 
-// The commented-out role-based middleware can stay as is
+// 🔐 Role-based middleware
+exports.adminOnly = (req, res, next) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ message: "Access denied. Admins only." });
+  }
+  next();
+};
+
+exports.organizerOnly = (req, res, next) => {
+  if (req.user?.role !== "organizer") {
+    return res.status(403).json({ message: "Access denied. Organizers only." });
+  }
+  next();
+};
+
+exports.adminOrOrganizer = (req, res, next) => {
+  const role = req.user?.role;
+  if (role !== "admin" && role !== "organizer") {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Admins or organizers only." });
+  }
+  next();
+};
