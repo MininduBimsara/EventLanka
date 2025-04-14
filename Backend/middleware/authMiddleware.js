@@ -3,10 +3,21 @@ const User = require("../models/User");
 const asyncHandler = require("express-async-handler");
 
 exports.protect = asyncHandler(async (req, res, next) => {
-  // Extract token from cookies instead of headers
+  // Check for token in cookies
   const token = req.cookies.token;
 
-  if (!token) {
+  // If no token in cookies, check Authorization header as fallback
+  // (Helpful during transition from client-side token storage to cookies)
+  const authHeader = req.headers.authorization;
+  const headerToken =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : null;
+
+  // Use cookie token if available, otherwise try header token
+  const finalToken = token || headerToken;
+
+  if (!finalToken) {
     return res
       .status(401)
       .json({ message: "Access denied. No token provided." });
@@ -14,7 +25,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(finalToken, process.env.JWT_SECRET);
 
     // Find the user and attach it to req.user
     const user = await User.findById(decoded.id).select("-password");
@@ -34,24 +45,4 @@ exports.protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-// exports.isAdmin = (req, res, next) => {
-//   if (req.user && req.user.role === "admin") {
-//     return next(); // User is admin, proceed to the next middleware
-//   } else {
-//     return res.status(403).json({ message: "Access denied. Admins only." });
-//   }
-// };
-// exports.isUser = (req, res, next) => {
-//   if (req.user && req.user.role === "user") {
-//     return next(); // User is a regular user, proceed to the next middleware
-//   } else {
-//     return res.status(403).json({ message: "Access denied. Users only." });
-//   }
-// };
-// exports.isOwner = (req, res, next) => {
-//   if (req.user && req.user._id.toString() === req.params.id) {
-//     return next(); // User is the owner of the resource, proceed to the next middleware
-//   } else {
-//     return res.status(403).json({ message: "Access denied. Not the owner." });
-//   }
-// };
+// The commented-out role-based middleware can stay as is

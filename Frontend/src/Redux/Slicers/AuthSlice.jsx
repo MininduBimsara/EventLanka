@@ -15,10 +15,9 @@ export const loginUser = createAsyncThunk(
         email: credentials.email,
         password: credentials.password,
       });
-      const { token, user } = response.data;
-      // Store the JWT in sessionStorage
-      sessionStorage.setItem("token", token);
-      return { token, user };
+
+      // The cookie is now set by the backend, we just need the user data
+      return response.data.user;
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Login failed"
@@ -52,10 +51,8 @@ export const registerUser = createAsyncThunk(
         });
       }
 
-      const { token, user } = response.data;
-      // Store the JWT in sessionStorage
-      sessionStorage.setItem("token", token);
-      return { token, user };
+      // The cookie is now set by the backend, we just need the user data
+      return response.data.user;
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Registration failed"
@@ -64,46 +61,17 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// Improved logout thunk
 export const logoutUser = createAsyncThunk(
   "user/logout",
-  async (_, thunkAPI) => {
+  async (_, { rejectWithValue }) => {
     try {
-      // Get the token from the Redux state
-      const token = thunkAPI.getState().user.token;
-
-      // Make the API call to logout with proper credentials and headers
-      if (token) {
-        try {
-          await axios.post(
-            `${API_URL}/logout`,
-            {},
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-        } catch (apiError) {
-          console.warn("Logout API call failed:", apiError);
-          // Continue with client-side logout even if API call fails
-        }
-      }
-
-      // Always clear the token from sessionStorage, regardless of API response
-      sessionStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"];
+      // Call the logout API endpoint to clear the cookie
+      await axios.post(`${API_URL}/logout`);
 
       return { success: true };
     } catch (error) {
-      console.error("Logout process failed:", error);
-      // Still clear token locally to ensure client-side logout
-      sessionStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"];
-
-      // We're still returning success to ensure the Redux state is cleared
-      return thunkAPI.fulfillWithValue({ success: true });
+      console.error("Logout error:", error);
+      return rejectWithValue("Logout failed");
     }
   }
 );
@@ -113,17 +81,18 @@ export const verifyAuth = createAsyncThunk(
   "user/verifyAuth",
   async (_, { rejectWithValue }) => {
     try {
-      const token = sessionStorage.getItem("token");
-
-      if (!token) {
-        return rejectWithValue("No auth token found");
-      }
+      // Log to verify credentials are being sent
+      console.log(
+        "Verifying auth with credentials:",
+        axios.defaults.withCredentials
+      );
 
       const response = await axios.get(`${API_URL}/verify`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true, // Explicitly include credentials for this request
       });
+
+      // Log successful verification
+      console.log("Auth verified:", response.data);
 
       // Expecting response.data.user to be valid if authenticated
       if (response.data.user) {
@@ -132,6 +101,7 @@ export const verifyAuth = createAsyncThunk(
         return rejectWithValue("No user authenticated");
       }
     } catch (error) {
+      console.error("Verification error:", error);
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
@@ -139,8 +109,7 @@ export const verifyAuth = createAsyncThunk(
 
 const initialState = {
   user: null,
-  token: sessionStorage.getItem("token") || null,
-  isAuthenticated: !!sessionStorage.getItem("token"), // Add isAuthenticated
+  isAuthenticated: false,
   loading: false,
   error: null,
 };
@@ -163,13 +132,8 @@ const userSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.isAuthenticated = true; // Update isAuthenticated
-        // Set global Authorization header
-        axios.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${action.payload.token}`;
+        state.user = action.payload;
+        state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -182,13 +146,8 @@ const userSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.isAuthenticated = true; // Update isAuthenticated
-        // Set global Authorization header
-        axios.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${action.payload.token}`;
+        state.user = action.payload;
+        state.isAuthenticated = true;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
@@ -201,16 +160,13 @@ const userSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         // Clear auth data
         state.user = null;
-        state.token = null;
-        state.isAuthenticated = false; // Update isAuthenticated
+        state.isAuthenticated = false;
         state.loading = false;
       })
       .addCase(logoutUser.rejected, (state) => {
-        // Clear auth data even if API call fails
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false; // Update isAuthenticated
+        // Set a specific error for logout failures
         state.loading = false;
+        state.error = "Logout failed. Please try again.";
       })
       // Verify Authentication
       .addCase(verifyAuth.pending, (state) => {
@@ -226,7 +182,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
-        state.error = action.payload || "Authentication verification failed";
+        state.error = null; // Don't show error on verification fail
       });
   },
 });

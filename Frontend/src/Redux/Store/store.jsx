@@ -11,7 +11,7 @@ import {
   REGISTER,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
-import userReducer from "../Slicers/userSlice";
+import userReducer from "../Slicers/AuthSlice";
 
 // Persist config
 const persistConfig = {

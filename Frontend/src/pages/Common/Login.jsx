@@ -154,6 +154,7 @@ const LoginRegistrationUI = () => {
           profileImage: null,
         });
         setImagePreview(null);
+        navigate("/");
         // Redirect to dashboard or desired page
         // window.location.href = "/dashboard";
         // Optionally, redirect the user or perform further actions here
