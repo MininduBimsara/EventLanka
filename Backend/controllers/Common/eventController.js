@@ -21,15 +21,8 @@ exports.createEvent = async (req, res) => {
 
     const bannerImage = req.file ? req.file.filename : null;
 
-    // Validate required fields
-    if (
-      !title ||
-      !description ||
-      !location ||
-      !date ||
-      !ticket_types ||
-      !bannerImage
-    ) {
+    // ✅ Removed bannerImage from required field check
+    if (!title || !description || !location || !date || !ticket_types) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
@@ -48,7 +41,7 @@ exports.createEvent = async (req, res) => {
       duration: duration || 1, // Default duration is 1 hour
       category: category || "Other", // Default category is "Other"
       ticket_types: parsedTicketTypes,
-      banner: bannerImage,
+      banner: bannerImage, // 👈 null if no image uploaded
       event_status: "pending",
     });
 
@@ -58,7 +51,7 @@ exports.createEvent = async (req, res) => {
       message: "Event created successfully!",
       event: {
         ...newEvent._doc,
-        banner: `/event-images/${bannerImage}`,
+        banner: bannerImage ? `/event-images/${bannerImage}` : null, // 👈 handle null case in response
       },
     });
   } catch (error) {
@@ -66,6 +59,7 @@ exports.createEvent = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
 
 // Get all events (Admin sees all, Organizers see their own, Users see only approved events)
 exports.getEvents = async (req, res) => {

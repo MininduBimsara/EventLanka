@@ -23,12 +23,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Import controllers
-const eventController = require("../controllers/eventController");
-const attendeeController = require("../controllers/attendeeController");
-const discountController = require("../controllers/discountController");
-const salesController = require("../controllers/salesController");
-const organizerController = require("../controllers/organizerController");
-const mediaController = require("../controllers/mediaController");
+const eventController = require("../controllers/Common/eventController");
+const attendeeController = require("../controllers/Organizer/attendeeController");
+const discountController = require("../controllers/Organizer/discountController");
+const salesController = require("../controllers/Organizer/salesController");
+const organizerController = require("../controllers/Organizer/organizerController");
 
 /* ===== Event Routes ===== */
 router.post("/events", protect, organizerOnly, eventController.createEvent);
@@ -36,12 +35,12 @@ router.put("/events/:id", protect, eventController.updateEvent);
 router.get("/events", eventController.getEvents);
 router.get("/events/:id", eventController.getEventById);
 router.delete("/events/:id", protect, eventController.deleteEvent);
-router.put(
-  "/events/:id/status",
-  protect,
-  adminOnly,
-  eventController.updateEventStatus
-);
+// router.put(
+//   "/events/:id/status",
+//   protect,
+//   adminOnly,
+//   eventController.updateEventStatus
+// );
 
 /* ===== Attendee Routes ===== */
 router.get(
@@ -49,8 +48,8 @@ router.get(
   protect,
   attendeeController.getByEvent
 );
-router.post("/attendees", protect, attendeeController.create);
-router.put("/attendees/:id", protect, attendeeController.update);
+// router.post("/attendees", protect, attendeeController.create);
+// router.put("/attendees/:id", protect, attendeeController.update);
 router.put(
   "/attendees/:id/attendance",
   protect,
@@ -115,10 +114,5 @@ router.get(
   organizerController.dashboard
 );
 router.put("/organizer/password", protect, organizerController.changePassword);
-
-/* ===== Media Routes ===== */
-router.post("/media", protect, upload.array("files"), mediaController.upload);
-router.get("/media", protect, mediaController.getAll);
-router.delete("/media/:id", protect, mediaController.delete);
 
 module.exports = router;

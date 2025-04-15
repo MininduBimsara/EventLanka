@@ -48,7 +48,7 @@ router.put(
 
 /* 👥 Users & Organizers */
 router.get("/users", protect, adminOnly, usersController.getUsers);
-router.get("/users/:id", protect, adminOnly, usersController.getUserById);
+router.get("/users/:id", protect, adminOnly, usersController.getUserProfile);
 router.put(
   "/users/:id/status",
   protect,

@@ -68,6 +68,16 @@ exports.updateUserStatus = async (req, res) => {
   }
 };
 
+// get all users
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await User.find({ role: "user" });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching users" });
+  }
+};
+
 
 // Organizer logic from User model
 exports.getOrganizers = async (req, res) => {
