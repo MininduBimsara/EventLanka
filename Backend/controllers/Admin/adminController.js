@@ -1,5 +1,4 @@
 const User = require("../models/User");
-const Organizer = require("../models/Organizer");
 const Event = require("../models/Event");
 const Payment = require("../models/Payment");
 const RefundRequest = require("../models/RefundRequest");
@@ -7,7 +6,7 @@ const RefundRequest = require("../models/RefundRequest");
 exports.getDashboardStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
-    const totalOrganizers = await Organizer.countDocuments();
+    const totalOrganizers = await User.countDocuments({ role: "organizer" }); // Assuming 'role' field distinguishes organizers
     const totalEvents = await Event.countDocuments();
     const totalRevenue =
       (
