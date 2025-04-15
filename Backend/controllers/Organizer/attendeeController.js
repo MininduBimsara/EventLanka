@@ -89,7 +89,7 @@ exports.exportList = asyncHandler(async (req, res) => {
       "Content-Disposition",
       `attachment; filename="attendees-${eventId}.csv"`
     );
-    // CSV generation logic...
+    // CSV generation logic... (like csv-writer or pdfkit).
 
     // Placeholder response
     res.status(200).send("CSV data would be here");
