@@ -1,4 +1,4 @@
-const User = require("../models/User");
+const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
@@ -144,11 +144,10 @@ const logout = (req, res) => {
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
   });
-  
+
   // Send a successful response
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
-  
 
 module.exports = {
   register,

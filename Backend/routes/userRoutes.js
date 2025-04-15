@@ -3,7 +3,7 @@ const {
   getUserProfile,
   updateUserProfile,
   deleteUserProfile,
-} = require("../controllers/userController");
+} = require("../controllers/Common/userController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();

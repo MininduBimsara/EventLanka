@@ -1,19 +1,18 @@
-const Ticket = require("../models/Ticket"); // Import the Ticket model
-const Event = require("../models/Event"); // Import the Event model (to check event validity)
+const Ticket = require("../../models/Ticket"); // Import the Ticket model
+const Event = require("../../models/Event"); // Import the Event model (to check event validity)
 const asyncHandler = require("express-async-handler");
 
 // ===========================
 // CREATE A TICKET (Buy Ticket)
 // ===========================
 
+// Modified buyTicket function in ticketController.js
 exports.buyTicket = asyncHandler(async (req, res) => {
   const { eventId, ticketType, quantity } = req.body;
 
   // Ensure the user is authenticated
   if (!req.user) {
-    return res
-      .status(401)
-      .json({ message: "You must be logged in to buy a ticket." });
+    return res.status(401).json({ message: "You must be logged in to buy a ticket." });
   }
 
   // Find the event to ensure it exists
@@ -33,22 +32,46 @@ exports.buyTicket = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Not enough tickets available" });
   }
 
+  // Calculate the total price
+  const totalPrice = ticketOption.price * quantity;
+
   // Create the ticket
   const ticket = await Ticket.create({
     user_id: req.user._id,
     event_id: eventId,
     ticket_type: ticketType,
     quantity: quantity,
-    price: ticketOption.price * quantity,
-    qr_code: "112233", // Ensure QR code is included
-    payment_status: "pending", // Change to "paid" after successful payment integration
+    price: totalPrice,
+    qr_code: "112233", // In a real app, you'd generate this
+    payment_status: "pending",
   });
 
   // Reduce ticket availability
   ticketOption.availability -= quantity;
   await event.save();
 
-  res.status(201).json({ message: "Ticket purchased successfully", ticket });
+  // Generate a unique order number
+  const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+  // Automatically create an order for this ticket
+  const order = await Order.create({
+    order_number: orderNumber,
+    user_id: req.user._id,
+    tickets: [ticket._id], // Array with the new ticket ID
+    total_amount: totalPrice,
+    discount_id: null, // No discount by default
+    discount_amount: 0,
+    payment_method: "pending", // This will be updated during payment
+    payment_status: "pending",
+    status: "pending"
+  });
+
+  res.status(201).json({ 
+    message: "Ticket purchased successfully", 
+    ticket,
+    order,
+    // You might want to include payment details or next steps here
+  });
 });
 
 // ===========================

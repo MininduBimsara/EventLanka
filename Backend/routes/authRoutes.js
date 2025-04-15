@@ -4,7 +4,7 @@ const {
   login,
   verifyToken,
   logout,
-} = require("../controllers/authController");
+} = require("../controllers/Common/authController");
 const { protect } = require("../middleware/authMiddleware");
 const multer = require("multer");
 const path = require("path");

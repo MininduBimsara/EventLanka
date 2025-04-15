@@ -59,7 +59,11 @@ const eventSchema = new mongoose.Schema({
   },
   banner: {
     type: String,
+  },
+  bookingAvailable: {
+    type: Boolean,
     required: true,
+    default: true, // Default value if not specified
   },
   createdAt: {
     type: Date,

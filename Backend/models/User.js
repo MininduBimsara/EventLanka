@@ -24,6 +24,11 @@ const userSchema = new Schema({
   profileImage: {
     type: String,
   },
+  status: {
+    type: String,
+    enum: ["active", "banned"],
+    default: "active",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
