@@ -9,51 +9,51 @@ const { v4: uuidv4 } = require("uuid"); // For generating order numbers
 // ===========================
 // CREATE AN ORDER
 // ===========================
-exports.createOrder = asyncHandler(async (req, res) => {
-  const { tickets, totalAmount, discountId, discountAmount, paymentMethod } =
-    req.body;
+// exports.createOrder = asyncHandler(async (req, res) => {
+//   const { tickets, totalAmount, discountId, discountAmount, paymentMethod } =
+//     req.body;
 
-  // Ensure the user is authenticated
-  if (!req.user) {
-    return res
-      .status(401)
-      .json({ message: "You must be logged in to create an order." });
-  }
+//   // Ensure the user is authenticated
+//   if (!req.user) {
+//     return res
+//       .status(401)
+//       .json({ message: "You must be logged in to create an order." });
+//   }
 
-  // Validate that tickets are provided
-  if (!tickets || !tickets.length) {
-    return res
-      .status(400)
-      .json({ message: "No tickets provided for the order." });
-  }
+//   // Validate that tickets are provided
+//   if (!tickets || !tickets.length) {
+//     return res
+//       .status(400)
+//       .json({ message: "No tickets provided for the order." });
+//   }
 
-  // Generate a unique order number
-  const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+//   // Generate a unique order number
+//   const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-  // Create the order
-  const order = await Order.create({
-    order_number: orderNumber,
-    user_id: req.user._id,
-    tickets: tickets,
-    total_amount: totalAmount,
-    discount_id: discountId || null,
-    discount_amount: discountAmount || 0,
-    payment_method: paymentMethod,
-    payment_status: "pending", // Will be updated after payment processing
-    status: "pending",
-  });
+//   // Create the order
+//   const order = await Order.create({
+//     order_number: orderNumber,
+//     user_id: req.user._id,
+//     tickets: tickets,
+//     total_amount: totalAmount,
+//     discount_id: discountId || null,
+//     discount_amount: discountAmount || 0,
+//     payment_method: paymentMethod,
+//     payment_status: "pending", // Will be updated after payment processing
+//     status: "pending",
+//   });
 
-  // Update tickets with the order information
-  await Ticket.updateMany(
-    { _id: { $in: tickets } },
-    { payment_status: "pending" }
-  );
+//   // Update tickets with the order information
+//   await Ticket.updateMany(
+//     { _id: { $in: tickets } },
+//     { payment_status: "pending" }
+//   );
 
-  res.status(201).json({
-    message: "Order created successfully",
-    order,
-  });
-});
+//   res.status(201).json({
+//     message: "Order created successfully",
+//     order,
+//   });
+// });
 
 // ===========================
 // GET ALL ORDERS (For Logged-in User)
