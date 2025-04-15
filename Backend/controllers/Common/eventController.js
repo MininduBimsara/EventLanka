@@ -14,11 +14,12 @@ exports.createEvent = async (req, res) => {
       description,
       location,
       date,
-      ticket_types,
-      banner,
       category,
       duration,
+      ticket_types,
     } = req.body;
+
+    const bannerImage = req.file ? req.file.filename : null;
 
     // Validate required fields
     if (
@@ -27,10 +28,16 @@ exports.createEvent = async (req, res) => {
       !location ||
       !date ||
       !ticket_types ||
-      !banner
+      !bannerImage
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
+
+    // Parse ticket_types if it's sent as a string
+    const parsedTicketTypes =
+      typeof ticket_types === "string"
+        ? JSON.parse(ticket_types)
+        : ticket_types;
 
     const newEvent = new Event({
       organizer_id: req.user.id,
@@ -40,15 +47,20 @@ exports.createEvent = async (req, res) => {
       date,
       duration: duration || 1, // Default duration is 1 hour
       category: category || "Other", // Default category is "Other"
-      ticket_types,
-      banner,
+      ticket_types: parsedTicketTypes,
+      banner: bannerImage,
       event_status: "pending",
     });
 
     await newEvent.save();
-    res
-      .status(201)
-      .json({ message: "Event created successfully!", event: newEvent });
+
+    res.status(201).json({
+      message: "Event created successfully!",
+      event: {
+        ...newEvent._doc,
+        banner: `/event-images/${bannerImage}`,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -68,7 +80,13 @@ exports.getEvents = async (req, res) => {
       events = await Event.find({ event_status: "approved" }); // Regular users see only approved events
     }
 
-    res.status(200).json(events);
+    // Transform banner URLs to be fully qualified
+    const transformedEvents = events.map((event) => ({
+      ...event._doc,
+      banner: event.banner ? `/event-images/${event.banner}` : null,
+    }));
+
+    res.status(200).json(transformedEvents);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -93,19 +111,42 @@ exports.updateEvent = async (req, res) => {
       });
     }
 
-    if (req.user.role === "organizer") {
-      req.body.event_status = "pending"; // Re-review after changes
+    // Handle file upload if there's a new banner
+    const updateData = { ...req.body };
+
+    if (req.file) {
+      updateData.banner = req.file.filename;
     }
+
+    // Parse ticket_types if it's sent as a string
+    if (
+      updateData.ticket_types &&
+      typeof updateData.ticket_types === "string"
+    ) {
+      updateData.ticket_types = JSON.parse(updateData.ticket_types);
+    }
+
+    if (req.user.role === "organizer") {
+      updateData.event_status = "pending"; // Re-review after changes
+    }
+
+    updateData.updatedAt = Date.now(); // Update the timestamp
 
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true } // Ensure validation is applied
     );
 
-    res
-      .status(200)
-      .json({ message: "Event updated successfully!", event: updatedEvent });
+    res.status(200).json({
+      message: "Event updated successfully!",
+      event: {
+        ...updatedEvent._doc,
+        banner: updatedEvent.banner
+          ? `/event-images/${updatedEvent.banner}`
+          : null,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -121,10 +162,23 @@ exports.deleteEvent = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    if (event.organizer_id.toString() !== req.user.id) {
+    if (
+      event.organizer_id.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
       return res.status(403).json({
         message: "Access Denied. You can only delete your own events.",
       });
+    }
+
+    //You might want to handle file deletion here
+    const fs = require('fs');
+    const path = require('path');
+    if (event.banner) {
+      const filePath = path.join(__dirname, '../../public/event-images', event.banner);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
 
     await event.deleteOne();
