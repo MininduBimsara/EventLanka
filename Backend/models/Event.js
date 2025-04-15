@@ -61,6 +61,11 @@ const eventSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  bookingAvailable: {
+    type: Boolean,
+    required: true,
+    default: true, // Default value if not specified
+  },
   createdAt: {
     type: Date,
     default: Date.now,

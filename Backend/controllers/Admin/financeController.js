@@ -1,6 +1,6 @@
-const RefundRequest = require("../models/RefundRequest");
-const Payment = require("../models/Payment");
-const Event = require("../models/Event");
+const RefundRequest = require("../../models/RefundRequest");
+const Payment = require("../../models/Payment");
+const Event = require("../../models/Event");
 
 exports.listRefundRequests = async (req, res) => {
   try {

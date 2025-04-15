@@ -1,7 +1,7 @@
-const User = require("../models/User");
-const Event = require("../models/Event");
-const Payment = require("../models/Payment");
-const RefundRequest = require("../models/RefundRequest");
+const User = require("../../models/User");
+const Event = require("../../models/Event");
+const Payment = require("../../models/Payment");
+const RefundRequest = require("../../models/RefundRequest");
 
 exports.getDashboardStats = async (req, res) => {
   try {

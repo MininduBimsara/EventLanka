@@ -5,8 +5,8 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 // Controllers (grouped)
 const adminController = require("../controllers/Admin/adminController");
-const eventsController = require("../controllers/eventsController");
-const usersController = require("../controllers/usersController");
+const eventsController = require("../controllers/Common/eventController");
+const usersController = require("../controllers/Common/userController");
 const financeController = require("../controllers/Admin/financeController");
 
 /* 📊 Admin Dashboard & Settings */

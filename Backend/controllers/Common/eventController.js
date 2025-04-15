@@ -188,3 +188,58 @@ exports.deleteEvent = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
+// Get pending events (Admin)
+exports.listPendingEvents = async (req, res) => {
+  try {
+    const pendingEvents = await Event.find({ event_status: "pending" });
+    res.status(200).json(pendingEvents);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// Get event by ID (Admin)
+exports.getEventById = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+    res.status(200).json(event);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// Approve event (Admin)
+exports.approveEvent = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    event.event_status = "approved";
+    await event.save();
+    res.status(200).json({ message: "Event approved successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// Reject event (Admin)
+exports.rejectEvent = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    event.event_status = "rejected";
+    await event.save();
+    res.status(200).json({ message: "Event rejected successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
