@@ -1,5 +1,6 @@
 const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
+const Event = require("../../models/Event");
 
 // Get user profile (Only logged-in users can view their profile)
 exports.getUserProfile = async (req, res) => {
