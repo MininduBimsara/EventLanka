@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Menu,
   Home,
@@ -9,10 +9,13 @@ import {
   DollarSign,
   Bell,
 } from "lucide-react";
+import { useTheme } from "../../Context/ThemeContext";
 
 const UserNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { darkMode } = useTheme();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -48,13 +51,20 @@ const UserNavbar = () => {
     },
   ];
 
+  // Theme-based classes
+  const navClasses = {
+    background: darkMode ? "bg-gray-800" : "bg-blue-800",
+    hoverBg: darkMode ? "hover:bg-gray-700" : "hover:bg-blue-700",
+    activeBg: darkMode ? "bg-gray-900" : "bg-blue-900",
+  };
+
   return (
-    <nav className="text-white bg-blue-800 shadow-md">
+    <nav className={`text-white shadow-md ${navClasses.background}`}>
       <div className="px-4 mx-auto max-w-7xl">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <span className="text-xl font-bold">Dashboard</span>
+              <span className="text-xl font-bold">EventsBooking</span>
             </Link>
           </div>
 
@@ -64,7 +74,11 @@ const UserNavbar = () => {
               <button
                 key={item.name}
                 onClick={() => navigate(item.path)}
-                className="flex items-center px-3 py-2 text-sm font-medium transition rounded-md hover:bg-blue-700"
+                className={`flex items-center px-3 py-2 text-sm font-medium transition rounded-md ${
+                  navClasses.hoverBg
+                } ${
+                  location.pathname === item.path ? navClasses.activeBg : ""
+                }`}
               >
                 <span className="mr-2">{item.icon}</span>
                 {item.name}
@@ -76,7 +90,7 @@ const UserNavbar = () => {
           <div className="flex items-center md:hidden">
             <button
               onClick={toggleMenu}
-              className="p-2 rounded-md hover:bg-blue-700 focus:outline-none"
+              className={`p-2 rounded-md ${navClasses.hoverBg} focus:outline-none`}
             >
               <Menu size={24} />
             </button>
@@ -86,7 +100,7 @@ const UserNavbar = () => {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className="bg-blue-800 md:hidden">
+        <div className={`md:hidden ${navClasses.background}`}>
           <div className="px-2 pt-2 pb-3 space-y-1">
             {navItems.map((item) => (
               <button
@@ -95,7 +109,11 @@ const UserNavbar = () => {
                   navigate(item.path);
                   setIsOpen(false);
                 }}
-                className="flex items-center px-3 py-2 text-sm font-medium transition rounded-md hover:bg-blue-700"
+                className={`flex items-center w-full px-3 py-2 text-sm font-medium transition rounded-md text-left ${
+                  navClasses.hoverBg
+                } ${
+                  location.pathname === item.path ? navClasses.activeBg : ""
+                }`}
               >
                 <span className="mr-2">{item.icon}</span>
                 {item.name}

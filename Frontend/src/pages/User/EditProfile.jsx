@@ -86,10 +86,10 @@ const EditProfile = () => {
 
   return (
     <>
-      <UserNavbar/>
-      
+      <UserNavbar />
+
       <div className="container min-h-screen px-4 py-8 mx-auto transition-colors duration-200 bg-white dark:bg-gray-900">
-        <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-4 right-4 dark:bg-gray-800">
+        <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-20 right-4 dark:bg-gray-800">
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-700"

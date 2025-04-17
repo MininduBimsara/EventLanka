@@ -7,14 +7,15 @@ import {
   FaEnvelope,
   FaPhone,
   FaMapMarkerAlt,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
 import { useTheme } from "../../Context/ThemeContext";
 import UserNavbar from "../../components/User/UserNavbar"; // Import the UserNavbar component
 
-
 const HelpCenter = () => {
   // Use the ThemeContext instead of prop
-  const { darkMode } = useTheme();
+  const { darkMode, toggleTheme } = useTheme();
 
   // State for contact form
   const [contactForm, setContactForm] = useState({
@@ -120,10 +121,20 @@ const HelpCenter = () => {
   return (
     <>
       <UserNavbar /> {/* Include the UserNavbar component */}
-      
       <div
         className={`container px-4 pt-20 pb-16 mx-auto ${themeClasses.background} ${themeClasses.text} min-h-screen`}
       >
+        {/* Dark Mode Toggle Button - Added to match EditProfile page */}
+        <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-20 right-4 dark:bg-gray-800">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="Toggle dark mode"
+          >
+            {darkMode ? <FaSun /> : <FaMoon />}
+          </button>
+        </div>
+
         <div className={`pb-8 mb-8 border-b ${themeClasses.border}`}>
           <h1 className="mb-2 text-4xl font-extrabold tracking-tight">
             Help Center

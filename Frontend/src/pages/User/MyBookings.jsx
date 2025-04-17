@@ -136,7 +136,7 @@ const MyBookings = () => {
       <div
         className={`container px-4 pt-20 pb-16 mx-auto ${themeClasses.background} ${themeClasses.text} min-h-screen`}
       >
-        <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-4 right-4 dark:bg-gray-800">
+        <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-20 right-4 dark:bg-gray-800">
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-700"
