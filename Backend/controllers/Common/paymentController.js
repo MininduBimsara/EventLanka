@@ -17,8 +17,9 @@ exports.processPayment = asyncHandler(async (req, res) => {
       .json({ message: "You must be logged in to process payment." });
   }
 
-  // Find the order
-  const order = await Order.findById(orderId);
+  // Find the order and populate the tickets to get the event_id
+  const order = await Order.findById(orderId).populate("tickets");
+
   if (!order) {
     return res.status(404).json({ message: "Order not found" });
   }
@@ -28,8 +29,10 @@ exports.processPayment = asyncHandler(async (req, res) => {
     return res.status(403).json({ message: "Not authorized" });
   }
 
-  // In a real application, you would integrate with a payment gateway like Stripe or PayPal here
-  // For this example, we'll simulate a successful payment
+  // Check if order has tickets
+  if (!order.tickets || order.tickets.length === 0) {
+    return res.status(400).json({ message: "Order has no tickets" });
+  }
 
   // Generate a transaction ID
   const transactionId = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -37,16 +40,17 @@ exports.processPayment = asyncHandler(async (req, res) => {
   // Create a payment record
   const payment = await Payment.create({
     user_id: req.user._id,
-    event_id: order.tickets[0].event_id, // Assuming all tickets are for the same event
+    event_id: order.tickets[0].event_id, // Now this should work after population
     amount: amount,
     payment_method: paymentMethod,
-    status: "completed", // In production, this would depend on the payment gateway response
+    status: "completed",
     transaction_id: transactionId,
   });
 
   // Update the order status
   order.payment_status = "paid";
   order.status = "completed";
+  order.paymentMethod = paymentMethod;
   order.payment_details = {
     transaction_id: transactionId,
     provider: paymentMethod === "creditCard" ? "Stripe" : "PayPal",
