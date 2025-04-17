@@ -77,7 +77,7 @@ const Navbar = () => {
   };
 
   // Add console logs for debugging
-  console.log("Auth state:", { isAuthenticated, user, loading });
+  // console.log("Auth state:", { isAuthenticated, user, loading });
 
   return (
     <nav

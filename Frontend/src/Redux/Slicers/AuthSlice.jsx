@@ -91,9 +91,6 @@ export const verifyAuth = createAsyncThunk(
         withCredentials: true, // Explicitly include credentials for this request
       });
 
-      // Log successful verification
-      console.log("Auth verified:", response.data);
-
       // Expecting response.data.user to be valid if authenticated
       if (response.data.user) {
         return response.data.user;
