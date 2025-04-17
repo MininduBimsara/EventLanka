@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // Base URL for Google auth API endpoints
-const AUTH_API_URL = "/api/auth";
+const AUTH_API_URL = "http://localhost:5000/api/auth";
 
 // Async thunk for Google authentication
 export const googleAuth = createAsyncThunk(

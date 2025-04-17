@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // Base URL for payment API endpoints
-const PAYMENT_API_URL = "/api/payments";
+const PAYMENT_API_URL = "http://localhost:5000/api/payments";
 
 // Async thunk for processing a payment
 export const processPayment = createAsyncThunk(
