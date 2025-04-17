@@ -3,6 +3,9 @@ const orderController = require("../controllers/Common/orderController");
 
 const router = express.Router();
 
+// Add authentication middleware
+router.use(protect);
+
 // Route to create a new order
 router.post('/', orderController.createOrder);
 
