@@ -32,7 +32,7 @@ const organizerController = require("../controllers/Organizer/organizerControlle
 /* ===== Event Routes ===== */
 router.post("/events", protect, organizerOnly, eventController.createEvent);
 router.put("/events/:id", protect, eventController.updateEvent);
-router.get("/events", eventController.getEvents);
+router.get("/events", protect, organizerOnly, eventController.getEvents);
 router.get("/events/:id", eventController.getEventById);
 router.delete("/events/:id", protect, eventController.deleteEvent);
 // router.put(

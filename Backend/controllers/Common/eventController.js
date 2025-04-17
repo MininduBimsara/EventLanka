@@ -66,9 +66,10 @@ exports.getEvents = async (req, res) => {
   try {
     let events;
 
-    if (req.user.role === "admin") {
+    // Check if req.user exists before accessing its properties
+    if (req.user && req.user.role === "admin") {
       events = await Event.find(); // Admin sees all events
-    } else if (req.user.role === "organizer") {
+    } else if (req.user && req.user.role === "organizer") {
       events = await Event.find({ organizer_id: req.user.id }); // Organizer sees their own
     } else {
       events = await Event.find({ event_status: "approved" }); // Regular users see only approved events

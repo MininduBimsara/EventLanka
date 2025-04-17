@@ -2,6 +2,7 @@ const User = require("../../models/User");
 const Event = require("../../models/Event");
 const Payment = require("../../models/Payment");
 const RefundRequest = require("../../models/RefundRequest");
+const bcrypt = require("bcryptjs");
 
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -78,6 +79,46 @@ exports.updateSettings = (req, res) => {
   res.json({ message: "Settings updated", settings: platformSettings });
 };
 
-exports.changeAdminPassword = (req, res) => {
-  res.json({ message: "Admin password changed (dummy)" });
+exports.changeAdminPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Extract userId from the JWT token (assuming it's stored in req.user)
+    const userId = req.user.id;
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if the user is an admin
+    if (user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized: User is not an admin" });
+    }
+
+    // Check if the old password matches
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Old password is incorrect" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: "Admin password changed successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error while changing password" });
+  }
 };

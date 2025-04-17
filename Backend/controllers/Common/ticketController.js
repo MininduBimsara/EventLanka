@@ -1,5 +1,7 @@
 const Ticket = require("../../models/Ticket"); // Import the Ticket model
 const Event = require("../../models/Event"); // Import the Event model (to check event validity)
+const Order = require("../../models/Order"); // Import the Order model (to create an order)
+const User = require("../../models/User"); // Import the User model (to check user validity)
 const asyncHandler = require("express-async-handler");
 
 // ===========================
