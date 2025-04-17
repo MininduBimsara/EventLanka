@@ -63,9 +63,7 @@ const UserNavbar = () => {
       <div className="px-4 mx-auto max-w-7xl">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <span className="text-xl font-bold">EventsBooking</span>
-            </Link>
+
           </div>
 
           {/* Desktop Navigation */}

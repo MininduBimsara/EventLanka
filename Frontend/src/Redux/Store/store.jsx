@@ -12,17 +12,22 @@ import {
 } from "redux-persist";
 import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
 import userReducer from "../Slicers/AuthSlice";
+import profileReducer from "../Slicers/userSlice"; // Assuming this is the correct path
+import eventsReducer from "../Slicers/EventSlice";
+
 
 // Persist config
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["user"],
+  whitelist: ["user", "events"],
 };
 
 // Root reducer
 const rootReducer = combineReducers({
   user: userReducer,
+  profile: profileReducer, //userSlice
+  events: eventsReducer,
 });
 
 // Persisted reducer
