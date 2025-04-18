@@ -195,14 +195,49 @@ exports.listPendingEvents = async (req, res) => {
 };
 
 // Get event by ID (Admin)
+// Get event by ID (Public - with proper data handling)
 exports.getEventById = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
+    
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
-    res.status(200).json(event);
+    
+    // For non-admin/non-organizers, only show approved events
+    if (
+      (!req.user || (req.user.role !== "admin" && req.user.role !== "organizer")) && 
+      event.event_status !== "approved"
+    ) {
+      return res.status(403).json({ 
+        message: "This event is not available for booking",
+        bookingAvailable: false
+      });
+    }
+    
+    // For organizers, only show their own events or approved events
+    if (
+      req.user && 
+      req.user.role === "organizer" && 
+      event.organizer_id.toString() !== req.user.id && 
+      event.event_status !== "approved"
+    ) {
+      return res.status(403).json({ 
+        message: "This event is not available for booking",
+        bookingAvailable: false
+      });
+    }
+    
+    // Transform banner URL
+    const transformedEvent = {
+      ...event._doc,
+      banner: event.banner ? `/event-images/${event.banner}` : null,
+      bookingAvailable: event.event_status === "approved"
+    };
+    
+    res.status(200).json(transformedEvent);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };

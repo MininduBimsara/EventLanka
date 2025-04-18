@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
+import { fetchEventById } from "../../Redux/Slicers/EventSlice"; // Update path as needed
 import OrganizerInfo from "../../components/Common/EventBooking/OrganizerInfo";
 import OrderSummary from "../../components/Common/EventBooking/OrderSummary";
 import TicketSelection from "../../components/Common/EventBooking/TicketSelection";
@@ -12,12 +14,13 @@ import EventHighlights from "../../components/Common/EventBooking/EventHighlight
 import NavBar from "../../components/Common/Navbar";
 
 const EventBookingPage = () => {
-  const location = useLocation();
   const { id } = useParams();
+  const dispatch = useDispatch();
 
-  // Get event data from navigation state or fetch it based on ID
-  const [eventData, setEventData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Get event data from Redux store
+  const { currentEvent, loading, error, bookingError } = useSelector(
+    (state) => state.events
+  );
 
   const [tickets, setTickets] = useState({
     vip: 0,
@@ -27,70 +30,22 @@ const EventBookingPage = () => {
 
   const [totalPrice, setTotalPrice] = useState(0);
 
+  // Define ticketPrices based on your event data model
+  // This could also be dynamically loaded from currentEvent.ticket_types
   const ticketPrices = {
     vip: 199.99,
     standard: 99.99,
     economy: 49.99,
   };
 
+  // Fetch event data if not already in store
   useEffect(() => {
-    // If event data was passed via navigation state
-    if (location.state && location.state.eventData) {
-      const event = location.state.eventData;
-
-      // Format the received data to match what your components expect
-      setEventData({
-        title: event.name,
-        image: "/api/placeholder/800/400", // You might want to add images to your event data
-        date: event.date,
-        time: event.time,
-        location: event.venue,
-        organizer: event.featuredArtists?.[0] || "Event Organizer",
-        organizerEmail: "contact@example.com", // You might want to add this to your event data
-        description: `Join us for an amazing ${event.category} event at ${
-          event.venue
-        }. ${event.trending ? "This is a trending event! " : ""}${
-          event.discount ? "Special discount available!" : ""
-        }`,
-        category: event.category,
-        featuredArtists: event.featuredArtists || [],
-        price: event.price,
-        bookingAvailable: event.bookingAvailable,
-      });
-      setIsLoading(false);
-    } else {
-      // If no state was passed, you could fetch the event data using the ID
-      // This is a mock example - you would replace this with your actual data fetching
-      const fetchEventData = async () => {
-        try {
-          // Simulating API call - replace with your actual data fetching
-          // const response = await fetch(`/api/events/${id}`);
-          // const data = await response.json();
-
-          // For now, let's use a placeholder
-          setTimeout(() => {
-            setEventData({
-              title: "Event Information Loading...",
-              image: "/api/placeholder/800/400",
-              date: "Loading...",
-              time: "Loading...",
-              location: "Loading...",
-              organizer: "Loading...",
-              organizerEmail: "info@example.com",
-              description: "Loading event details...",
-            });
-            setIsLoading(false);
-          }, 500);
-        } catch (error) {
-          console.error("Error fetching event data:", error);
-          setIsLoading(false);
-        }
-      };
-
-      fetchEventData();
+    if (!currentEvent || currentEvent._id !== id) {
+      dispatch(fetchEventById(id));
     }
-  }, [id, location.state]);
+  }, [dispatch, id, currentEvent]);
 
+  // Calculate total price whenever tickets change
   useEffect(() => {
     calculateTotal();
   }, [tickets]);
@@ -111,7 +66,8 @@ const EventBookingPage = () => {
     });
   };
 
-  if (isLoading) {
+  // Show loading state
+  if (loading || !currentEvent) {
     return (
       <>
         <NavBar />
@@ -126,6 +82,60 @@ const EventBookingPage = () => {
       </>
     );
   }
+
+  // Show error state
+  if (error || bookingError) {
+    return (
+      <>
+        <NavBar />
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-purple-500 via-pink-500 to-orange-400">
+          <div className="p-8 text-center bg-white rounded-lg shadow-xl">
+            <div className="w-16 h-16 mx-auto text-red-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <p className="mt-4 text-xl font-semibold text-red-700">
+              {bookingError || error}
+            </p>
+            <p className="mt-2 text-gray-600">
+              Please try another event or go back to the events page.
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Format event data for components
+  const eventData = {
+    title: currentEvent.name || currentEvent.title,
+    image: currentEvent.banner
+      ? `${process.env.REACT_APP_API_URL}${currentEvent.banner}`
+      : "/api/placeholder/800/400",
+    date: new Date(currentEvent.date).toLocaleDateString(),
+    time: currentEvent.time || new Date(currentEvent.date).toLocaleTimeString(),
+    location: currentEvent.venue || currentEvent.location,
+    organizer:
+      currentEvent.featuredArtists?.[0] ||
+      currentEvent.organizer ||
+      "Event Organizer",
+    organizerEmail: currentEvent.organizerEmail || "contact@example.com",
+    description:
+      currentEvent.description ||
+      `Join us for an amazing ${currentEvent.category} event`,
+    featuredArtists: currentEvent.featuredArtists || [],
+  };
 
   return (
     <>
@@ -152,11 +162,15 @@ const EventBookingPage = () => {
             {/* Event Highlights Component */}
             <EventHighlights
               highlights={
-                eventData.featuredArtists || [
-                  "Live performances by top artists",
-                  "Food and drinks available",
-                  "Family-friendly event",
-                ]
+                eventData.featuredArtists.length > 0
+                  ? eventData.featuredArtists.map(
+                      (artist) => `Performance by ${artist}`
+                    )
+                  : [
+                      "Live performances by top artists",
+                      "Food and drinks available",
+                      "Family-friendly event",
+                    ]
               }
             />
 
@@ -180,7 +194,17 @@ const EventBookingPage = () => {
               totalPrice={totalPrice}
             />
 
-            {/* Content after Order Summary would go here */}
+            {/* Book Now Button */}
+            <div className="px-6 py-4">
+              <button
+                className="w-full py-4 text-lg font-bold text-white transition-all duration-300 bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                onClick={() =>
+                  alert("Booking functionality would be implemented here!")
+                }
+              >
+                COMPLETE BOOKING
+              </button>
+            </div>
           </div>
         </div>
       </div>
