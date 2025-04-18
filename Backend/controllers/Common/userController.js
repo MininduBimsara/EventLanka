@@ -21,12 +21,41 @@ exports.updateUserProfile = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const { name, email, password, profileImage } = req.body;
-    const updatedData = { name, email, profileImage };
+    // Extract fields from request body
+    const updatedData = {};
 
-    if (password) {
+    // Only add fields that are provided in the request
+    const allowedFields = [
+      "name",
+      "email",
+      "profileImage",
+      "firstName",
+      "lastName",
+      "phone",
+      "address",
+      "city",
+    ];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updatedData[field] = req.body[field];
+      }
+    });
+
+    // Handle username created from firstName and lastName
+    if (req.body.username) {
+      updatedData.name = req.body.username;
+    }
+
+    // Only handle password if provided
+    if (req.body.password) {
       const salt = await bcrypt.genSalt(10);
-      updatedData.password = await bcrypt.hash(password, salt);
+      updatedData.password = await bcrypt.hash(req.body.password, salt);
+    }
+
+    // Only update if there are fields to update
+    if (Object.keys(updatedData).length === 0) {
+      return res.status(400).json({ message: "No fields to update" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -79,7 +108,6 @@ exports.getUsers = async (req, res) => {
   }
 };
 
-
 // Organizer logic from User model
 exports.getOrganizers = async (req, res) => {
   try {
@@ -92,8 +120,12 @@ exports.getOrganizers = async (req, res) => {
 
 exports.getOrganizerProfile = async (req, res) => {
   try {
-    const organizer = await User.findOne({ _id: req.params.id, role: "organizer" });
-    if (!organizer) return res.status(404).json({ error: "Organizer not found" });
+    const organizer = await User.findOne({
+      _id: req.params.id,
+      role: "organizer",
+    });
+    if (!organizer)
+      return res.status(404).json({ error: "Organizer not found" });
     res.json(organizer);
   } catch (err) {
     res.status(500).json({ error: "Error fetching organizer profile" });
@@ -107,7 +139,8 @@ exports.updateOrganizerStatus = async (req, res) => {
       { status: req.body.status },
       { new: true }
     );
-    if (!organizer) return res.status(404).json({ error: "Organizer not found" });
+    if (!organizer)
+      return res.status(404).json({ error: "Organizer not found" });
     res.json({ message: "Organizer status updated", organizer });
   } catch (err) {
     res.status(500).json({ error: "Error updating organizer status" });

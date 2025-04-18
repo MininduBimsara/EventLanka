@@ -1,12 +1,16 @@
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+// import { fetchEventById } from "../../../Redux/Slicers/EventSlice"; // Update path as needed
 
 const EventCard = ({ event }) => {
   const navigate = useNavigate();
+  // const dispatch = useDispatch();
 
   const handleButtonClick = () => {
-    if (event.bookingAvailable) {
-      navigate(`/event/${event._id}`);
-    }
+    if (!event.bookingAvailable) return;
+    // 1) immediately update the URL
+    navigate(`/event/${event._id}`);
+    // 2) EventBookingPage will see `id` from useParams and dispatch(fetchEventById(id))
   };
 
   return (
