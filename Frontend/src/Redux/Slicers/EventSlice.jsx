@@ -8,7 +8,8 @@ export const fetchEvents = createAsyncThunk(
   "events/fetchEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(API_URL);
+      // Include withCredentials to send cookies with request
+      const response = await axios.get(API_URL, { withCredentials: true });
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -31,9 +32,12 @@ export const createEvent = createAsyncThunk(
           headers: {
             "Content-Type": "multipart/form-data",
           },
+          withCredentials: true, // Include cookies for auth
         });
       } else {
-        response = await axios.post(API_URL, eventData);
+        response = await axios.post(API_URL, eventData, {
+          withCredentials: true, // Include cookies for auth
+        });
       }
 
       return response.data;
@@ -57,9 +61,12 @@ export const updateEvent = createAsyncThunk(
           headers: {
             "Content-Type": "multipart/form-data",
           },
+          withCredentials: true, // Include cookies for auth
         });
       } else {
-        response = await axios.put(`${API_URL}/${eventId}`, eventData);
+        response = await axios.put(`${API_URL}/${eventId}`, eventData, {
+          withCredentials: true, // Include cookies for auth
+        });
       }
 
       return response.data;
@@ -76,11 +83,36 @@ export const deleteEvent = createAsyncThunk(
   "events/deleteEvent",
   async (eventId, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_URL}/${eventId}`);
+      await axios.delete(`${API_URL}/${eventId}`, {
+        withCredentials: true, // Include cookies for auth
+      });
       return eventId; // Return the ID to remove it from state
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete event"
+      );
+    }
+  }
+);
+
+// Async thunk for fetching a single event by ID
+export const fetchEventById = createAsyncThunk(
+  "events/fetchEventById",
+  async (eventId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/${eventId}`, {
+        withCredentials: true, // Include cookies for auth
+      });
+
+      // Check if booking is available
+      if (!response.data.bookingAvailable) {
+        return rejectWithValue("Booking is not available for this event");
+      }
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch event details"
       );
     }
   }
@@ -92,6 +124,7 @@ const initialState = {
   currentEvent: null,
   loading: false,
   error: null,
+  bookingError: null,
 };
 
 const eventsSlice = createSlice({
@@ -101,6 +134,7 @@ const eventsSlice = createSlice({
     // Clear errors
     clearEventsErrors(state) {
       state.error = null;
+      state.bookingError = null;
     },
 
     // Set current event (for viewing details)
@@ -108,11 +142,19 @@ const eventsSlice = createSlice({
       state.currentEvent = state.events.find(
         (event) => event._id === action.payload
       );
+
+      // Check if booking is available when setting current event
+      if (state.currentEvent && !state.currentEvent.bookingAvailable) {
+        state.bookingError = "Booking is not available for this event";
+      } else {
+        state.bookingError = null;
+      }
     },
 
     // Clear current event
     clearCurrentEvent(state) {
       state.currentEvent = null;
+      state.bookingError = null;
     },
   },
   extraReducers: (builder) => {
@@ -162,6 +204,12 @@ const eventsSlice = createSlice({
           state.currentEvent._id === action.payload._id
         ) {
           state.currentEvent = action.payload;
+          // Check booking availability when updating current event
+          if (!action.payload.bookingAvailable) {
+            state.bookingError = "Booking is not available for this event";
+          } else {
+            state.bookingError = null;
+          }
         }
       })
       .addCase(updateEvent.rejected, (state, action) => {
@@ -183,11 +231,32 @@ const eventsSlice = createSlice({
         // Clear currentEvent if it's the deleted event
         if (state.currentEvent && state.currentEvent._id === action.payload) {
           state.currentEvent = null;
+          state.bookingError = null;
         }
       })
       .addCase(deleteEvent.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // Fetch event by ID
+      .addCase(fetchEventById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.bookingError = null;
+      })
+      .addCase(fetchEventById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentEvent = action.payload;
+      })
+      .addCase(fetchEventById.rejected, (state, action) => {
+        state.loading = false;
+        // Distinguish between booking errors and other errors
+        if (action.payload === "Booking is not available for this event") {
+          state.bookingError = action.payload;
+        } else {
+          state.error = action.payload;
+        }
       });
   },
 });
