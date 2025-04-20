@@ -26,7 +26,7 @@ const EditProfile = () => {
   const { darkMode, toggleTheme } = useTheme();
 
   // Auth slice holds the logged‑in user
-  const authUser = useSelector((state) => state.user.userInfo);
+  const authUser = useSelector((state) => state.user.user);
 
   // Profile slice holds loading, error, successMessage, and the updated user
   const { loading, error, successMessage, userInfo } = useSelector(
@@ -129,77 +129,82 @@ const EditProfile = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!authUser || !authUser._id) {
-      alert("Session expired. Please log in again.");
-      navigate("/login");
+const handleSubmit = (e) => {
+  e.preventDefault();
+  if (!authUser || !authUser.id) {
+    alert("Session expired. Please log in again.");
+    navigate("/login");
+    return;
+  }
+
+  // Build a payload of only changed fields
+  const changed = {};
+  let hasChanges = false;
+
+  // Check basic fields
+  ["firstName", "lastName", "email", "phone", "address", "city"].forEach(
+    (key) => {
+      const val = userData[key];
+      // original values from profileData
+      const orig =
+        key === "firstName" || key === "lastName"
+          ? (profileData.name || "").split(" ")[key === "firstName" ? 0 : 1] ||
+            ""
+          : profileData[key] || "";
+      if (val && val !== orig) {
+        changed[key] = val;
+        hasChanges = true;
+      }
+    }
+  );
+
+  // File?
+  if (userData.profileImage instanceof File) {
+    changed.profileImage = userData.profileImage;
+    hasChanges = true; // Ensure this is set
+  }
+
+  // Password?
+  if (userData.newPassword) {
+    if (userData.newPassword !== userData.confirmPassword) {
+      alert("New passwords don’t match.");
       return;
     }
+    changed.password = userData.newPassword;
+    hasChanges = true;
+  }
 
-    // Build a payload of only changed fields
-    const changed = {};
-    let hasChanges = false;
+  // Always send `name` if either first or last changed
+  if (changed.firstName || changed.lastName) {
+    changed.name = `${changed.firstName || profileData.name.split(" ")[0]} ${
+      changed.lastName || profileData.name.split(" ")[1] || ""
+    }`.trim();
+  }
 
-    // Check basic fields
-    ["firstName", "lastName", "email", "phone", "address", "city"].forEach(
-      (key) => {
-        const val = userData[key];
-        // original values from profileData
-        const orig =
-          key === "firstName" || key === "lastName"
-            ? (profileData.name || "").split(" ")[
-                key === "firstName" ? 0 : 1
-              ] || ""
-            : profileData[key] || "";
-        if (val && val !== orig) {
-          changed[key === "firstName" || key === "lastName" ? key : key] = val;
-          hasChanges = true;
-        }
+  // If no changes detected, show an alert
+  if (!hasChanges) {
+    alert("No changes detected.");
+    return;
+  }
+
+  // Dispatch our thunk (it pulls the ID from auth slice)
+  dispatch(updateUserProfile(changed))
+    .unwrap()
+    .then(() => {
+      // Check if only the profile image was updated
+      if (Object.keys(changed).length === 1 && changed.profileImage) {
+        alert("Profile image updated successfully!");
+      } else {
+        alert("Profile updated successfully!");
       }
-    );
-
-    // File?
-    if (userData.profileImage instanceof File) {
-      changed.profileImage = userData.profileImage;
-      hasChanges = true;
-    }
-
-    // Password?
-    if (userData.newPassword) {
-      if (userData.newPassword !== userData.confirmPassword) {
-        alert("New passwords don’t match.");
-        return;
+    })
+    .catch((err) => {
+      if (err.includes("401")) {
+        alert("Session expired. Please log in again.");
+        navigate("/login");
       }
-      changed.password = userData.newPassword;
-      hasChanges = true;
-    }
-
-    // Always send `name` if either first or last changed
-    if (changed.firstName || changed.lastName) {
-      changed.name = `${changed.firstName || profileData.name.split(" ")[0]} ${
-        changed.lastName || profileData.name.split(" ")[1] || ""
-      }`.trim();
-    }
-
-    if (!hasChanges) {
-      alert("No changes detected.");
-      return;
-    }
-
-    // Dispatch our thunk (it pulls the ID from auth slice)
-    dispatch(updateUserProfile(changed))
-      .unwrap()
-      .then(() => {
-        // successMessage lives in profile slice
-      })
-      .catch((err) => {
-        if (err.includes("401")) {
-          alert("Session expired. Please log in again.");
-          navigate("/login");
-        }
-      });
-  };
+    });
+};
 
   // Clear errors & success when we leave
   useEffect(() => {

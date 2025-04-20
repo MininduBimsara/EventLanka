@@ -5,6 +5,7 @@ import axios from "axios";
 import { ThemeProvider } from "./Context/ThemeContext";
 import { useDispatch } from "react-redux";
 import { fetchUserProfile } from "./Redux/Slicers/userSlice";
+import { verifyAuth } from "./Redux/Slicers/AuthSlice";
 
 // Common Pages
 import NewHome from "./pages/Common/NewHome";
@@ -56,6 +57,10 @@ function App() {
 
   useEffect(() => {
     dispatch(fetchUserProfile());
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(verifyAuth());
   }, [dispatch]);
 
   return (
