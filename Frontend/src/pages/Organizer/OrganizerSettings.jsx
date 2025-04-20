@@ -552,8 +552,8 @@ const OrganizerSettings = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-0">
           <h1 className="mb-6 text-2xl font-bold text-gray-900">
             Account Settings
           </h1>

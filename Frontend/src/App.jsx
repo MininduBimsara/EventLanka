@@ -1,7 +1,10 @@
 import "./App.css";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import axios from "axios";
 import { ThemeProvider } from "./Context/ThemeContext";
+import { useDispatch } from "react-redux";
+import { fetchUserProfile } from "./Redux/Slicers/userSlice";
 
 // Common Pages
 import NewHome from "./pages/Common/NewHome";
@@ -22,7 +25,7 @@ import MediaManager from "./pages/Organizer/MediaManager";
 import SalesAnalytics from "./pages/Organizer/SalesAnalytics";
 import OrganizerProfile from "./pages/Organizer/OrganizerProfile";
 import OrganizerSettings from "./pages/Organizer/OrganizerSettings";
-// import OrganizerLayout from "./pages/Organizer/OrganizerLayout";
+import OrganizerLayout from "./pages/Organizer/OrganizerLayout";
 
 //Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
@@ -49,6 +52,12 @@ function App() {
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   }
 
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+  }, [dispatch]);
+
   return (
     <>
       <ThemeProvider>
@@ -65,17 +74,17 @@ function App() {
             <Route path="/contact" element={<ContactUsPage />} />
             {/* <Route path="/home" element={<Home />} /> */}
 
-            {/* Organizer Routes element={<OrganizerLayout />}*/}
-            <Route path="/organizer">
+            {/* Organizer Routes */}
+            <Route path="/organizer" element={<OrganizerLayout />}>
               <Route path="dashboard" element={<OrganizerDashboard />} />
               <Route path="profile" element={<OrganizerProfile />} />
               <Route path="settings" element={<OrganizerSettings />} />
               <Route path="attendees" element={<Attendees />} />
-              <Route path="createevent" element={<CreateEvent />} />
+              <Route path="create-event" element={<CreateEvent />} />
               <Route path="discounts" element={<Discounts />} />
-              <Route path="manageevents" element={<ManageEvents />} />
+              <Route path="manage-events" element={<ManageEvents />} />
               <Route path="media" element={<MediaManager />} />
-              <Route path="salesanalytics" element={<SalesAnalytics />} />
+              <Route path="sales-analytics" element={<SalesAnalytics />} />
             </Route>
 
             {/* Admin Routes*/}
