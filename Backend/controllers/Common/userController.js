@@ -39,11 +39,15 @@ exports.updateUserProfile = async (req, res) => {
     // Extract fields from request body
     const updatedData = {};
 
+    // Include profileImage if uploaded
+    if (req.file) {
+      updatedData.profileImage = req.file.filename;
+    }
+
     // Only add fields that are provided in the request
     const allowedFields = [
       "name",
       "email",
-      "profileImage",
       "firstName",
       "lastName",
       "phone",
