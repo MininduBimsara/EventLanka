@@ -1,4 +1,5 @@
 const User = require("../../models/User");
+const Organizer = require("../../models/Organizer");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
@@ -35,6 +36,25 @@ const register = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    // If user is an organizer, create a basic organizer profile
+    // with default values only (no additional fields from request)
+    if (role === "organizer") {
+      const organizer = new Organizer({
+        user: user._id,
+        // Default values only - no extra fields from the registration form
+        phone: "",
+        bio: "",
+        website: "",
+        instagram: "",
+        facebook: "",
+        linkedin: "",
+        categories: [],
+        isPublic: true,
+      });
+      await organizer.save();
+    }
+
+    // Generate token
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

@@ -11,7 +11,7 @@ const {
 } = require("../middleware/authMiddleware");
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
+const eventStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Make sure this path exists and is accessible
     cb(null, "uploads/event-images/");
@@ -21,7 +21,30 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const eventUpload = multer({ eventStorage });
+
+// Configure multer for profile image uploads
+const profileStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/profile-images/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const fileExt = path.extname(file.originalname);
+    cb(null, "profile-" + uniqueSuffix + fileExt);
+  },
+});
+
+const profileUpload = multer({ 
+  storage: profileStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed."), false);
+    }
+  }
+});
 
 // Import controllers
 const eventController = require("../controllers/Common/eventController");
@@ -33,10 +56,10 @@ const organizerController = require("../controllers/Organizer/organizerControlle
 /* ===== Event Routes ===== */
 // For the event routes, add the upload middleware:
 router.post(
-  "/events", 
-  protect, 
-  organizerOnly, 
-  upload.single('banner'), // Add this line to handle file uploads with field name 'banner'
+  "/events",
+  protect,
+  organizerOnly,
+  eventUpload.single("banner"), // Add this line to handle file uploads with field name 'banner'
   eventController.createEvent
 );
 router.put("/events/:id", protect, eventController.updateEvent);
@@ -107,6 +130,7 @@ router.put(
   "/organizer/profile",
   protect,
   organizerOnly,
+  profileUpload.single("profileImage"),
   organizerController.updateProfile
 );
 router.put(
@@ -122,5 +146,25 @@ router.get(
   organizerController.dashboard
 );
 router.put("/organizer/password", protect, organizerController.changePassword);
+
+
+// Add new routes for admin access to organizers
+// router.get(
+//   "/all",
+//   protect,
+//   adminOnly,
+//   organizerController.getAllOrganizers
+// );
+// router.get(
+//   "/:id",
+//   protect,
+//   organizerController.getOrganizerById
+// );
+// router.put(
+//   "/:id/status",
+//   protect,
+//   adminOnly,
+//   organizerController.updateOrganizerStatus
+// );
 
 module.exports = router;
