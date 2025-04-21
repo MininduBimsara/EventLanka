@@ -1,3 +1,4 @@
+// src/pages/User/EditProfile.jsx
 import React, { useState, useEffect } from "react";
 import {
   FaUser,
@@ -17,18 +18,32 @@ import {
   clearSuccessMessage,
 } from "../../Redux/Slicers/userSlice";
 import UserNavbar from "../../components/User/UserNavbar";
+import { useNavigate } from "react-router-dom";
 
 const EditProfile = () => {
   const dispatch = useDispatch();
-  const { loading, error, successMessage, userInfo } = useSelector(
-    (state) => state.user
-  );
+  const navigate = useNavigate();
   const { darkMode, toggleTheme } = useTheme();
-  const [imagePreview, setImagePreview] = useState(null);
-  const [originalData, setOriginalData] = useState({});
-  const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-  // Initialize userData with existing data from userInfo
+  // Auth slice holds the logged‑in user
+  const authUser = useSelector((state) => state.user.user);
+
+  // Profile slice holds loading, error, successMessage, and the updated user
+  const { loading, error, successMessage, userInfo } = useSelector(
+    (state) => state.profile
+  );
+
+  // If not logged in, send back to /login
+  useEffect(() => {
+    if (!authUser) {
+      navigate("/login");
+    }
+  }, [authUser, navigate]);
+
+  // Combine: prefer the freshly‐updated profile, else fall back to authUser
+  const profileData = userInfo || authUser;
+
+  // Local form state
   const [userData, setUserData] = useState({
     firstName: "",
     lastName: "",
@@ -41,136 +56,157 @@ const EditProfile = () => {
     newPassword: "",
     confirmPassword: "",
   });
+  const [imagePreview, setImagePreview] = useState(null);
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-  // Load user data on component mount
+  // On mount (or whenever profileData changes), preload the form
   useEffect(() => {
-    if (userInfo) {
-      // Split name into firstName and lastName if available
-      let firstName = "";
-      let lastName = "";
+    if (!profileData) return;
 
-      if (userInfo.name) {
-        const nameParts = userInfo.name.split(" ");
-        firstName = nameParts[0] || "";
-        lastName = nameParts.slice(1).join(" ") || "";
-      }
+    // Name → first/last
+    const nameParts = (profileData.name || "").split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
 
-      const initialData = {
-        firstName,
-        lastName,
-        email: userInfo.email || "",
-        phone: userInfo.phone || "",
-        address: userInfo.address || "",
-        city: userInfo.city || "",
-        profileImage: userInfo.profileImage || null,
-      };
+    setUserData((_) => ({
+      firstName,
+      lastName,
+      email: profileData.email || "",
+      phone: profileData.phone || "",
+      address: profileData.address || "",
+      city: profileData.city || "",
+      profileImage: null,
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    }));
 
-      setUserData(initialData);
-      setOriginalData(initialData);
-
-      if (userInfo.profileImage) {
-        setImagePreview(userInfo.profileImage);
-      }
+    // Profile image preview if available
+    if (profileData.profileImage) {
+      const imgUrl =
+        profileData.profileImage.startsWith("http") ||
+        profileData.profileImage.startsWith("/")
+          ? profileData.profileImage
+          : `/profile-images/${profileData.profileImage}`;
+      setImagePreview(imgUrl);
     }
-  }, [userInfo]);
+  }, [profileData]);
 
-  // Handle input change
+  // Clean up previews on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  // Generic input handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData({
-      ...userData,
-      [name]: value,
-    });
+    setUserData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle profile image upload
+  // File input handler
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setUserData({
-        ...userData,
-        profileImage: file,
-      });
-
-      const imagePreviewUrl = URL.createObjectURL(file);
-      setImagePreview(imagePreviewUrl);
-    }
+    if (!file) return;
+    setUserData((prev) => ({ ...prev, profileImage: file }));
+    const blob = URL.createObjectURL(file);
+    setImagePreview(blob);
   };
 
-  // Toggle password fields
+  // Toggle password section
   const togglePasswordFields = () => {
-    setShowPasswordFields(!showPasswordFields);
-    // Clear password fields when hiding them
+    setShowPasswordFields((s) => !s);
     if (showPasswordFields) {
-      setUserData({
-        ...userData,
+      setUserData((prev) => ({
+        ...prev,
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
-      });
+      }));
     }
   };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const handleSubmit = (e) => {
+  e.preventDefault();
+  if (!authUser || !authUser.id) {
+    alert("Session expired. Please log in again.");
+    navigate("/login");
+    return;
+  }
 
-    // Check if any fields have been changed
-    const changedFields = {};
-    let hasChanges = false;
+  // Build a payload of only changed fields
+  const changed = {};
+  let hasChanges = false;
 
-    // Compare each field with its original value
-    Object.keys(userData).forEach((key) => {
-      // For password fields, only include if they have a value
-      if (
-        key === "currentPassword" ||
-        key === "newPassword" ||
-        key === "confirmPassword"
-      ) {
-        if (userData[key]) {
-          changedFields[key] = userData[key];
-          hasChanges = true;
-        }
-      }
-      // For other fields, check if they've changed from original
-      else if (userData[key] !== originalData[key]) {
-        changedFields[key] = userData[key];
+  // Check basic fields
+  ["firstName", "lastName", "email", "phone", "address", "city"].forEach(
+    (key) => {
+      const val = userData[key];
+      // original values from profileData
+      const orig =
+        key === "firstName" || key === "lastName"
+          ? (profileData.name || "").split(" ")[key === "firstName" ? 0 : 1] ||
+            ""
+          : profileData[key] || "";
+      if (val && val !== orig) {
+        changed[key] = val;
         hasChanges = true;
       }
-    });
+    }
+  );
 
-    // If changing password, validate that new passwords match
-    if (
-      changedFields.newPassword &&
-      changedFields.newPassword !== userData.confirmPassword
-    ) {
-      alert("New passwords don't match");
+  // File?
+  if (userData.profileImage instanceof File) {
+    changed.profileImage = userData.profileImage;
+    hasChanges = true; // Ensure this is set
+  }
+
+  // Password?
+  if (userData.newPassword) {
+    if (userData.newPassword !== userData.confirmPassword) {
+      alert("New passwords don’t match.");
       return;
     }
+    changed.password = userData.newPassword;
+    hasChanges = true;
+  }
 
-    // If password is being changed, rename newPassword to password for the API
-    if (changedFields.newPassword) {
-      changedFields.password = changedFields.newPassword;
-      delete changedFields.newPassword;
-      delete changedFields.confirmPassword;
-    }
+  // Always send `name` if either first or last changed
+  if (changed.firstName || changed.lastName) {
+    changed.name = `${changed.firstName || profileData.name.split(" ")[0]} ${
+      changed.lastName || profileData.name.split(" ")[1] || ""
+    }`.trim();
+  }
 
-    // If first name or last name is changing, construct username
-    if (changedFields.firstName || changedFields.lastName) {
-      const firstName = changedFields.firstName || userData.firstName;
-      const lastName = changedFields.lastName || userData.lastName;
-      changedFields.username = `${firstName} ${lastName}`.trim();
-    }
+  // If no changes detected, show an alert
+  if (!hasChanges) {
+    alert("No changes detected.");
+    return;
+  }
 
-    // Only dispatch if there are changes
-    if (hasChanges) {
-      dispatch(updateUserProfile(changedFields));
-    } else {
-      alert("No changes detected");
-    }
-  };
+  // Dispatch our thunk (it pulls the ID from auth slice)
+  dispatch(updateUserProfile(changed))
+    .unwrap()
+    .then(() => {
+      // Check if only the profile image was updated
+      if (Object.keys(changed).length === 1 && changed.profileImage) {
+        alert("Profile image updated successfully!");
+      } else {
+        alert("Profile updated successfully!");
+      }
+    })
+    .catch((err) => {
+      if (err.includes("401")) {
+        alert("Session expired. Please log in again.");
+        navigate("/login");
+      }
+    });
+};
 
-  // Clear messages when component unmounts
+  // Clear errors & success when we leave
   useEffect(() => {
     return () => {
       dispatch(clearUserError());
@@ -178,321 +214,204 @@ const EditProfile = () => {
     };
   }, [dispatch]);
 
-  // Clear success message after 3 seconds
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        dispatch(clearSuccessMessage());
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage, dispatch]);
-
   return (
     <>
       <UserNavbar />
 
-      <div className="container min-h-screen px-4 py-8 mx-auto transition-colors duration-200 bg-white dark:bg-gray-900">
-        <div className="fixed z-10 p-2 text-xl bg-white rounded-full shadow-lg top-20 right-4 dark:bg-gray-800">
+      <div className="container min-h-screen px-4 py-8 mx-auto bg-white dark:bg-gray-900">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+            Edit Profile
+          </h1>
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-full text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 text-white rounded-full bg-amber-500"
             aria-label="Toggle dark mode"
           >
             {darkMode ? <FaSun /> : <FaMoon />}
           </button>
         </div>
 
-        <div className="flex flex-col items-center justify-center mb-8">
-          <h1 className="mb-2 text-3xl font-bold text-gray-800 dark:text-white">
-            Edit Profile
-          </h1>
-          <div className="w-16 h-1 rounded bg-amber-500"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            Update any field without having to fill out everything
-          </p>
-        </div>
-
         {successMessage && (
-          <div className="p-4 mb-6 border border-green-200 rounded-lg bg-green-50 dark:bg-green-900 dark:border-green-700">
-            <div className="flex items-center">
-              <FaCheck className="mr-2 text-green-500 dark:text-green-300" />
-              <span className="text-green-700 dark:text-green-300">
-                {successMessage}
-              </span>
-            </div>
+          <div className="p-4 mb-4 border border-green-200 rounded bg-green-50">
+            <FaCheck className="inline mr-2 text-green-500" />
+            <span className="text-green-700">{successMessage}</span>
           </div>
         )}
-
         {error && (
-          <div className="p-4 mb-6 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900 dark:border-red-700">
-            <span className="text-red-700 dark:text-red-300">{error}</span>
+          <div className="p-4 mb-4 border border-red-200 rounded bg-red-50">
+            <span className="text-red-700">{error}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {/* Profile Image Upload Section */}
-          <div className="md:col-span-1">
-            <div className="p-6 transition-all duration-200 bg-white rounded-lg shadow-md dark:bg-gray-800 hover:shadow-lg">
-              <h3 className="mb-4 text-xl font-semibold text-gray-800 dark:text-white">
-                Profile Photo
-              </h3>
-              <div className="flex flex-col items-center">
-                <div className="relative w-40 h-40 mb-5 overflow-hidden bg-gray-100 rounded-full shadow-md dark:bg-gray-700">
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Profile"
-                      className="object-cover w-full h-full"
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {/* Image upload */}
+            <div className="md:col-span-1">
+              <div className="p-6 bg-white rounded-lg shadow dark:bg-gray-800">
+                <h3 className="mb-4 text-xl font-semibold text-gray-800 dark:text-white">
+                  Profile Photo
+                </h3>
+                <div className="flex flex-col items-center">
+                  <div className="w-32 h-32 mb-4 overflow-hidden bg-gray-200 rounded-full dark:bg-gray-700">
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <FaUser className="w-full h-full p-8 text-gray-400 dark:text-gray-500" />
+                    )}
+                  </div>
+                  <label className="px-4 py-2 text-white rounded cursor-pointer bg-amber-500">
+                    Change Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
                     />
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full text-gray-400 dark:text-gray-500">
-                      <FaUser size={64} />
-                    </div>
-                  )}
+                  </label>
                 </div>
-                <label className="px-6 py-3 text-sm font-medium text-white transition-colors duration-150 rounded-md cursor-pointer bg-amber-500 hover:bg-amber-600">
-                  Change Photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                </label>
-                {userData.profileImage && (
-                  <button
-                    type="button"
-                    className="mt-3 text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                    onClick={() => {
-                      setUserData({ ...userData, profileImage: null });
-                      setImagePreview(null);
-                    }}
-                  >
-                    Remove Photo
-                  </button>
-                )}
               </div>
             </div>
-          </div>
 
-          {/* Profile Information Form */}
-          <div className="md:col-span-2">
-            <form onSubmit={handleSubmit}>
-              <div className="p-6 mb-8 transition-all duration-200 bg-white rounded-lg shadow-md dark:bg-gray-800 hover:shadow-lg">
-                <h3 className="mb-6 text-xl font-semibold text-gray-800 dark:text-white">
+            {/* Main form */}
+            <div className="space-y-6 md:col-span-2">
+              {/* Personal info */}
+              <div className="p-6 bg-white rounded-lg shadow dark:bg-gray-800">
+                <h3 className="mb-4 text-xl font-semibold text-gray-800 dark:text-white">
                   Personal Information
                 </h3>
-
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  {/* First Name Field */}
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      First Name
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                        <FaUser />
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {[
+                    {
+                      name: "firstName",
+                      icon: FaUser,
+                      placeholder: "First Name",
+                      value: userData.firstName,
+                    },
+                    {
+                      name: "lastName",
+                      icon: FaUser,
+                      placeholder: "Last Name",
+                      value: userData.lastName,
+                    },
+                    {
+                      name: "email",
+                      icon: FaEnvelope,
+                      placeholder: "Email Address",
+                      type: "email",
+                      value: userData.email,
+                    },
+                    {
+                      name: "phone",
+                      icon: FaPhone,
+                      placeholder: "Phone Number",
+                      type: "tel",
+                      value: userData.phone,
+                    },
+                    {
+                      name: "address",
+                      icon: FaMapMarkerAlt,
+                      placeholder: "Street Address",
+                      value: userData.address,
+                    },
+                    {
+                      name: "city",
+                      icon: FaMapMarkerAlt,
+                      placeholder: "City",
+                      value: userData.city,
+                    },
+                  ].map(({ name, icon: Icon, placeholder, type, value }) => (
+                    <div key={name}>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {placeholder}
+                      </label>
+                      <div className="relative mt-1">
+                        <Icon className="absolute text-gray-400 left-3 top-3" />
+                        <input
+                          name={name}
+                          type={type || "text"}
+                          value={value}
+                          onChange={handleInputChange}
+                          className="w-full py-2 pl-10 pr-4 border rounded-md dark:bg-gray-700 dark:text-gray-200"
+                          placeholder={placeholder}
+                        />
                       </div>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={userData.firstName}
-                        onChange={handleInputChange}
-                        className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      />
                     </div>
-                  </div>
-
-                  {/* Last Name Field */}
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Last Name
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                        <FaUser />
-                      </div>
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={userData.lastName}
-                        onChange={handleInputChange}
-                        className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Email Field */}
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                        <FaEnvelope />
-                      </div>
-                      <input
-                        type="email"
-                        name="email"
-                        value={userData.email}
-                        onChange={handleInputChange}
-                        className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Phone Field */}
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                        <FaPhone />
-                      </div>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={userData.phone}
-                        onChange={handleInputChange}
-                        className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Address Field */}
-                  <div className="sm:col-span-2">
-                    <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Address
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                        <FaMapMarkerAlt />
-                      </div>
-                      <input
-                        type="text"
-                        name="address"
-                        value={userData.address}
-                        onChange={handleInputChange}
-                        className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      />
-                    </div>
-                  </div>
-
-                  {/* City Field */}
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      City
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                        <FaMapMarkerAlt />
-                      </div>
-                      <input
-                        type="text"
-                        name="city"
-                        value={userData.city}
-                        onChange={handleInputChange}
-                        className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Password Section - Now with toggle */}
-              <div className="p-6 mb-8 transition-all duration-200 bg-white rounded-lg shadow-md dark:bg-gray-800 hover:shadow-lg">
-                <div className="flex items-center justify-between mb-6">
+              {/* Password change */}
+              <div className="p-6 bg-white rounded-lg shadow dark:bg-gray-800">
+                <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-                    Password Settings
+                    Change Password
                   </h3>
                   <button
                     type="button"
                     onClick={togglePasswordFields}
-                    className="px-4 py-2 text-sm text-white transition-colors duration-200 rounded-md bg-amber-500 hover:bg-amber-600"
+                    className="px-4 py-2 text-white rounded bg-amber-500"
                   >
-                    {showPasswordFields
-                      ? "Cancel Password Change"
-                      : "Change Password"}
+                    {showPasswordFields ? "Cancel" : "Change Password"}
                   </button>
                 </div>
-
                 {showPasswordFields && (
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    {/* Current Password Field */}
-                    <div className="sm:col-span-2">
-                      <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                        Current Password
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                          <FaLock />
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {[
+                      {
+                        name: "currentPassword",
+                        placeholder: "Current Password",
+                      },
+                      {
+                        name: "newPassword",
+                        placeholder: "New Password",
+                      },
+                      {
+                        name: "confirmPassword",
+                        placeholder: "Confirm New Password",
+                      },
+                    ].map(({ name, placeholder }) => (
+                      <div key={name}>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {placeholder}
+                        </label>
+                        <div className="relative mt-1">
+                          <FaLock className="absolute text-gray-400 left-3 top-3" />
+                          <input
+                            type="password"
+                            name={name}
+                            value={userData[name]}
+                            onChange={handleInputChange}
+                            className="w-full py-2 pl-10 pr-4 border rounded-md dark:bg-gray-700 dark:text-gray-200"
+                            placeholder={placeholder}
+                          />
                         </div>
-                        <input
-                          type="password"
-                          name="currentPassword"
-                          value={userData.currentPassword}
-                          onChange={handleInputChange}
-                          className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                        />
                       </div>
-                    </div>
-
-                    {/* New Password Field */}
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                        New Password
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                          <FaLock />
-                        </div>
-                        <input
-                          type="password"
-                          name="newPassword"
-                          value={userData.newPassword}
-                          onChange={handleInputChange}
-                          className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Confirm Password Field */}
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                        Confirm Password
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-amber-500">
-                          <FaLock />
-                        </div>
-                        <input
-                          type="password"
-                          name="confirmPassword"
-                          value={userData.confirmPassword}
-                          onChange={handleInputChange}
-                          className="block w-full py-3 pl-10 pr-3 transition-colors duration-200 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                        />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end">
+              {/* Submit */}
+              <div className="text-right">
                 <button
                   type="submit"
-                  className="px-8 py-3 text-white transition-colors duration-200 rounded-md shadow-md disabled:opacity-75 bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                  onClick={handleSubmit}
                   disabled={loading}
+                  className={`px-6 py-2 rounded-md text-white ${
+                    loading ? "bg-gray-400" : "bg-amber-500 hover:bg-amber-600"
+                  }`}
                 >
                   {loading ? "Saving..." : "Save Changes"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </>
   );

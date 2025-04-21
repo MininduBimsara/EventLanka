@@ -2,17 +2,27 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // Base URL for organizer API endpoints
-const ORGANIZER_API_URL = "/api/organizer";
+const ORGANIZER_API_URL = "http://localhost:5000/api/organizer";
 
 // ===== EVENT THUNKS =====
 export const createEvent = createAsyncThunk(
   "organizer/createEvent",
   async (eventData, { rejectWithValue }) => {
     try {
+      // Set the correct content type for FormData (multipart/form-data)
+      const config = {
+        headers: {
+         
+        },
+        withCredentials: true, // Include cookies with the request
+      };
+
       const response = await axios.post(
         `${ORGANIZER_API_URL}/events`,
-        eventData
+        eventData,
+        config
       );
+
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -443,7 +453,7 @@ const organizerSlice = createSlice({
         state.loading = false;
         state.events.unshift(action.payload);
         state.success = true;
-        state.message = "Event created successfully";
+        state.message = action.payload.message || "Event created successfully";
       })
       .addCase(createEvent.rejected, (state, action) => {
         state.loading = false;

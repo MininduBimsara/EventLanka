@@ -14,6 +14,21 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
+// Get current user profile
+exports.getCurrentUser = async (req, res) => {
+  try {
+    // req.user is already set by the protect middleware
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Return the user object (already excludes password because of the middleware)
+    res.status(200).json(req.user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Update user profile (Only logged-in users can edit their own profile)
 exports.updateUserProfile = async (req, res) => {
   try {
@@ -24,11 +39,15 @@ exports.updateUserProfile = async (req, res) => {
     // Extract fields from request body
     const updatedData = {};
 
+    // Include profileImage if uploaded
+    if (req.file) {
+      updatedData.profileImage = req.file.filename;
+    }
+
     // Only add fields that are provided in the request
     const allowedFields = [
       "name",
       "email",
-      "profileImage",
       "firstName",
       "lastName",
       "phone",

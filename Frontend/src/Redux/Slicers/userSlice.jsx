@@ -1,76 +1,84 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api"; // Base API URL
+const API_URL = "http://localhost:5000/api/users"; // Base API URL
+
+// Set default axios config
+axios.defaults.withCredentials = true;
+
+// Helper function to safely get user ID
+export const getUserId = (state) => {
+  const { user } = state;
+
+  // Check multiple possible locations for the user ID
+  return (
+    user?.userInfo?._id ||
+    user?.userInfo?.id ||
+    user?.user?._id ||
+    user?.user?.id ||
+    null // Return null if no ID is found
+  );
+};
+
+// Function to get the current user profile
+export const fetchUserProfile = createAsyncThunk(
+  "user/fetchUserProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      // First try to get the user's details from the server
+      // This assumes you have an endpoint that returns the current user's data
+      const response = await axios.get(`${API_URL}/current`, {
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch user profile"
+      );
+    }
+  }
+);
 
 // Async thunk for updating user profile
+
 export const updateUserProfile = createAsyncThunk(
-  "user/updateUserProfile",
+  "profile/updateUserProfile",
   async (userData, { getState, rejectWithValue }) => {
     try {
-      // Get the user ID from Redux state
-      const { user } = getState();
-      const userId = user.user?.id; // Access the MongoDB ID sent from backend
-
+      const userId = getUserId(getState());
       if (!userId) {
         return rejectWithValue("User ID not found. Please log in again.");
       }
 
-      // Filter out empty fields to only send the updated ones
-      const filteredUserData = {};
-      Object.keys(userData).forEach((key) => {
-        // Only include fields that have values
-        if (
-          userData[key] !== undefined &&
-          userData[key] !== null &&
-          userData[key] !== ""
-        ) {
-          filteredUserData[key] = userData[key];
-        }
-      });
-
-      // Check if profileImage is a File object (new upload)
-      if (filteredUserData.profileImage instanceof File) {
-        // Create FormData for file upload
+      let response;
+      // if there’s a new file, build FormData
+      if (userData.profileImage instanceof File) {
         const formData = new FormData();
-
-        // Add text fields to FormData
-        Object.keys(filteredUserData).forEach((key) => {
-          if (key !== "profileImage") {
-            formData.append(key, filteredUserData[key]);
-          }
+        Object.entries(userData).forEach(([key, val]) => {
+          // append everything, including the file
+          formData.append(key, val);
         });
-
-        // Add the file
-        formData.append("profileImage", filteredUserData.profileImage);
-
-        const response = await axios.put(
-          `${API_URL}/user/${userId}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-            withCredentials: true, // This is the key setting for sending cookies
-          }
-        );
-        return response.data;
+        // **DON’T** set Content‑Type here—axios will do it for us
+        response = await axios.put(`${API_URL}/${userId}`, formData, {
+          withCredentials: true,
+        });
       } else {
-        // If no new file, just send regular JSON data
-        const response = await axios.put(
-          `${API_URL}/user/${userId}`,
-          filteredUserData,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            withCredentials: true, // This is the key setting for sending cookies
-          }
-        );
-        return response.data;
+        // JSON payload for non‑file updates
+        response = await axios.put(`${API_URL}/${userId}`, userData, {
+          withCredentials: true,
+        });
       }
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Update failed");
+
+      return response.data;
+    } catch (err) {
+      if (err.response?.status === 401) {
+        return rejectWithValue("401 Unauthorized: Please log in again");
+      }
+      return rejectWithValue(
+        err.response?.data?.message ||
+          `Update failed: ${err.message} (${err.response?.status})`
+      );
     }
   }
 );
@@ -79,8 +87,7 @@ export const updateProfilePhoto = createAsyncThunk(
   "user/updateProfilePhoto",
   async (photoData, { getState, rejectWithValue }) => {
     try {
-      const { user } = getState();
-      const userId = user.user?.id;
+      const userId = getUserId(getState());
 
       if (!userId) {
         return rejectWithValue("User ID not found. Please log in again.");
@@ -89,18 +96,17 @@ export const updateProfilePhoto = createAsyncThunk(
       const formData = new FormData();
       formData.append("profileImage", photoData);
 
-      const response = await axios.put(
-        `${API_URL}/user/${userId}/photo`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true, // This is the key setting for sending cookies
-        }
-      );
+      const response = await axios.put(`${API_URL}/${userId}/photo`, formData, {
+        // headers: {
+        //   "Content-Type": "multipart/form-data",
+        // },
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
+      if (error.response && error.response.status === 401) {
+        return rejectWithValue("401 Unauthorized: Please log in again");
+      }
       return rejectWithValue(
         error.response?.data?.message || "Photo update failed"
       );
@@ -126,6 +132,19 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch user profile
+      .addCase(fetchUserProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userInfo = action.payload;
+      })
+      .addCase(fetchUserProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Update user profile
       .addCase(updateUserProfile.pending, (state) => {
         state.loading = true;
