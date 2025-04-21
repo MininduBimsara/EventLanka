@@ -16,7 +16,7 @@ import profileReducer from "../Slicers/userSlice";
 import eventsReducer from "../Slicers/EventSlice";
 import googleAuthReducer from "../Slicers/GoogleAuthSlice";
 import orderReducer from "../Slicers/orderSlice";
-import organizerReducer from "../Slicers/OrganizzerSlice";
+import organizerReducer from "../Slicers/OrganizerSlice";
 import paymentReducer from "../Slicers/PaymentSlice";
 import ticketReducer from "../Slicers/ticketSlice";
 import adminReducer from "../Slicers/adminSlice";

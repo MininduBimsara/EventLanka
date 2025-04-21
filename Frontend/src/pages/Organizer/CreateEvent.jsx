@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { createEvent } from "../../Redux/Slicers/OrganizerSlice";
 import {
   Calendar,
   Clock,
@@ -12,6 +14,9 @@ import {
 } from "lucide-react";
 
 export default function CreateEvent() {
+  const dispatch = useDispatch();
+  const { loading, error, success } = useSelector((state) => state.organizer);
+
   const [event, setEvent] = useState({
     title: "",
     description: "",
@@ -22,12 +27,14 @@ export default function CreateEvent() {
     endDate: "",
     endTime: "",
     bannerImage: null,
+    bannerFile: null,
     ticketTypes: [{ name: "General Admission", price: 0, quantity: 100 }],
     enableDiscounts: false,
     status: "draft", // draft or published
   });
 
   const [previewMode, setPreviewMode] = useState(false);
+  const [submissionMessage, setSubmissionMessage] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -37,11 +44,33 @@ export default function CreateEvent() {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Store the actual file object for FormData
+      setEvent((prevEvent) => ({ ...prevEvent, bannerFile: file }));
+
+      // Create a preview URL with proper error handling
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setEvent({ ...event, bannerImage: e.target.result });
+
+      reader.onload = (loadEvent) => {
+        // Use a callback form of setState to ensure we're working with latest state
+        setEvent((prevEvent) => ({
+          ...prevEvent,
+          bannerImage: loadEvent.target.result,
+        }));
       };
-      reader.readAsDataURL(file);
+
+      reader.onerror = () => {
+        console.error("Error reading file");
+        // Handle the error gracefully - maybe set an error state
+        setSubmissionMessage("Failed to load image preview");
+      };
+
+      // Start reading the file
+      try {
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("Error starting file read:", err);
+        setSubmissionMessage("Failed to process image");
+      }
     }
   };
 
@@ -67,14 +96,88 @@ export default function CreateEvent() {
     setPreviewMode(!previewMode);
   };
 
+  // Convert frontend data to match backend model
+  const prepareEventData = () => {
+    // Format the date and time
+    const date = new Date(`${event.startDate}T${event.startTime}`);
+
+    // Calculate duration in hours if end date/time provided
+    let duration = 1; // Default 1 hour
+    if (event.endDate && event.endTime) {
+      const endDate = new Date(`${event.endDate}T${event.endTime}`);
+      duration = (endDate - date) / (1000 * 60 * 60); // Convert milliseconds to hours
+    }
+
+    // Format ticket types to match backend model
+    const ticket_types = event.ticketTypes.map((ticket) => ({
+      type: ticket.name,
+      price: parseFloat(ticket.price),
+      availability: parseInt(ticket.quantity),
+    }));
+
+    // Create FormData for multipart/form-data submission (for file upload)
+    const formData = new FormData();
+    formData.append("title", event.title);
+    formData.append("description", event.description);
+    formData.append("category", event.category);
+    formData.append("location", event.location);
+    formData.append("date", date.toISOString());
+    formData.append("duration", duration);
+    formData.append("ticket_types", JSON.stringify(ticket_types));
+
+    // Append banner file if available
+    if (event.bannerFile) {
+      formData.append("banner", event.bannerFile);
+    }
+
+    return formData;
+  };
+
   const saveEvent = (status) => {
-    // Here you would typically send the event to your API
-    setEvent({ ...event, status });
-    alert(
-      `Event ${
-        status === "published" ? "published" : "saved as draft"
-      } successfully!`
-    );
+    try {
+      const formData = prepareEventData();
+
+      // Add status to the form data
+      formData.append(
+        "event_status",
+        status === "published" ? "pending" : "draft"
+      );
+
+      // Dispatch without unwrap, using then/catch instead
+      dispatch(createEvent(formData))
+        .then((result) => {
+          // Check if there's a payload or if it's an error action
+          if (result.payload) {
+            setSubmissionMessage(
+              `Event ${
+                status === "published"
+                  ? "submitted for approval"
+                  : "saved as draft"
+              } successfully!`
+            );
+
+            // Reset form if necessary
+            if (status === "published") {
+              // Reset form or redirect to events list
+              // You might want to add your reset logic here
+            }
+          } else if (result.error) {
+            // Handle error case from createAsyncThunk rejection
+            setSubmissionMessage(
+              `Error: ${result.error.message || "Failed to save event"}`
+            );
+          }
+        })
+        .catch((err) => {
+          // Handle any other errors that might have occurred
+          setSubmissionMessage(
+            `Error: ${err.message || "Failed to save event"}`
+          );
+        });
+    } catch (err) {
+      // Handle synchronous errors in the try block
+      setSubmissionMessage(`Error: ${err.message || "Failed to save event"}`);
+    }
   };
 
   // Preview component
@@ -177,17 +280,30 @@ export default function CreateEvent() {
           <button
             onClick={() => saveEvent("draft")}
             className="px-4 py-2 transition bg-gray-100 rounded-md hover:bg-gray-200"
+            disabled={loading}
           >
-            Save Draft
+            {loading ? "Saving..." : "Save Draft"}
           </button>
           <button
             onClick={() => saveEvent("published")}
             className="px-4 py-2 text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
+            disabled={loading}
           >
-            Publish
+            {loading ? "Publishing..." : "Publish"}
           </button>
         </div>
       </div>
+
+      {/* Status Messages */}
+      {submissionMessage && (
+        <div
+          className={`p-4 mb-4 rounded-md ${
+            error ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+          }`}
+        >
+          {submissionMessage}
+        </div>
+      )}
 
       {previewMode ? (
         <EventPreview />
@@ -372,7 +488,13 @@ export default function CreateEvent() {
                     className="object-cover w-full h-48 rounded-md"
                   />
                   <button
-                    onClick={() => setEvent({ ...event, bannerImage: null })}
+                    onClick={() =>
+                      setEvent({
+                        ...event,
+                        bannerImage: null,
+                        bannerFile: null,
+                      })
+                    }
                     className="mt-2 text-sm text-red-600 hover:text-red-800"
                   >
                     Remove Image

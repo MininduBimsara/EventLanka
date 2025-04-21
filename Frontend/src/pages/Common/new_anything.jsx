@@ -1,397 +1,561 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { createEvent } from "../../Redux/Slicers/OrganizerSlice";
 import {
+  Calendar,
+  Clock,
   MapPin,
-  Phone,
-  Mail,
-  MessageCircle,
-  Instagram,
-  Twitter,
-  Facebook,
-  Send,
+  Image,
+  Edit3,
+  Tag,
+  Ticket,
+  DollarSign,
+  Users,
 } from "lucide-react";
 
-const ContactUsPage = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
+export default function CreateEvent() {
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.organizer);
+
+  const [event, setEvent] = useState({
+    title: "",
+    description: "",
+    category: "",
+    location: "",
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+    bannerImage: null,
+    bannerFile: null,
+    ticketTypes: [{ name: "General Admission", price: 0, quantity: 100 }],
+    enableDiscounts: false,
   });
 
-  const [chatOpen, setChatOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("form");
-  const [activeFaq, setActiveFaq] = useState(null);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [submissionMessage, setSubmissionMessage] = useState("");
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type, checked } = e.target;
+    if (type === "checkbox") {
+      setEvent((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setEvent((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  const toggleFaq = (index) => {
-    setActiveFaq(activeFaq === index ? null : index);
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setEvent((prev) => ({ ...prev, bannerFile: file }));
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setEvent((prev) => ({ ...prev, bannerImage: evt.target.result }));
+    };
+    reader.onerror = () => {
+      console.error("Error reading file");
+      setSubmissionMessage("Failed to load image preview");
+    };
+    reader.readAsDataURL(file);
   };
 
-  const faqItems = [
-    {
-      question: "How can I get a refund for my tickets?",
-      answer:
-        "Refunds are available up to 48 hours before the event. Simply log in to your account and visit the 'My Tickets' section to request a refund.",
-    },
-    {
-      question: "Can I transfer my ticket to someone else?",
-      answer:
-        "Yes! You can transfer tickets to friends by using the 'Transfer' option in your ticket details. The recipient will receive an email with instructions.",
-    },
-    {
-      question: "How early should I arrive at the venue?",
-      answer:
-        "We recommend arriving at least 30 minutes before the event starts to allow time for security checks and finding your seat.",
-    },
-    {
-      question: "Do you offer group discounts?",
-      answer:
-        "Yes, we offer discounts for groups of 10 or more. Please contact our support team with your event details for a custom quote.",
-    },
-  ];
+  const addTicketType = () =>
+    setEvent((prev) => ({
+      ...prev,
+      ticketTypes: [...prev.ticketTypes, { name: "", price: 0, quantity: 0 }],
+    }));
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#D0A2F7] via-[#8ECAE6] to-[#023E8A]">
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-20 h-20 bg-yellow-300 rounded-full top-20 left-10 opacity-20 animate-pulse"></div>
-        <div className="absolute w-32 h-32 bg-blue-300 rounded-full top-40 right-20 opacity-20 animate-ping"></div>
-        <div className="absolute w-16 h-16 bg-green-300 rounded-full bottom-20 left-1/4 opacity-30 animate-bounce"></div>
-        <div className="absolute w-24 h-24 bg-red-300 rounded-full top-1/3 right-1/3 opacity-20 animate-pulse"></div>
-      </div>
+  const updateTicketType = (i, field, value) => {
+    setEvent((prev) => {
+      const tickets = [...prev.ticketTypes];
+      tickets[i][field] = value;
+      return { ...prev, ticketTypes: tickets };
+    });
+  };
 
-      {/* Hero Section */}
-      <div className="relative px-6 pt-20 pb-10 text-center md:px-12">
-        <h1 className="mb-4 text-4xl font-bold text-white md:text-6xl animate-pulse">
-          Get in Touch & Let's Make Magic Happen!
-        </h1>
-        <p className="max-w-3xl mx-auto text-xl text-white md:text-2xl opacity-90">
-          We're here to help you create unforgettable moments. Reach out and let
-          the fun begin!
-        </p>
-      </div>
+  const removeTicketType = (i) =>
+    setEvent((prev) => ({
+      ...prev,
+      ticketTypes: prev.ticketTypes.filter((_, idx) => idx !== i),
+    }));
 
-      {/* Main Content */}
-      <div className="max-w-6xl px-4 pb-20 mx-auto">
-        <div className="p-6 bg-white border border-white shadow-2xl bg-opacity-10 backdrop-blur-lg rounded-3xl md:p-8 border-opacity-20">
-          {/* Tabs */}
-          <div className="flex max-w-md p-1 mx-auto mb-8 bg-white rounded-full bg-opacity-20">
-            <button
-              onClick={() => setActiveTab("form")}
-              className={`flex-1 py-3 px-4 rounded-full transition-all duration-300 ${
-                activeTab === "form"
-                  ? "bg-white text-purple-700 shadow-lg"
-                  : "text-white hover:bg-white hover:bg-opacity-10"
-              }`}
-            >
-              Contact Form
-            </button>
-            <button
-              onClick={() => setActiveTab("info")}
-              className={`flex-1 py-3 px-4 rounded-full transition-all duration-300 ${
-                activeTab === "info"
-                  ? "bg-white text-purple-700 shadow-lg"
-                  : "text-white hover:bg-white hover:bg-opacity-10"
-              }`}
-            >
-              Info & FAQ
-            </button>
-          </div>
+  const togglePreview = () => setPreviewMode((v) => !v);
 
-          <div className="grid gap-8 md:grid-cols-2">
-            {/* Contact Form Section */}
-            {activeTab === "form" && (
-              <div className="p-6 transition-all duration-500 transform bg-white border border-white bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20 hover:scale-102 hover:shadow-xl">
-                <h2 className="mb-6 text-3xl font-bold text-white">
-                  Send Us a Message
-                </h2>
-                <form>
-                  <div className="relative mb-4 group">
-                    <label className="block mb-1 text-sm text-white transition-all duration-300 group-focus-within:text-yellow-300">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full p-3 text-white placeholder-white transition-all duration-300 bg-white border border-white rounded-lg bg-opacity-10 border-opacity-30 placeholder-opacity-60 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                      placeholder="Your name"
-                    />
-                  </div>
+  const prepareEventData = () => {
+    const dateISO = new Date(
+      `${event.startDate}T${event.startTime}`
+    ).toISOString();
+    let duration = 1;
+    if (event.endDate && event.endTime) {
+      const end = new Date(`${event.endDate}T${event.endTime}`);
+      duration = (end - new Date(dateISO)) / 36e5;
+    }
+    const ticket_types = event.ticketTypes.map((t) => ({
+      type: t.name,
+      price: parseFloat(t.price),
+      availability: parseInt(t.quantity, 10),
+    }));
 
-                  <div className="relative mb-4 group">
-                    <label className="block mb-1 text-sm text-white transition-all duration-300 group-focus-within:text-yellow-300">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full p-3 text-white placeholder-white transition-all duration-300 bg-white border border-white rounded-lg bg-opacity-10 border-opacity-30 placeholder-opacity-60 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                      placeholder="your.email@example.com"
-                    />
-                  </div>
+    const fd = new FormData();
+    fd.append("title", event.title);
+    fd.append("description", event.description);
+    fd.append("category", event.category);
+    fd.append("location", event.location);
+    fd.append("date", dateISO);
+    fd.append("duration", duration);
+    fd.append("ticket_types", JSON.stringify(ticket_types));
+    if (event.bannerFile) fd.append("banner", event.bannerFile);
+    return fd;
+  };
 
-                  <div className="relative mb-4 group">
-                    <label className="block mb-1 text-sm text-white transition-all duration-300 group-focus-within:text-yellow-300">
-                      Subject
-                    </label>
-                    <input
-                      type="text"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      className="w-full p-3 text-white placeholder-white transition-all duration-300 bg-white border border-white rounded-lg bg-opacity-10 border-opacity-30 placeholder-opacity-60 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                      placeholder="What's this about?"
-                    />
-                  </div>
+  const saveEvent = (status) => {
+    setSubmissionMessage("");
+    try {
+      const formData = prepareEventData();
+      formData.append(
+        "event_status",
+        status === "published" ? "pending" : "draft"
+      );
+      dispatch(createEvent(formData))
+        .then((res) => {
+          if (res.payload) {
+            setSubmissionMessage(
+              `Event ${
+                status === "published" ? "submitted" : "saved as draft"
+              } successfully!`
+            );
+          } else {
+            throw new Error(res.error?.message || "Unknown error");
+          }
+        })
+        .catch((err) => {
+          setSubmissionMessage(`Error: ${err.message}`);
+        });
+    } catch (err) {
+      setSubmissionMessage(`Error: ${err.message}`);
+    }
+  };
 
-                  <div className="relative mb-6 group">
-                    <label className="block mb-1 text-sm text-white transition-all duration-300 group-focus-within:text-yellow-300">
-                      Message
-                    </label>
-                    <textarea
-                      name="message"
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      rows="4"
-                      className="w-full p-3 text-white placeholder-white transition-all duration-300 bg-white border border-white rounded-lg bg-opacity-10 border-opacity-30 placeholder-opacity-60 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                      placeholder="Tell us how we can help you..."
-                    ></textarea>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="flex items-center justify-center w-full px-6 py-3 font-bold text-white transition-all duration-300 transform rounded-lg shadow-lg bg-gradient-to-r from-yellow-400 to-orange-500 hover:shadow-xl hover:scale-105 group animate-pulse"
-                  >
-                    <span>Send Message</span>
-                    <Send
-                      size={18}
-                      className="ml-2 transition-transform duration-300 group-hover:translate-x-1"
-                    />
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* FAQ & Info Section */}
-            {activeTab === "info" && (
-              <div className="p-6 bg-white border border-white bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20">
-                <h2 className="mb-6 text-3xl font-bold text-white">
-                  Frequently Asked Questions
-                </h2>
-                <div className="space-y-4">
-                  {faqItems.map((faq, index) => (
-                    <div
-                      key={index}
-                      className="overflow-hidden transition-all duration-300 border border-white border-opacity-20 rounded-xl hover:bg-white hover:bg-opacity-5"
-                    >
-                      <button
-                        onClick={() => toggleFaq(index)}
-                        className="flex items-center justify-between w-full p-4 font-medium text-left text-white"
-                      >
-                        <span>{faq.question}</span>
-                        <span
-                          className={`transform transition-transform duration-300 ${
-                            activeFaq === index ? "rotate-180" : ""
-                          }`}
-                        >
-                          ▼
-                        </span>
-                      </button>
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ${
-                          activeFaq === index
-                            ? "max-h-40 opacity-100"
-                            : "max-h-0 opacity-0"
-                        }`}
-                      >
-                        <div className="p-4 pt-0 text-white text-opacity-80">
-                          {faq.answer}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Contact Info and Map Section - Always visible */}
-            <div>
-              <div className="p-6 mb-8 bg-white border border-white bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20">
-                <h2 className="mb-6 text-3xl font-bold text-white">
-                  Get In Touch
-                </h2>
-
-                <div className="space-y-4">
-                  <div className="flex items-center text-white transition-colors duration-300 group hover:text-yellow-300">
-                    <div className="flex items-center justify-center w-12 h-12 mr-4 transition-all duration-300 bg-white rounded-full bg-opacity-10 group-hover:bg-white group-hover:bg-opacity-20">
-                      <Phone size={22} />
-                    </div>
-                    <div>
-                      <div className="text-sm opacity-70">Phone</div>
-                      <a href="tel:+1234567890" className="text-lg font-medium">
-                        +1 (234) 567-890
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center text-white transition-colors duration-300 group hover:text-yellow-300">
-                    <div className="flex items-center justify-center w-12 h-12 mr-4 transition-all duration-300 bg-white rounded-full bg-opacity-10 group-hover:bg-white group-hover:bg-opacity-20">
-                      <Mail size={22} />
-                    </div>
-                    <div>
-                      <div className="text-sm opacity-70">Email</div>
-                      <a
-                        href="mailto:hello@ticketmagic.com"
-                        className="text-lg font-medium"
-                      >
-                        hello@ticketmagic.com
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center text-white transition-colors duration-300 group hover:text-yellow-300">
-                    <div className="flex items-center justify-center w-12 h-12 mr-4 transition-all duration-300 bg-white rounded-full bg-opacity-10 group-hover:bg-white group-hover:bg-opacity-20">
-                      <MapPin size={22} />
-                    </div>
-                    <div>
-                      <div className="text-sm opacity-70">Office Address</div>
-                      <address className="text-lg not-italic font-medium">
-                        123 Event Street, Party City, PC 12345
-                      </address>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Social Media Links */}
-                <div className="mt-8">
-                  <h3 className="mb-4 text-lg text-white">Connect With Us</h3>
-                  <div className="flex space-x-4">
-                    <a
-                      href="#"
-                      className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-gradient-to-br from-purple-600 to-pink-500 hover:rotate-6"
-                    >
-                      <Instagram />
-                    </a>
-                    <a
-                      href="#"
-                      className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-blue-500 hover:rotate-6"
-                    >
-                      <Twitter />
-                    </a>
-                    <a
-                      href="#"
-                      className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-blue-600 hover:rotate-6"
-                    >
-                      <Facebook />
-                    </a>
-                    <a
-                      href="#"
-                      className="flex items-center justify-center w-12 h-12 text-white transition-all duration-300 transform bg-white rounded-full bg-opacity-10 hover:scale-110 hover:bg-black hover:rotate-6"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0v0Z"></path>
-                        <path d="M12.5 9.5c.5-1.5 1.5-2 2.5-2 1.5 0 2.5 1.5 2.5 2.5 0 1.5-2.5 2.5-3 3 1 1.5 3 1.5 4 2"></path>
-                        <path d="M10.5 12c-1.5 1.5-2 3.5-2 5.5 0 2 1 3 3.5 3s3.5-1 3.5-3c0-2-2-3.5-2-5.5"></path>
-                      </svg>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Map Section */}
-              <div className="overflow-hidden border-4 border-white shadow-lg rounded-2xl border-opacity-20">
-                <div className="relative h-64 pt-0 pb-0 bg-gray-200">
-                  <div className="absolute inset-0 flex items-center justify-center bg-purple-900 bg-opacity-20">
-                    <div className="flex items-center p-4 bg-white rounded-lg shadow-lg bg-opacity-90">
-                      <MapPin className="mr-2 text-purple-600" />
-                      <span className="font-medium">Our Office Location</span>
-                    </div>
-                    <div className="absolute p-2 bg-white rounded-lg shadow-lg bottom-4 right-4">
-                      <img
-                        src="/api/placeholder/100/30"
-                        alt="Map controls placeholder"
-                      />
-                    </div>
-                  </div>
-                  <img
-                    src="/api/placeholder/600/300"
-                    alt="Location Map"
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+  const EventPreview = () => (
+    <div className="overflow-hidden bg-white rounded-lg shadow-lg">
+      {event.bannerImage ? (
+        <img src={event.bannerImage} className="object-cover w-full h-64" />
+      ) : (
+        <div className="flex items-center justify-center h-64 bg-gray-200">
+          <span className="text-gray-500">No banner uploaded</span>
         </div>
-      </div>
-
-      {/* Live Chat Widget */}
-      <div className="fixed z-50 bottom-6 right-6">
-        <button
-          onClick={() => setChatOpen(!chatOpen)}
-          className="flex items-center justify-center w-16 h-16 text-white transition-all duration-300 transform rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-pink-500 hover:scale-110 hover:rotate-6 animate-bounce"
-        >
-          <MessageCircle size={28} />
-        </button>
-
-        {chatOpen && (
-          <div className="absolute right-0 overflow-hidden transition-all duration-300 bg-white shadow-2xl bottom-20 w-80 rounded-2xl animate-fadeIn">
-            <div className="p-4 bg-gradient-to-r from-purple-600 to-pink-500">
-              <div className="flex items-center">
-                <div className="flex items-center justify-center w-10 h-10 mr-3 bg-white rounded-full">
-                  <MessageCircle size={20} className="text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-white">Live Support</h3>
-                  <p className="text-sm text-white text-opacity-80">
-                    We typically reply in a few minutes
-                  </p>
-                </div>
+      )}
+      <div className="p-6">
+        <h1 className="mb-2 text-2xl font-bold">
+          {event.title || "Event Title"}
+        </h1>
+        <p className="flex items-center mb-4 text-gray-600">
+          <Calendar className="w-4 h-4 mr-2" />
+          {event.startDate
+            ? `${event.startDate} @ ${event.startTime}`
+            : "Date not set"}
+        </p>
+        <p className="flex items-center mb-4 text-gray-600">
+          <MapPin className="w-4 h-4 mr-2" />
+          {event.location || "Location not set"}
+        </p>
+        <p className="flex items-center mb-4 text-gray-600">
+          <Tag className="w-4 h-4 mr-2" />
+          {event.category || "Category not set"}
+        </p>
+        <div className="pt-4 mt-4 border-t">
+          <h2 className="mb-2 font-semibold">Description</h2>
+          <p className="text-gray-700 whitespace-pre-wrap">
+            {event.description || "No description provided"}
+          </p>
+        </div>
+        <div className="pt-4 mt-4 border-t">
+          <h2 className="mb-2 font-semibold">Tickets</h2>
+          {event.ticketTypes.map((t, i) => (
+            <div
+              key={i}
+              className="flex justify-between p-3 mb-2 rounded bg-gray-50"
+            >
+              <div>
+                <p className="font-medium">{t.name}</p>
+                <p className="text-sm text-gray-500">{t.quantity} available</p>
               </div>
+              <p className="font-semibold">${t.price}</p>
             </div>
-            <div className="flex flex-col justify-end h-64 p-4 bg-gray-50">
-              <div className="p-3 mb-3 bg-purple-100 rounded-lg rounded-bl-none max-w-3/4">
-                <p className="text-sm text-purple-900">
-                  Hi there! 👋 How can we help you today?
-                </p>
-                <p className="mt-1 text-xs text-gray-500">2:34 PM</p>
-              </div>
-              <div className="mt-auto">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Type your message..."
-                    className="w-full py-2 pl-4 pr-12 bg-white border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <button className="absolute flex items-center justify-center w-8 h-8 text-white transform -translate-y-1/2 bg-purple-500 rounded-full right-2 top-1/2">
-                    <Send size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );
-};
 
-export default ContactUsPage;
+  const categories = [
+    "Music",
+    "Conference",
+    "Workshop",
+    "Sports",
+    "Food & Drink",
+    "Charity",
+    "Arts",
+    "Business",
+    "Party",
+    "Other",
+  ];
+
+  return (
+    <div className="max-w-4xl p-6 mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">
+          {event.title ? `Edit: ${event.title}` : "Create New Event"}
+        </h1>
+        <div className="space-x-2">
+          <button
+            onClick={togglePreview}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            {previewMode ? "Edit" : "Preview"}
+          </button>
+          <button
+            onClick={() => saveEvent("draft")}
+            disabled={loading}
+            className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+          >
+            {loading ? "Saving..." : "Save Draft"}
+          </button>
+          <button
+            onClick={() => saveEvent("published")}
+            disabled={loading}
+            className="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+          >
+            {loading ? "Publishing..." : "Publish"}
+          </button>
+        </div>
+      </div>
+
+      {submissionMessage && (
+        <div
+          className={`p-4 mb-4 rounded ${
+            error ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+          }`}
+        >
+          {submissionMessage}
+        </div>
+      )}
+
+      {previewMode ? (
+        <EventPreview />
+      ) : (
+        <div className="p-6 space-y-8 bg-white rounded-lg shadow-md">
+          {/* --- Event Details --- */}
+          <section>
+            <h2 className="pb-2 mb-4 font-semibold border-b">Event Details</h2>
+            <div className="mb-4">
+              <label className="block mb-1">Title *</label>
+              <div className="flex overflow-hidden border rounded">
+                <span className="p-2 border-r bg-gray-50">
+                  <Edit3 className="w-5 h-5 text-gray-400" />
+                </span>
+                <input
+                  type="text"
+                  name="title"
+                  value={event.title}
+                  onChange={handleInputChange}
+                  className="flex-1 p-2 focus:outline-none"
+                  placeholder="Event name"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block mb-1">Description</label>
+              <textarea
+                name="description"
+                value={event.description}
+                onChange={handleInputChange}
+                rows="4"
+                className="w-full p-3 border rounded focus:outline-none"
+                placeholder="Describe your event"
+              />
+              <p className="text-xs text-gray-500">Markdown is supported.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="block mb-1">Category *</label>
+                <div className="flex overflow-hidden border rounded">
+                  <span className="p-2 border-r bg-gray-50">
+                    <Tag className="w-5 h-5 text-gray-400" />
+                  </span>
+                  <select
+                    name="category"
+                    value={event.category}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 focus:outline-none"
+                    required
+                  >
+                    <option value="">Select one…</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block mb-1">Location *</label>
+                <div className="flex overflow-hidden border rounded">
+                  <span className="p-2 border-r bg-gray-50">
+                    <MapPin className="w-5 h-5 text-gray-400" />
+                  </span>
+                  <input
+                    type="text"
+                    name="location"
+                    value={event.location}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 focus:outline-none"
+                    placeholder="Venue"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* --- Date & Time --- */}
+          <section>
+            <h2 className="pb-2 mb-4 font-semibold border-b">Date & Time</h2>
+            <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
+              <div>
+                <label className="block mb-1">Start Date *</label>
+                <div className="flex overflow-hidden border rounded">
+                  <span className="p-2 border-r bg-gray-50">
+                    <Calendar className="w-5 h-5 text-gray-400" />
+                  </span>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={event.startDate}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block mb-1">Start Time *</label>
+                <div className="flex overflow-hidden border rounded">
+                  <span className="p-2 border-r bg-gray-50">
+                    <Clock className="w-5 h-5 text-gray-400" />
+                  </span>
+                  <input
+                    type="time"
+                    name="startTime"
+                    value={event.startTime}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="block mb-1">End Date</label>
+                <div className="flex overflow-hidden border rounded">
+                  <span className="p-2 border-r bg-gray-50">
+                    <Calendar className="w-5 h-5 text-gray-400" />
+                  </span>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={event.endDate}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block mb-1">End Time</label>
+                <div className="flex overflow-hidden border rounded">
+                  <span className="p-2 border-r bg-gray-50">
+                    <Clock className="w-5 h-5 text-gray-400" />
+                  </span>
+                  <input
+                    type="time"
+                    name="endTime"
+                    value={event.endTime}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* --- Banner Image --- */}
+          <section>
+            <h2 className="pb-2 mb-4 font-semibold border-b">Banner Image</h2>
+            {event.bannerImage ? (
+              <div className="mb-4">
+                <img
+                  src={event.bannerImage}
+                  className="object-cover w-full h-48 rounded"
+                />
+                <button
+                  onClick={() =>
+                    setEvent((prev) => ({
+                      ...prev,
+                      bannerImage: null,
+                      bannerFile: null,
+                    }))
+                  }
+                  className="mt-2 text-red-600 hover:text-red-800"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="p-6 text-center border-2 border-dashed rounded">
+                <Image className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="mb-1 text-gray-500">
+                  Drag & drop or click to upload
+                </p>
+                <input
+                  type="file"
+                  name="banner"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="banner-upload"
+                />
+                <label
+                  htmlFor="banner-upload"
+                  className="inline-block px-4 py-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300"
+                >
+                  Select Image
+                </label>
+              </div>
+            )}
+          </section>
+
+          {/* --- Tickets --- */}
+          <section>
+            <h2 className="pb-2 mb-4 font-semibold border-b">Ticket Types</h2>
+            {event.ticketTypes.map((t, i) => (
+              <div key={i} className="p-4 mb-4 space-y-3 rounded bg-gray-50">
+                <div className="flex justify-between">
+                  <h3 className="font-medium">Ticket #{i + 1}</h3>
+                  {event.ticketTypes.length > 1 && (
+                    <button
+                      onClick={() => removeTicketType(i)}
+                      className="text-sm text-red-600 hover:text-red-800"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="block mb-1">Name *</label>
+                    <div className="flex overflow-hidden border rounded">
+                      <span className="p-2 border-r bg-gray-50">
+                        <Ticket className="w-5 h-5 text-gray-400" />
+                      </span>
+                      <input
+                        type="text"
+                        value={t.name}
+                        onChange={(e) =>
+                          updateTicketType(i, "name", e.target.value)
+                        }
+                        className="flex-1 p-2 focus:outline-none"
+                        placeholder="VIP, General…"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block mb-1">Price ($) *</label>
+                    <div className="flex overflow-hidden border rounded">
+                      <span className="p-2 border-r bg-gray-50">
+                        <DollarSign className="w-5 h-5 text-gray-400" />
+                      </span>
+                      <input
+                        type="number"
+                        value={t.price}
+                        onChange={(e) =>
+                          updateTicketType(i, "price", e.target.value)
+                        }
+                        className="flex-1 p-2 focus:outline-none"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block mb-1">Quantity Available *</label>
+                    <div className="flex overflow-hidden border rounded">
+                      <span className="p-2 border-r bg-gray-50">
+                        <Users className="w-5 h-5 text-gray-400" />
+                      </span>
+                      <input
+                        type="number"
+                        value={t.quantity}
+                        onChange={(e) =>
+                          updateTicketType(i, "quantity", e.target.value)
+                        }
+                        className="flex-1 p-2 focus:outline-none"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={addTicketType}
+              className="flex items-center text-blue-600 hover:text-blue-800"
+            >
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Add Ticket Type
+            </button>
+          </section>
+
+          {/* --- Discounts --- */}
+          <section>
+            <h2 className="pb-2 mb-4 font-semibold border-b">
+              Additional Options
+            </h2>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="enableDiscounts"
+                checked={event.enableDiscounts}
+                onChange={handleInputChange}
+                className="w-5 h-5 form-checkbox"
+              />
+              <span>Enable discount codes</span>
+            </label>
+            {event.enableDiscounts && (
+              <p className="mt-2 text-sm text-gray-500">
+                You’ll be able to create discount codes after saving.
+              </p>
+            )}
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
