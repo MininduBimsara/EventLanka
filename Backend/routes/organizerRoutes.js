@@ -13,7 +13,8 @@ const {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads"));
+    // Make sure this path exists and is accessible
+    cb(null, "uploads/event-images/");
   },
   filename: function (req, file, cb) {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -30,7 +31,14 @@ const salesController = require("../controllers/Organizer/salesController");
 const organizerController = require("../controllers/Organizer/organizerController");
 
 /* ===== Event Routes ===== */
-router.post("/events", protect, organizerOnly, eventController.createEvent);
+// For the event routes, add the upload middleware:
+router.post(
+  "/events", 
+  protect, 
+  organizerOnly, 
+  upload.single('banner'), // Add this line to handle file uploads with field name 'banner'
+  eventController.createEvent
+);
 router.put("/events/:id", protect, eventController.updateEvent);
 router.get("/events", protect, organizerOnly, eventController.getEvents);
 router.get("/events/:id", eventController.getEventById);

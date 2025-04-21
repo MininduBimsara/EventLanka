@@ -12,7 +12,7 @@ export const createEvent = createAsyncThunk(
       // Set the correct content type for FormData (multipart/form-data)
       const config = {
         headers: {
-          "Content-Type": "multipart/form-data",
+         
         },
         withCredentials: true, // Include cookies with the request
       };
