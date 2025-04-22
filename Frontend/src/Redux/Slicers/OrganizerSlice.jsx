@@ -1,8 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getUserId } from "./userSlice";
 
 // Base URL for organizer API endpoints
 const ORGANIZER_API_URL = "http://localhost:5000/api/organizer";
+
+// Set default axios config
+axios.defaults.withCredentials = true;
 
 // ===== EVENT THUNKS =====
 export const createEvent = createAsyncThunk(
@@ -302,51 +306,94 @@ export const getSalesAnalytics = createAsyncThunk(
 );
 
 // ===== ORGANIZER PROFILE THUNKS =====
-export const getOrganizerProfile = createAsyncThunk(
-  "organizer/getProfile",
+// Function to get the current organizer profile
+// Add this to your organizerSlice.js
+export const fetchOrganizerProfile = createAsyncThunk(
+  "organizer/fetchOrganizerProfile",
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${ORGANIZER_API_URL}/organizer/profile`
+        `${ORGANIZER_API_URL}/profile`
       );
       return response.data;
     } catch (error) {
+      if (error.response?.status === 401) {
+        return rejectWithValue("401 Unauthorized: Please log in again");
+      }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch organizer profile"
+        error.response?.data?.message || "Failed to fetch profile data"
       );
     }
   }
 );
 
+// Async thunk for updating organizer profile
 export const updateOrganizerProfile = createAsyncThunk(
-  "organizer/updateProfile",
-  async (profileData, { rejectWithValue }) => {
+  "organizer/updateOrganizerProfile",
+  async (organizerData, { getState, rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${ORGANIZER_API_URL}/organizer/profile`,
-        profileData
-      );
-      return response.data;
-    } catch (error) {
+      let response;
+      
+      // If there's a new file, build FormData
+      if (organizerData.profileImage instanceof File) {
+        const formData = new FormData();
+        Object.entries(organizerData).forEach(([key, val]) => {
+          // Handle arrays specially (like categories)
+          if (Array.isArray(val)) {
+            formData.append(key, JSON.stringify(val));
+          } else {
+            // Append everything else, including the file
+            formData.append(key, val);
+          }
+        });
+        
+        response = await axios.put(
+          `${ORGANIZER_API_URL}/profile`,
+          formData,
+          {
+            withCredentials: true,
+          }
+        );
+      } else {
+        // JSON payload for non-file updates
+        response = await axios.put(
+          `${ORGANIZER_API_URL}/profile`,
+          organizerData,
+          {
+            withCredentials: true,
+          }
+        );
+      }
+
+      return response.data.organizer; // Based on your backend response structure
+    } catch (err) {
+      if (err.response?.status === 401) {
+        return rejectWithValue("401 Unauthorized: Please log in again");
+      }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update profile"
+        err.response?.data?.message ||
+          `Update failed: ${err.message} (${err.response?.status})`
       );
     }
   }
 );
 
 export const updateOrganizerSettings = createAsyncThunk(
-  "organizer/updateSettings",
+  "organizer/updateOrganizerSettings",
   async (settingsData, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${ORGANIZER_API_URL}/organizer/settings`,
-        settingsData
+        `${ORGANIZER_API_URL}/settings`,
+        settingsData,
+        { withCredentials: true }
       );
-      return response.data;
+      return response.data.user;
     } catch (error) {
+      if (error.response?.status === 401) {
+        return rejectWithValue("401 Unauthorized: Please log in again");
+      }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update settings"
+        error.response?.data?.message || "Settings update failed"
       );
     }
   }
@@ -357,7 +404,7 @@ export const getOrganizerDashboard = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${ORGANIZER_API_URL}/organizer/dashboard`
+        `${ORGANIZER_API_URL}/dashboard`
       );
       return response.data;
     } catch (error) {
@@ -368,18 +415,23 @@ export const getOrganizerDashboard = createAsyncThunk(
   }
 );
 
-export const changeOrganizerPassword = createAsyncThunk(
-  "organizer/changePassword",
+// Async thunk for updating organizer password
+export const updateOrganizerPassword = createAsyncThunk(
+  "organizer/updateOrganizerPassword",
   async (passwordData, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${ORGANIZER_API_URL}/organizer/password`,
-        passwordData
+        `${ORGANIZER_API_URL}/password`,
+        passwordData,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
+      if (error.response?.status === 401) {
+        return rejectWithValue("401 Unauthorized: Please log in again");
+      }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to change password"
+        error.response?.data?.message || "Password update failed"
       );
     }
   }
@@ -753,15 +805,15 @@ const organizerSlice = createSlice({
 
       // ===== ORGANIZER PROFILE REDUCERS =====
       // Get Organizer Profile
-      .addCase(getOrganizerProfile.pending, (state) => {
+      .addCase(fetchOrganizerProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(getOrganizerProfile.fulfilled, (state, action) => {
+      .addCase(fetchOrganizerProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload;
       })
-      .addCase(getOrganizerProfile.rejected, (state, action) => {
+      .addCase(fetchOrganizerProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -813,16 +865,16 @@ const organizerSlice = createSlice({
       })
 
       // Change Organizer Password
-      .addCase(changeOrganizerPassword.pending, (state) => {
+      .addCase(updateOrganizerPassword.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(changeOrganizerPassword.fulfilled, (state) => {
+      .addCase(updateOrganizerPassword.fulfilled, (state) => {
         state.loading = false;
         state.success = true;
         state.message = "Password changed successfully";
       })
-      .addCase(changeOrganizerPassword.rejected, (state, action) => {
+      .addCase(updateOrganizerPassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
