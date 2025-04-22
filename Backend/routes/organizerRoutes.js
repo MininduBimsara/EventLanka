@@ -121,31 +121,31 @@ router.get("/sales/analytics", protect, salesController.getAnalytics);
 
 /* ===== Organizer Routes ===== */
 router.get(
-  "/organizer/profile",
+  "/profile",
   protect,
   organizerOnly,
   organizerController.getProfile
 );
 router.put(
-  "/organizer/profile",
+  "/profile",
   protect,
   organizerOnly,
   profileUpload.single("profileImage"),
   organizerController.updateProfile
 );
 router.put(
-  "/organizer/settings",
+  "/settings",
   protect,
   organizerOnly,
   organizerController.updateSettings
 );
 router.get(
-  "/organizer/dashboard",
+  "/dashboard",
   protect,
   organizerOnly,
   organizerController.dashboard
 );
-router.put("/organizer/password", protect, organizerController.changePassword);
+router.put("/password", protect, organizerController.changePassword);
 
 
 // Add new routes for admin access to organizers

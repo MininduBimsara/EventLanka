@@ -1,42 +1,39 @@
 const User = require("../../models/User");
+const Organizer = require("../../models/Organizer");
 const Event = require("../../models/Event");
 const Ticket = require("../../models/Ticket");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 
 // Get organizer profile
+
 exports.getProfile = asyncHandler(async (req, res) => {
-try {
-  const organizer = await Organizer.findOne({
-    user: req.params.id,
-  }).populate("user", "-password");
+  try {
+    const organizer = await Organizer.findOne({
+      user: req.user.id,  // Changed from req.params.id
+    }).populate("user", "-password");
 
-  if (!organizer) {
-    return res.status(404).json({ message: "Organizer not found" });
+    if (!organizer) {
+      return res.status(404).json({ message: "Organizer not found" });
+    }
+
+    // Combine user and organizer data
+    const organizerData = {
+      ...organizer.user._doc,
+      ...organizer._doc,
+      id: organizer.user._id,
+    };
+
+    res.status(200).json(organizerData);
+  } catch (error) {
+    console.error("Error fetching organizer profile:", error);
+    res.status(500).json({ message: error.message });
   }
-
-  // Combine user and organizer data
-  const organizerData = {
-    ...organizer.user._doc,
-    ...organizer._doc,
-    id: organizer.user._id,
-  };
-
-  res.status(200).json(organizerData);
-} catch (error) {
-  console.error("Error fetching organizer profile:", error);
-  res.status(500).json({ message: error.message });
-}
 });
 
 // Update organizer profile
 exports.updateProfile = async (req, res) => {
   try {
-    // Check authorization
-    if (req.user.id !== req.params.id) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-
     // Extract fields to update in User model
     const userUpdates = {};
     const userFields = ["username", "email"];
@@ -54,7 +51,7 @@ exports.updateProfile = async (req, res) => {
 
     // Update User document if needed
     if (Object.keys(userUpdates).length > 0) {
-      await User.findByIdAndUpdate(req.params.id, userUpdates);
+      await User.findByIdAndUpdate(req.user.id, userUpdates);
     }
 
     // Extract organizer-specific fields
@@ -77,21 +74,21 @@ exports.updateProfile = async (req, res) => {
     });
 
     // Find and update or create organizer profile
-    let organizer = await Organizer.findOne({ user: req.params.id });
+    let organizer = await Organizer.findOne({ user: req.user.id });
 
     if (organizer) {
       // Update existing organizer document
       organizer = await Organizer.findOneAndUpdate(
-        { user: req.params.id },
+        { user: req.user.id },
         organizerUpdates,
         { new: true }
       ).populate("user", "-password");
     } else {
       // Create new organizer document if doesn't exist
-      organizerUpdates.user = req.params.id;
+      organizerUpdates.user = req.user.id;
       organizer = new Organizer(organizerUpdates);
       await organizer.save();
-      organizer = await Organizer.findOne({ user: req.params.id }).populate(
+      organizer = await Organizer.findOne({ user: req.user.id }).populate(
         "user",
         "-password"
       );
