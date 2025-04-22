@@ -457,7 +457,7 @@ const initialState = {
   salesAnalytics: null,
 
   // Organizer profile states
-  profile: null,
+  organizerProfile: null,
   settings: null,
   dashboardData: null,
 
@@ -811,7 +811,7 @@ const organizerSlice = createSlice({
       })
       .addCase(fetchOrganizerProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload;
+        state.organizerProfile = action.payload;
       })
       .addCase(fetchOrganizerProfile.rejected, (state, action) => {
         state.loading = false;
@@ -825,7 +825,7 @@ const organizerSlice = createSlice({
       })
       .addCase(updateOrganizerProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload;
+        state.organizerProfile = action.payload;
         state.success = true;
         state.message = "Profile updated successfully";
       })
