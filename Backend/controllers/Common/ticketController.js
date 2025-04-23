@@ -44,7 +44,7 @@ exports.buyTicket = asyncHandler(async (req, res) => {
     ticket_type: ticketType,
     quantity: quantity,
     price: totalPrice,
-    qr_code: "112233", // In a real app, you'd generate this
+    qr_code: null, // In a real app, you'd generate this
     payment_status: "pending",
   });
 

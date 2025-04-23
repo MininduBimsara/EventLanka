@@ -90,7 +90,7 @@ router.get(
 // router.post("/attendees", protect, attendeeController.create);
 // router.put("/attendees/:id", protect, attendeeController.update);
 router.put(
-  "/attendees/:id/attendance",
+  "/attendees/:ticketId/attendance",
   protect,
   // validate(attendeeValidations.markAttendance),
   attendeeController.markAttendance
