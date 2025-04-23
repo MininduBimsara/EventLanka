@@ -97,41 +97,43 @@ export default function CreateEvent() {
   };
 
   // Convert frontend data to match backend model
-  const prepareEventData = () => {
-    // Format the date and time
-    const date = new Date(`${event.startDate}T${event.startTime}`);
+const prepareEventData = () => {
+  // Format the date and time
+  const date = new Date(`${event.startDate}T${event.startTime}`);
 
-    // Calculate duration in hours if end date/time provided
-    let duration = 1; // Default 1 hour
-    if (event.endDate && event.endTime) {
-      const endDate = new Date(`${event.endDate}T${event.endTime}`);
-      duration = (endDate - date) / (1000 * 60 * 60); // Convert milliseconds to hours
-    }
+  // Calculate duration in hours if end date/time provided
+  let duration = 1; // Default 1 hour
+  if (event.endDate && event.endTime) {
+    const endDate = new Date(`${event.endDate}T${event.endTime}`);
+    duration = (endDate - date) / (1000 * 60 * 60); // Convert milliseconds to hours
+  }
 
-    // Format ticket types to match backend model
-    const ticket_types = event.ticketTypes.map((ticket) => ({
-      type: ticket.name,
-      price: parseFloat(ticket.price),
-      availability: parseInt(ticket.quantity),
-    }));
+  // Format ticket types to match backend model
+  const ticket_types = event.ticketTypes.map((ticket) => ({
+    type: ticket.name,
+    price: parseFloat(ticket.price),
+    availability: parseInt(ticket.quantity),
+  }));
 
-    // Create FormData for multipart/form-data submission (for file upload)
-    const formData = new FormData();
-    formData.append("title", event.title);
-    formData.append("description", event.description);
-    formData.append("category", event.category);
-    formData.append("location", event.location);
-    formData.append("date", date.toISOString());
-    formData.append("duration", duration);
-    formData.append("ticket_types", JSON.stringify(ticket_types));
+  // Create FormData for multipart/form-data submission (for file upload)
+  const formData = new FormData();
+  formData.append("title", event.title);
+  formData.append("description", event.description);
+  formData.append("category", event.category);
+  formData.append("location", event.location);
+  formData.append("date", date.toISOString());
+  formData.append("duration", duration.toString());
 
-    // Append banner file if available
-    if (event.bannerFile) {
-      formData.append("banner", event.bannerFile);
-    }
+  // Handle ticket types properly - convert to string and send as a single field
+  formData.append("ticket_types", JSON.stringify(ticket_types));
 
-    return formData;
-  };
+  // Append banner file if available
+  if (event.bannerFile) {
+    formData.append("banner", event.bannerFile);
+  }
+
+  return formData;
+};
 
   const saveEvent = (status) => {
     try {

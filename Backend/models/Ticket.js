@@ -27,7 +27,7 @@ const ticketSchema = new mongoose.Schema({
   },
   qr_code: {
     type: String,
-    required: true,
+    default: null,
   },
   issued_at: {
     type: Date,
@@ -36,6 +36,15 @@ const ticketSchema = new mongoose.Schema({
   validated: {
     type: Boolean,
     default: false,
+  },
+  attendance_status: {
+    type: String,
+    enum: ["not_attended", "attended"],
+    default: "not_attended",
+  },
+  check_in_time: {
+    type: Date,
+    default: null,
   },
 });
 

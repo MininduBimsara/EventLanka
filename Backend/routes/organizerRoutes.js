@@ -10,6 +10,13 @@ const {
   organizerOnly,
 } = require("../middleware/authMiddleware");
 
+// Import validation middleware
+// const {
+//   validate,
+//   attendeeValidations,
+//   discountValidations,
+// } = require("../middleware/OrganizerValidationMiddleware");
+
 // Configure multer for file uploads
 const eventStorage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -21,7 +28,8 @@ const eventStorage = multer.diskStorage({
   },
 });
 
-const eventUpload = multer({ eventStorage });
+// Fix: Changed from { eventStorage } to { storage: eventStorage }
+const eventUpload = multer({ storage: eventStorage });
 
 // Configure multer for profile image uploads
 const profileStorage = multer.diskStorage({
@@ -35,7 +43,7 @@ const profileStorage = multer.diskStorage({
   },
 });
 
-const profileUpload = multer({ 
+const profileUpload = multer({
   storage: profileStorage,
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
@@ -43,7 +51,7 @@ const profileUpload = multer({
     } else {
       cb(new Error("Only image files are allowed."), false);
     }
-  }
+  },
 });
 
 // Import controllers
@@ -59,10 +67,10 @@ router.post(
   "/events",
   protect,
   organizerOnly,
-  eventUpload.single("banner"), // Add this line to handle file uploads with field name 'banner'
+  eventUpload.single("banner"),
   eventController.createEvent
 );
-router.put("/events/:id", protect, eventController.updateEvent);
+router.put("/events/:id", protect, organizerOnly, eventController.updateEvent);
 router.get("/events", protect, organizerOnly, eventController.getEvents);
 router.get("/events/:id", eventController.getEventById);
 router.delete("/events/:id", protect, eventController.deleteEvent);
@@ -82,27 +90,51 @@ router.get(
 // router.post("/attendees", protect, attendeeController.create);
 // router.put("/attendees/:id", protect, attendeeController.update);
 router.put(
-  "/attendees/:id/attendance",
+  "/attendees/:ticketId/attendance",
   protect,
+  // validate(attendeeValidations.markAttendance),
   attendeeController.markAttendance
 );
 router.post(
   "/attendees/:ticketId/resend-confirmation",
   protect,
+  // validate(attendeeValidations.resendConfirmation),
   attendeeController.resendConfirmation
 );
 router.get(
   "/events/:eventId/attendees/export/:format",
   protect,
+  // validate(attendeeValidations.exportList),
   attendeeController.exportList
 );
 
+// New QR code routes
+router.get(
+  "/tickets/:ticketId/qrcode",
+  protect,
+  // validate(attendeeValidations.generateQRCode),
+  attendeeController.generateQRCode
+);
+router.post(
+  "/tickets/validate-qrcode",
+  protect,
+  // validate(attendeeValidations.validateQRCode),
+  attendeeController.validateQRCode
+);
+
 /* ===== Discount Routes ===== */
-router.post("/discounts", protect, organizerOnly, discountController.create);
+router.post(
+  "/discounts",
+  protect,
+  organizerOnly,
+  // validate(discountValidations.createDiscount),
+  discountController.create
+);
 router.put(
   "/discounts/:discountId",
   protect,
   organizerOnly,
+  // validate(discountValidations.updateDiscount),
   discountController.update
 );
 router.delete(
@@ -112,7 +144,11 @@ router.delete(
   discountController.delete
 );
 router.get("/events/:eventId/discounts", protect, discountController.getAll);
-router.post("/discounts/validate", discountController.validateCode);
+router.post(
+  "/discounts/validate",
+  // validate(discountValidations.validateCode),
+  discountController.validateCode
+);
 
 /* ===== Sales Routes ===== */
 router.get("/sales/event/:eventId", protect, salesController.getSalesByEvent);
@@ -120,12 +156,7 @@ router.get("/sales/period", protect, salesController.getSalesByPeriod);
 router.get("/sales/analytics", protect, salesController.getAnalytics);
 
 /* ===== Organizer Routes ===== */
-router.get(
-  "/profile",
-  protect,
-  organizerOnly,
-  organizerController.getProfile
-);
+router.get("/profile", protect, organizerOnly, organizerController.getProfile);
 router.put(
   "/profile",
   protect,
@@ -139,14 +170,8 @@ router.put(
   organizerOnly,
   organizerController.updateSettings
 );
-router.get(
-  "/dashboard",
-  protect,
-  organizerOnly,
-  organizerController.dashboard
-);
+router.get("/dashboard", protect, organizerOnly, organizerController.dashboard);
 router.put("/password", protect, organizerController.changePassword);
-
 
 // Add new routes for admin access to organizers
 // router.get(

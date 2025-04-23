@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Search,
   Download,
@@ -7,154 +8,86 @@ import {
   ChevronDown,
   QrCode,
 } from "lucide-react";
+import {
+  getEventAttendees,
+  markAttendance,
+  resendConfirmation,
+  exportAttendeeList,
+  getOrganizerEvents, // Add this function to fetch events
+} from "../../Redux/Slicers/OrganizerSlice";
 
 const Attendees = () => {
-  // State management
-  const [events, setEvents] = useState([]);
+  const dispatch = useDispatch();
+
+  // Redux state
+  const { attendees, loading, error, events } = useSelector(
+    (state) => state.organizer
+  );
+
+  // Local state
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [attendees, setAttendees] = useState([]);
   const [filteredAttendees, setFilteredAttendees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [exportType, setExportType] = useState("csv");
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedQRCode, setSelectedQRCode] = useState(null);
 
-  // Mock data for demonstration
+  // Fetch events on component mount
   useEffect(() => {
-    // In a real application, this would be an API call
-    const mockEvents = [
-      { id: 1, name: "Annual Conference 2025" },
-      { id: 2, name: "Tech Summit" },
-      { id: 3, name: "Networking Mixer" },
-    ];
+    dispatch(getOrganizerEvents());
+  }, [dispatch]);
 
-    const mockAttendees = [
-      {
-        id: 1,
-        eventId: 1,
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "555-123-4567",
-        ticketType: "VIP",
-        paymentStatus: "Paid",
-        checkedIn: false,
-        qrCode: "qr_code_1",
-      },
-      {
-        id: 2,
-        eventId: 1,
-        name: "Jane Smith",
-        email: "jane@example.com",
-        phone: "555-987-6543",
-        ticketType: "General",
-        paymentStatus: "Paid",
-        checkedIn: true,
-        qrCode: "qr_code_2",
-      },
-      {
-        id: 3,
-        eventId: 1,
-        name: "Alex Johnson",
-        email: "alex@example.com",
-        phone: "555-456-7890",
-        ticketType: "General",
-        paymentStatus: "Pending",
-        checkedIn: false,
-        qrCode: "qr_code_3",
-      },
-      {
-        id: 4,
-        eventId: 2,
-        name: "Sarah Williams",
-        email: "sarah@example.com",
-        phone: "555-789-0123",
-        ticketType: "Premium",
-        paymentStatus: "Paid",
-        checkedIn: false,
-        qrCode: "qr_code_4",
-      },
-      {
-        id: 5,
-        eventId: 2,
-        name: "Michael Brown",
-        email: "michael@example.com",
-        phone: "555-234-5678",
-        ticketType: "General",
-        paymentStatus: "Refunded",
-        checkedIn: false,
-        qrCode: "qr_code_5",
-      },
-    ];
-
-    setEvents(mockEvents);
-    setAttendees(mockAttendees);
-
-    // Default to the first event
-    if (mockEvents.length > 0) {
-      setSelectedEvent(mockEvents[0]);
-      setFilteredAttendees(
-        mockAttendees.filter((a) => a.eventId === mockEvents[0].id)
-      );
+  // Fetch attendees when an event is selected
+  useEffect(() => {
+    if (selectedEvent?._id) {
+      dispatch(getEventAttendees(selectedEvent._id));
     }
-  }, []);
+  }, [selectedEvent, dispatch]);
+
+  // Update filtered attendees when attendees or search term changes
+  useEffect(() => {
+    if (attendees && attendees.length > 0) {
+      const filtered = attendees.filter(
+        (attendee) =>
+          attendee.user_id?.username
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          attendee.user_id?.email
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          attendee.ticket_type?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredAttendees(filtered);
+    }
+  }, [attendees, searchTerm]);
 
   // Handle event selection
   const handleSelectEvent = (event) => {
     setSelectedEvent(event);
-    const eventAttendees = attendees.filter((a) => a.eventId === event.id);
-    setFilteredAttendees(eventAttendees);
     setIsDropdownOpen(false);
+    setSearchTerm("");
   };
 
   // Handle search
   const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-
-    if (selectedEvent) {
-      const filtered = attendees.filter(
-        (a) =>
-          a.eventId === selectedEvent.id &&
-          (a.name.toLowerCase().includes(term) ||
-            a.email.toLowerCase().includes(term) ||
-            a.phone.includes(term) ||
-            a.ticketType.toLowerCase().includes(term) ||
-            a.paymentStatus.toLowerCase().includes(term))
-      );
-      setFilteredAttendees(filtered);
-    }
+    setSearchTerm(e.target.value);
   };
 
   // Handle check-in toggle
-  const handleCheckIn = (id) => {
-    const updatedAttendees = attendees.map((attendee) => {
-      if (attendee.id === id) {
-        return { ...attendee, checkedIn: !attendee.checkedIn };
-      }
-      return attendee;
-    });
-
-    setAttendees(updatedAttendees);
-
-    if (selectedEvent) {
-      setFilteredAttendees(
-        updatedAttendees.filter(
-          (a) =>
-            a.eventId === selectedEvent.id &&
-            (a.name.toLowerCase().includes(searchTerm) ||
-              a.email.toLowerCase().includes(searchTerm) ||
-              a.phone.includes(searchTerm) ||
-              a.ticketType.toLowerCase().includes(searchTerm) ||
-              a.paymentStatus.toLowerCase().includes(searchTerm))
-        )
-      );
-    }
+  const handleCheckIn = (attendeeId) => {
+    dispatch(
+      markAttendance({
+        attendeeId,
+        attendanceData: { status: "attended" },
+      })
+    );
   };
 
   // Handle resend confirmation email
-  const handleResendEmail = (attendee) => {
-    // In a real application, this would trigger an API call
-    alert(`Confirmation email resent to ${attendee.email}`);
+  const handleResendEmail = (ticketId) => {
+    dispatch(resendConfirmation(ticketId));
   };
 
   // Handle export
@@ -164,64 +97,91 @@ const Attendees = () => {
       return;
     }
 
-    if (exportType === "csv") {
-      exportToCSV();
-    } else {
-      exportToPDF();
+    try {
+      // Show loading state if needed
+      dispatch(
+        exportAttendeeList({
+          eventId: selectedEvent._id,
+          format: exportType,
+        })
+      )
+        .unwrap()
+        .then(() => {
+          // Success feedback
+          console.log(`${exportType.toUpperCase()} exported successfully`);
+        })
+        .catch((error) => {
+          // Error feedback
+          console.error("Export failed:", error);
+          alert(`Failed to export as ${exportType.toUpperCase()}: ${error}`);
+        });
+    } catch (error) {
+      console.error("Export error:", error);
     }
   };
 
-  const exportToCSV = () => {
-    // Prepare CSV data
-    const headers = [
-      "Name",
-      "Email",
-      "Phone",
-      "Ticket Type",
-      "Payment Status",
-      "Checked In",
-    ];
-    const csvRows = [headers.join(",")];
-
-    filteredAttendees.forEach((attendee) => {
-      const row = [
-        attendee.name,
-        attendee.email,
-        attendee.phone,
-        attendee.ticketType,
-        attendee.paymentStatus,
-        attendee.checkedIn ? "Yes" : "No",
-      ];
-      csvRows.push(row.join(","));
-    });
-
-    const csvContent = csvRows.join("\n");
-
-    // Create a Blob and download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-
-    link.href = url;
-    link.setAttribute("download", `${selectedEvent?.name}-attendees.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const exportToPDF = () => {
-    // In a real application, this would generate a PDF
-    alert("PDF export functionality would be implemented here");
-  };
-
   // View QR Code
-  const viewQRCode = (qrCode) => {
-    // In a real application, this would display the QR code
-    alert(`Viewing QR Code: ${qrCode}`);
+  const viewQRCode = async (ticketId) => {
+    try {
+      // In a real implementation, you would fetch the QR code from your backend
+      const response = await fetch(
+        `http://localhost:5000/api/organizer/tickets/${ticketId}/qrcode`,
+        {
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch QR code");
+
+      const data = await response.json();
+      setSelectedQRCode(data.qrCode);
+      setShowQRModal(true);
+    } catch (error) {
+      console.error("Error fetching QR code:", error);
+      alert("Error fetching QR code");
+    }
   };
+
+  // QR Code Modal
+  const QRCodeModal = () => {
+    if (!showQRModal) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="p-6 bg-white rounded-lg">
+          <h3 className="mb-4 text-lg font-bold">Attendee QR Code</h3>
+          <div className="flex justify-center">
+            <img
+              src={selectedQRCode}
+              alt="Attendee QR Code"
+              className="w-64 h-64"
+            />
+          </div>
+          <div className="flex justify-center mt-4">
+            <button
+              className="px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              onClick={() => setShowQRModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render loading state
+  if (loading && !attendees.length) {
+    return <div className="p-6">Loading attendees...</div>;
+  }
+
+  // Render error state
+  if (error) {
+    return <div className="p-6 text-red-500">Error: {error}</div>;
+  }
 
   return (
-    <div className="bg-white rounded-lg shadow-md ">
+    <div className="bg-white rounded-lg shadow-md">
       <h2 className="mb-6 text-2xl font-bold">Event Attendees</h2>
 
       {/* Event Selection */}
@@ -233,7 +193,7 @@ const Attendees = () => {
               className="inline-flex justify-between w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
-              {selectedEvent ? selectedEvent.name : "Select Event"}
+              {selectedEvent ? selectedEvent.title : "Select Event"}
               <ChevronDown className="w-5 h-5 ml-2" />
             </button>
           </div>
@@ -243,12 +203,12 @@ const Attendees = () => {
               <div className="py-1" role="menu" aria-orientation="vertical">
                 {events.map((event) => (
                   <button
-                    key={event.id}
+                    key={event._id}
                     className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                     onClick={() => handleSelectEvent(event)}
                   >
-                    {event.name}
+                    {event.title}
                   </button>
                 ))}
               </div>
@@ -301,6 +261,7 @@ const Attendees = () => {
           <button
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             onClick={handleExport}
+            disabled={!selectedEvent || filteredAttendees.length === 0}
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -345,25 +306,19 @@ const Attendees = () => {
                 scope="col"
                 className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
               >
-                Phone
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
                 Ticket Type
               </th>
               <th
                 scope="col"
                 className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
               >
-                Payment Status
+                Quantity
               </th>
               <th
                 scope="col"
                 className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
               >
-                Check-in
+                Check-in Status
               </th>
               <th
                 scope="col"
@@ -382,68 +337,79 @@ const Attendees = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAttendees.length > 0 ? (
               filteredAttendees.map((attendee) => (
-                <tr key={attendee.id}>
+                <tr key={attendee._id}>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
-                    {attendee.name}
+                    {attendee.user_id?.username || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {attendee.email}
+                    {attendee.user_id?.email || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {attendee.phone}
+                    {attendee.ticket_type}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {attendee.ticketType}
+                    {attendee.quantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                       ${
-                        attendee.paymentStatus === "Paid"
+                        attendee.attendance_status === "attended"
                           ? "bg-green-100 text-green-800"
-                          : attendee.paymentStatus === "Pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {attendee.paymentStatus}
+                      {attendee.attendance_status === "attended"
+                        ? "Checked In"
+                        : "Not Checked In"}
+                      {attendee.check_in_time &&
+                        ` (${new Date(
+                          attendee.check_in_time
+                        ).toLocaleTimeString()})`}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                     <button
-                      onClick={() => handleCheckIn(attendee.id)}
-                      className={`p-2 rounded-full ${
-                        attendee.checkedIn
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    <button
-                      onClick={() => viewQRCode(attendee.qrCode)}
+                      onClick={() => viewQRCode(attendee._id)}
                       className="p-2 text-gray-500 bg-gray-100 rounded-full hover:bg-gray-200"
+                      title="View QR Code"
                     >
                       <QrCode className="w-5 h-5" />
                     </button>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    <button
-                      onClick={() => handleResendEmail(attendee)}
-                      className="p-2 text-blue-500 bg-blue-100 rounded-full hover:bg-blue-200"
-                      title="Resend Confirmation Email"
-                    >
-                      <Mail className="w-5 h-5" />
-                    </button>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleCheckIn(attendee._id)}
+                        className={`p-2 rounded-full ${
+                          attendee.attendance_status === "attended"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        }`}
+                        title={
+                          attendee.attendance_status === "attended"
+                            ? "Already Checked In"
+                            : "Mark as Checked In"
+                        }
+                        disabled={attendee.attendance_status === "attended"}
+                      >
+                        <Check className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleResendEmail(attendee._id)}
+                        className="p-2 text-blue-500 bg-blue-100 rounded-full hover:bg-blue-200"
+                        title="Resend Confirmation Email"
+                      >
+                        <Mail className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td
-                  colSpan="8"
+                  colSpan="7"
                   className="px-6 py-4 text-sm text-center text-gray-500"
                 >
                   {selectedEvent
@@ -466,17 +432,28 @@ const Attendees = () => {
           <div className="p-3 bg-green-100 rounded-lg">
             <span className="text-sm text-gray-500">Checked In:</span>
             <span className="ml-2 font-bold">
-              {filteredAttendees.filter((a) => a.checkedIn).length}
+              {
+                filteredAttendees.filter(
+                  (a) => a.attendance_status === "attended"
+                ).length
+              }
             </span>
           </div>
           <div className="p-3 bg-yellow-100 rounded-lg">
             <span className="text-sm text-gray-500">Pending Check-in:</span>
             <span className="ml-2 font-bold">
-              {filteredAttendees.filter((a) => !a.checkedIn).length}
+              {
+                filteredAttendees.filter(
+                  (a) => a.attendance_status !== "attended"
+                ).length
+              }
             </span>
           </div>
         </div>
       )}
+
+      {/* QR Code Modal */}
+      <QRCodeModal />
     </div>
   );
 };

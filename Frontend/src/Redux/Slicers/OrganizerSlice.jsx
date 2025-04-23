@@ -15,9 +15,7 @@ export const createEvent = createAsyncThunk(
     try {
       // Set the correct content type for FormData (multipart/form-data)
       const config = {
-        headers: {
-         
-        },
+        headers: {},
         withCredentials: true, // Include cookies with the request
       };
 
@@ -98,6 +96,9 @@ export const deleteOrganizerEvent = createAsyncThunk(
 );
 
 // ===== ATTENDEE THUNKS =====
+/**
+ * Fetch all attendees for a specific event
+ */
 export const getEventAttendees = createAsyncThunk(
   "organizer/getEventAttendees",
   async (eventId, { rejectWithValue }) => {
@@ -114,15 +115,21 @@ export const getEventAttendees = createAsyncThunk(
   }
 );
 
+/**
+ * Mark attendance for an attendee
+ */
 export const markAttendance = createAsyncThunk(
   "organizer/markAttendance",
   async ({ attendeeId, attendanceData }, { rejectWithValue }) => {
     try {
       const response = await axios.put(
         `${ORGANIZER_API_URL}/attendees/${attendeeId}/attendance`,
-        attendanceData
+        attendanceData,
+        {
+          withCredentials: true, // Including credentials if you need them
+        }
       );
-      return response.data;
+      return response.data.ticket; // Return the updated ticket object
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to mark attendance"
@@ -131,6 +138,9 @@ export const markAttendance = createAsyncThunk(
   }
 );
 
+/**
+ * Resend confirmation email to an attendee
+ */
 export const resendConfirmation = createAsyncThunk(
   "organizer/resendConfirmation",
   async (ticketId, { rejectWithValue }) => {
@@ -138,7 +148,7 @@ export const resendConfirmation = createAsyncThunk(
       const response = await axios.post(
         `${ORGANIZER_API_URL}/attendees/${ticketId}/resend-confirmation`
       );
-      return response.data;
+      return { ticketId, ...response.data };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to resend confirmation"
@@ -147,30 +157,89 @@ export const resendConfirmation = createAsyncThunk(
   }
 );
 
+/**
+ * Export attendee list as CSV or PDF
+ */
 export const exportAttendeeList = createAsyncThunk(
   "organizer/exportAttendeeList",
   async ({ eventId, format }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/events/${eventId}/attendees/export/${format}`,
-        { responseType: "blob" }
+      if (format === "pdf") {
+        // For PDFs, use window.open approach instead of Axios for streaming
+        window.open(
+          `${ORGANIZER_API_URL}/events/${eventId}/attendees/export/${format}`,
+          "_blank"
+        );
+        return { eventId, format, success: true };
+      } else {
+        // For CSV and other formats, continue using Axios
+        const response = await axios.get(
+          `${ORGANIZER_API_URL}/events/${eventId}/attendees/export/${format}`,
+          { responseType: "blob" }
+        );
+
+        // Create a URL for the blob
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+
+        // Create a link and click it to trigger download
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `attendees-${eventId}.${format}`);
+        document.body.appendChild(link);
+        link.click();
+
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+
+        return { eventId, format, success: true };
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          `Failed to export attendee list as ${format}`
       );
+    }
+  }
+);
 
-      // Create a URL for the blob
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-
-      // Create a link and click it to trigger download
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `attendees-${eventId}.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      return { eventId, format, success: true };
+/**
+ * Generate QR code for an attendee ticket
+ */
+export const generateQRCode = createAsyncThunk(
+  "organizer/generateQRCode",
+  async (ticketId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${ORGANIZER_API_URL}/tickets/${ticketId}/qrcode`
+      );
+      return response.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to export attendee list"
+        error.response?.data?.message || "Failed to generate QR code"
+      );
+    }
+  }
+);
+
+/**
+ * Validate QR code for check-in
+ */
+export const validateQRCode = createAsyncThunk(
+  "organizer/validateQRCode",
+  async (qrData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${ORGANIZER_API_URL}/tickets/validate-qrcode`,
+        { qrData }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to validate QR code"
       );
     }
   }
@@ -312,9 +381,7 @@ export const fetchOrganizerProfile = createAsyncThunk(
   "organizer/fetchOrganizerProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/profile`
-      );
+      const response = await axios.get(`${ORGANIZER_API_URL}/profile`);
       return response.data;
     } catch (error) {
       if (error.response?.status === 401) {
@@ -333,7 +400,7 @@ export const updateOrganizerProfile = createAsyncThunk(
   async (organizerData, { getState, rejectWithValue }) => {
     try {
       let response;
-      
+
       // If there's a new file, build FormData
       if (organizerData.profileImage instanceof File) {
         const formData = new FormData();
@@ -346,14 +413,10 @@ export const updateOrganizerProfile = createAsyncThunk(
             formData.append(key, val);
           }
         });
-        
-        response = await axios.put(
-          `${ORGANIZER_API_URL}/profile`,
-          formData,
-          {
-            withCredentials: true,
-          }
-        );
+
+        response = await axios.put(`${ORGANIZER_API_URL}/profile`, formData, {
+          withCredentials: true,
+        });
       } else {
         // JSON payload for non-file updates
         response = await axios.put(
@@ -403,9 +466,7 @@ export const getOrganizerDashboard = createAsyncThunk(
   "organizer/getDashboard",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/dashboard`
-      );
+      const response = await axios.get(`${ORGANIZER_API_URL}/dashboard`);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -466,6 +527,7 @@ const initialState = {
   error: null,
   success: false,
   message: "",
+  qrCode: null,
 };
 
 // Create the organizer slice
@@ -491,6 +553,11 @@ const organizerSlice = createSlice({
     // Clear attendees list
     clearAttendees: (state) => {
       state.attendees = [];
+    },
+    clearMessages: (state) => {
+      state.success = false;
+      state.message = "";
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -597,6 +664,7 @@ const organizerSlice = createSlice({
       .addCase(getEventAttendees.fulfilled, (state, action) => {
         state.loading = false;
         state.attendees = action.payload;
+        state.error = null;
       })
       .addCase(getEventAttendees.rejected, (state, action) => {
         state.loading = false;
@@ -650,6 +718,49 @@ const organizerSlice = createSlice({
         state.message = "Attendee list exported successfully";
       })
       .addCase(exportAttendeeList.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Generate QR Code
+      .addCase(generateQRCode.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(generateQRCode.fulfilled, (state, action) => {
+        state.loading = false;
+        state.qrCode = action.payload.qrCode;
+        state.success = true;
+      })
+      .addCase(generateQRCode.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Validate QR Code
+      .addCase(validateQRCode.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(validateQRCode.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.message = "QR code validated successfully";
+
+        // If the validation returns an updated ticket, find and update it in the state
+        if (action.payload.ticket) {
+          const index = state.attendees.findIndex(
+            (attendee) => attendee._id === action.payload.ticket.id
+          );
+          if (index !== -1) {
+            state.attendees[index] = {
+              ...state.attendees[index],
+              attendance_status: "attended",
+              check_in_time: action.payload.ticket.checkInTime,
+            };
+          }
+        }
+      })
+      .addCase(validateQRCode.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -887,6 +998,7 @@ export const {
   clearCurrentEvent,
   clearCurrentDiscount,
   clearAttendees,
+  clearMessages,
 } = organizerSlice.actions;
 
 // Export reducer
