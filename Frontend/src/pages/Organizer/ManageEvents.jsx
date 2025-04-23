@@ -1,4 +1,10 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import {
+  getOrganizerEvents,
+  deleteOrganizerEvent,
+} from "../../Redux/Slicers/OrganizerSlice";
 import {
   Search,
   Edit,
@@ -8,75 +14,16 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
 
 const ManageEvents = () => {
-  // Sample event data - in a real app, this would come from an API
-  const [events, setEvents] = useState([
-    {
-      id: 1,
-      title: "Summer Music Festival",
-      date: "2025-06-15T18:00:00",
-      status: "Approved",
-      ticketsSold: 342,
-      earnings: 17100,
-      isDraft: false,
-    },
-    {
-      id: 2,
-      title: "Tech Conference 2025",
-      date: "2025-05-10T09:00:00",
-      status: "Approved",
-      ticketsSold: 187,
-      earnings: 14960,
-      isDraft: false,
-    },
-    {
-      id: 3,
-      title: "Art Exhibition",
-      date: "2025-04-20T10:00:00",
-      status: "Pending",
-      ticketsSold: 0,
-      earnings: 0,
-      isDraft: false,
-    },
-    {
-      id: 4,
-      title: "Local Food Festival",
-      date: "2025-07-12T11:00:00",
-      status: "Rejected",
-      ticketsSold: 0,
-      earnings: 0,
-      isDraft: false,
-    },
-    {
-      id: 5,
-      title: "City Marathon",
-      date: "2025-09-05T07:00:00",
-      status: "Approved",
-      ticketsSold: 576,
-      earnings: 25920,
-      isDraft: false,
-    },
-    {
-      id: 6,
-      title: "Workshop Series",
-      date: "2025-04-30T14:00:00",
-      status: "Approved",
-      ticketsSold: 45,
-      earnings: 2250,
-      isDraft: true,
-    },
-    {
-      id: 7,
-      title: "Charity Gala",
-      date: "2025-05-25T19:00:00",
-      status: "Pending",
-      ticketsSold: 0,
-      earnings: 0,
-      isDraft: false,
-    },
-  ]);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Get events from Redux instead of local state
+  const { events, loading, error } = useSelector((state) => state.organizer);
 
   // State for search, filter, sort, and pagination
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,6 +32,11 @@ const ManageEvents = () => {
   const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  // Fetch events when component mounts
+  useEffect(() => {
+    dispatch(getOrganizerEvents());
+  }, [dispatch]);
 
   // Handle sorting
   const handleSort = (field) => {
@@ -96,22 +48,39 @@ const ManageEvents = () => {
     }
   };
 
-  // Handle event deletion
+  // Navigate to update event page
+  const handleEdit = (id) => {
+    navigate(`/organizer/update-event/${id}`);
+  };
+
+  // Navigate to view event details
+  const handleView = (id) => {
+    navigate(`/event/${id}`);
+  };
+
+  // Navigate to view attendees
+  const handleViewAttendees = (id) => {
+    navigate(`/organizer/event/${id}/attendees`);
+  };
+
+  // Handle event deletion with API call
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
-      setEvents(events.filter((event) => event.id !== id));
+      dispatch(deleteOrganizerEvent(id));
     }
   };
 
   // Filter and sort events
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch = event.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" || event.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredEvents = events
+    ? events.filter((event) => {
+        const matchesSearch = event.title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const matchesStatus =
+          statusFilter === "All" || event.event_status === statusFilter;
+        return matchesSearch && matchesStatus;
+      })
+    : [];
 
   const sortedEvents = [...filteredEvents].sort((a, b) => {
     let comparison = 0;
@@ -121,11 +90,17 @@ const ManageEvents = () => {
     } else if (sortField === "date") {
       comparison = new Date(a.date) - new Date(b.date);
     } else if (sortField === "status") {
-      comparison = a.status.localeCompare(b.status);
+      comparison = a.event_status.localeCompare(b.event_status);
     } else if (sortField === "ticketsSold") {
-      comparison = a.ticketsSold - b.ticketsSold;
+      // Assuming you have ticket sales data in your API response
+      const aSold = a.ticket_sales?.totalSold || 0;
+      const bSold = b.ticket_sales?.totalSold || 0;
+      comparison = aSold - bSold;
     } else if (sortField === "earnings") {
-      comparison = a.earnings - b.earnings;
+      // Assuming you have earnings data in your API response
+      const aEarnings = a.ticket_sales?.totalEarnings || 0;
+      const bEarnings = b.ticket_sales?.totalEarnings || 0;
+      comparison = aEarnings - bEarnings;
     }
 
     return sortDirection === "asc" ? comparison : -comparison;
@@ -155,18 +130,18 @@ const ManageEvents = () => {
     }).format(amount);
   };
 
-  // Status badge component
+  // Status badge component with correct API status names
   const StatusBadge = ({ status }) => {
     let bgColor = "";
 
     switch (status) {
-      case "Approved":
+      case "approved":
         bgColor = "bg-green-100 text-green-800";
         break;
-      case "Pending":
+      case "pending":
         bgColor = "bg-yellow-100 text-yellow-800";
         break;
-      case "Rejected":
+      case "rejected":
         bgColor = "bg-red-100 text-red-800";
         break;
       default:
@@ -177,14 +152,51 @@ const ManageEvents = () => {
       <span
         className={`px-2 py-1 rounded-full text-xs font-semibold ${bgColor}`}
       >
-        {status}
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
+  // Show loading state
+  if (loading && !events) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+        <span className="ml-2 text-lg">Loading events...</span>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !events) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <AlertCircle className="w-16 h-16 text-red-600" />
+        <h2 className="mt-4 text-2xl font-bold">Error Loading Events</h2>
+        <p className="mt-2 text-gray-600">{error}</p>
+        <button
+          onClick={() => dispatch(getOrganizerEvents())}
+          className="px-6 py-2 mt-6 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="container px-4 py-8 mx-auto">
       <h1 className="mb-6 text-2xl font-bold">Manage Events</h1>
+
+      {/* Show error message if any operation fails */}
+      {error && (
+        <div className="p-4 mb-6 text-red-700 bg-red-100 rounded-lg">
+          <p className="flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            {error}
+          </p>
+        </div>
+      )}
 
       {/* Search and Filter */}
       <div className="flex flex-col items-center justify-between gap-4 mb-6 md:flex-row">
@@ -207,9 +219,9 @@ const ManageEvents = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="All">All Statuses</option>
-              <option value="Approved">Approved</option>
-              <option value="Pending">Pending</option>
-              <option value="Rejected">Rejected</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
+              <option value="rejected">Rejected</option>
             </select>
             <Filter className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
           </div>
@@ -305,9 +317,19 @@ const ManageEvents = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {currentEvents.length > 0 ? (
+            {loading && (
+              <tr>
+                <td colSpan="6" className="px-6 py-4 text-center">
+                  <div className="flex justify-center">
+                    <Loader className="w-6 h-6 text-blue-600 animate-spin" />
+                    <span className="ml-2">Loading events...</span>
+                  </div>
+                </td>
+              </tr>
+            )}
+            {!loading && currentEvents.length > 0 ? (
               currentEvents.map((event) => (
-                <tr key={event.id} className="hover:bg-gray-50">
+                <tr key={event._id || event.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div>
@@ -326,38 +348,43 @@ const ManageEvents = () => {
                     {formatDateTime(event.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={event.status} />
+                    <StatusBadge status={event.event_status} />
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {event.ticketsSold}
+                    {event.ticket_sales?.totalSold || 0}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {formatCurrency(event.earnings)}
+                    {formatCurrency(event.ticket_sales?.totalEarnings || 0)}
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
                     <div className="flex justify-end space-x-2">
                       <button
                         className="text-indigo-600 hover:text-indigo-900"
                         title="View Details"
+                        onClick={() => handleView(event._id || event.id)}
                       >
                         <Eye className="w-5 h-5" />
                       </button>
                       <button
                         className="text-blue-600 hover:text-blue-900"
                         title="Edit Event"
+                        onClick={() => handleEdit(event._id || event.id)}
                       >
                         <Edit className="w-5 h-5" />
                       </button>
                       <button
                         className="text-red-600 hover:text-red-900"
                         title="Delete Event"
-                        onClick={() => handleDelete(event.id)}
+                        onClick={() => handleDelete(event._id || event.id)}
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
                       <button
                         className="text-green-600 hover:text-green-900"
                         title="View Attendees"
+                        onClick={() =>
+                          handleViewAttendees(event._id || event.id)
+                        }
                       >
                         <Users className="w-5 h-5" />
                       </button>
@@ -365,7 +392,7 @@ const ManageEvents = () => {
                   </td>
                 </tr>
               ))
-            ) : (
+            ) : !loading ? (
               <tr>
                 <td
                   colSpan="6"
@@ -374,7 +401,7 @@ const ManageEvents = () => {
                   No events found
                 </td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>

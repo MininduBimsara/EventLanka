@@ -27,6 +27,7 @@ import SalesAnalytics from "./pages/Organizer/SalesAnalytics";
 import OrganizerProfile from "./pages/Organizer/OrganizerProfile";
 import OrganizerSettings from "./pages/Organizer/OrganizerSettings";
 import OrganizerLayout from "./pages/Organizer/OrganizerLayout";
+import UpdateEvent from "./pages/Organizer/UpdateEvent";
 
 //Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
@@ -90,6 +91,7 @@ function App() {
               <Route path="manage-events" element={<ManageEvents />} />
               <Route path="media" element={<MediaManager />} />
               <Route path="sales-analytics" element={<SalesAnalytics />} />
+              <Route path="update-event/:id" element={<UpdateEvent />} />
             </Route>
 
             {/* Admin Routes*/}
