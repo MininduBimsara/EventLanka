@@ -104,17 +104,28 @@ exports.deleteUserProfile = async (req, res) => {
 };
 
 exports.updateUserStatus = async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ message: "User status updated", user });
-  } catch (err) {
-    res.status(500).json({ error: "Error updating user status" });
-  }
+ try {
+   const { status } = req.body;
+
+   // Ensure the status is either "active" or "banned"
+   if (!["active", "banned"].includes(status)) {
+     return res.status(400).json({ message: "Invalid status value" });
+   }
+
+   const user = await User.findByIdAndUpdate(
+     req.params.id,
+     { status },
+     { new: true }
+   );
+
+   if (!user) {
+     return res.status(404).json({ message: "User not found" });
+   }
+
+   res.status(200).json({ message: `User status updated to ${status}`, user });
+ } catch (error) {
+   res.status(500).json({ message: "Error updating user status" });
+ }
 };
 
 // get all users
@@ -122,6 +133,16 @@ exports.getUsers = async (req, res) => {
   try {
     const users = await User.find({ role: "user" });
     res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching users" });
+  }
+};
+
+exports.getAllNonAdminUsers = async (req, res) => {
+  try {
+    // Fetch all users excluding admins
+    const users = await User.find({ role: { $ne: "admin" } });
+    res.status(200).json(users);
   } catch (err) {
     res.status(500).json({ error: "Error fetching users" });
   }

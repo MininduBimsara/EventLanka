@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Eye,
   Calendar,
@@ -8,12 +9,25 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  X,
 } from "lucide-react";
+import {
+  fetchOrganizers,
+  updateOrganizerStatus,
+  fetchOrganizerProfile,
+  fetchOrganizerEvents,
+} from "../../Redux/Slicers/adminSlice"; // Adjust path as needed
 
 export default function OrganizersAdmin() {
-  const [organizers, setOrganizers] = useState([]);
+  const dispatch = useDispatch();
+
+  // Get organizers from Redux store
+  const { organizersList, currentOrganizer, organizerEvents, loading } =
+    useSelector((state) => state.admin.users);
+  const error = useSelector((state) => state.admin.error);
+
+  // Local state for filtering and sorting
   const [filteredOrganizers, setFilteredOrganizers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -22,85 +36,23 @@ export default function OrganizersAdmin() {
   });
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
-  // Mock data - in a real app, this would come from an API
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockOrganizers = [
-        {
-          id: 1,
-          name: "Jane Smith",
-          email: "jane@eventpro.com",
-          totalEvents: 24,
-          joinedDate: "2023-02-15",
-          status: "active",
-        },
-        {
-          id: 2,
-          name: "John Doe",
-          email: "john@eventify.com",
-          totalEvents: 16,
-          joinedDate: "2023-05-22",
-          status: "active",
-        },
-        {
-          id: 3,
-          name: "Alice Johnson",
-          email: "alice@gatherings.org",
-          totalEvents: 8,
-          joinedDate: "2023-10-10",
-          status: "pending",
-        },
-        {
-          id: 4,
-          name: "Robert Chen",
-          email: "robert@eventmasters.net",
-          totalEvents: 32,
-          joinedDate: "2022-11-05",
-          status: "active",
-        },
-        {
-          id: 5,
-          name: "Maria Garcia",
-          email: "maria@planit.co",
-          totalEvents: 0,
-          joinedDate: "2024-01-12",
-          status: "pending",
-        },
-        {
-          id: 6,
-          name: "Kevin Williams",
-          email: "kevin@eventsbykw.com",
-          totalEvents: 12,
-          joinedDate: "2023-07-30",
-          status: "banned",
-        },
-        {
-          id: 7,
-          name: "Sarah Miller",
-          email: "sarah@eventworld.com",
-          totalEvents: 20,
-          joinedDate: "2022-12-18",
-          status: "active",
-        },
-        {
-          id: 8,
-          name: "David Brown",
-          email: "david@gatherup.io",
-          totalEvents: 5,
-          joinedDate: "2023-09-05",
-          status: "banned",
-        },
-      ];
-      setOrganizers(mockOrganizers);
-      setFilteredOrganizers(mockOrganizers);
-      setIsLoading(false);
-    }, 800);
-  }, []);
+  // Modal states
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEventsModal, setShowEventsModal] = useState(false);
+  const [selectedOrganizerId, setSelectedOrganizerId] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [eventsLoading, setEventsLoading] = useState(false);
 
-  // Apply filters and search
+  // Fetch organizers on component mount
   useEffect(() => {
-    let result = [...organizers];
+    dispatch(fetchOrganizers());
+  }, [dispatch]);
+
+  // Update filtered organizers whenever organizers list, filters, or search changes
+  useEffect(() => {
+    if (!organizersList) return;
+
+    let result = [...organizersList];
 
     // Apply status filter
     if (activeFilter !== "all") {
@@ -112,8 +64,8 @@ export default function OrganizersAdmin() {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         (organizer) =>
-          organizer.name.toLowerCase().includes(term) ||
-          organizer.email.toLowerCase().includes(term)
+          organizer.name?.toLowerCase().includes(term) ||
+          organizer.email?.toLowerCase().includes(term)
       );
     }
 
@@ -131,7 +83,7 @@ export default function OrganizersAdmin() {
     }
 
     setFilteredOrganizers(result);
-  }, [organizers, activeFilter, searchTerm, sortConfig]);
+  }, [organizersList, activeFilter, searchTerm, sortConfig]);
 
   // Request sort
   const requestSort = (key) => {
@@ -144,6 +96,7 @@ export default function OrganizersAdmin() {
 
   // Format date
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     const options = { year: "numeric", month: "short", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
@@ -151,12 +104,40 @@ export default function OrganizersAdmin() {
   // Toggle organizer status
   const toggleStatus = (id, currentStatus) => {
     const newStatus = currentStatus === "active" ? "banned" : "active";
-
-    setOrganizers(
-      organizers.map((organizer) =>
-        organizer.id === id ? { ...organizer, status: newStatus } : organizer
-      )
+    dispatch(
+      updateOrganizerStatus({
+        organizerId: id,
+        statusData: { status: newStatus },
+      })
     );
+  };
+
+  // View organizer details
+  const viewOrganizerDetails = (organizerId) => {
+    setSelectedOrganizerId(organizerId);
+    setDetailsLoading(true);
+    dispatch(fetchOrganizerProfile(organizerId))
+      .then(() => {
+        setShowDetailsModal(true);
+        setDetailsLoading(false);
+      })
+      .catch(() => {
+        setDetailsLoading(false);
+      });
+  };
+
+  // View organizer events
+  const viewOrganizerEvents = (organizerId) => {
+    setSelectedOrganizerId(organizerId);
+    setEventsLoading(true);
+    dispatch(fetchOrganizerEvents(organizerId))
+      .then(() => {
+        setShowEventsModal(true);
+        setEventsLoading(false);
+      })
+      .catch(() => {
+        setEventsLoading(false);
+      });
   };
 
   // Status badge component
@@ -185,7 +166,7 @@ export default function OrganizersAdmin() {
       default:
         return (
           <span className={`${baseClasses} bg-gray-100 text-gray-800`}>
-            {status}
+            {status || "Unknown"}
           </span>
         );
     }
@@ -202,8 +183,25 @@ export default function OrganizersAdmin() {
     );
   };
 
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6 bg-white rounded-lg shadow">
+        <div className="p-4 text-red-700 bg-red-100 border border-red-200 rounded-md">
+          <p>Error: {error}</p>
+          <button
+            className="px-4 py-2 mt-2 text-white bg-red-500 rounded hover:bg-red-600"
+            onClick={() => dispatch(fetchOrganizers())}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
@@ -309,11 +307,11 @@ export default function OrganizersAdmin() {
               <th
                 scope="col"
                 className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase cursor-pointer"
-                onClick={() => requestSort("joinedDate")}
+                onClick={() => requestSort("createdAt")}
               >
                 <div className="flex items-center">
                   Joined Date
-                  <SortIndicator columnKey="joinedDate" />
+                  <SortIndicator columnKey="createdAt" />
                 </div>
               </th>
               <th
@@ -337,7 +335,7 @@ export default function OrganizersAdmin() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredOrganizers.length > 0 ? (
               filteredOrganizers.map((organizer) => (
-                <tr key={organizer.id} className="hover:bg-gray-50">
+                <tr key={organizer._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {organizer.name}
@@ -350,12 +348,12 @@ export default function OrganizersAdmin() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">
-                      {organizer.totalEvents}
+                      {organizer.totalEvents || 0}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">
-                      {formatDate(organizer.joinedDate)}
+                      {formatDate(organizer.createdAt)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -366,12 +364,16 @@ export default function OrganizersAdmin() {
                       <button
                         className="text-blue-600 hover:text-blue-900"
                         title="View Profile"
+                        onClick={() => viewOrganizerDetails(organizer._id)}
+                        disabled={detailsLoading}
                       >
                         <Eye className="w-5 h-5" />
                       </button>
                       <button
                         className="text-purple-600 hover:text-purple-900"
                         title="View Events"
+                        onClick={() => viewOrganizerEvents(organizer._id)}
+                        disabled={eventsLoading}
                       >
                         <Calendar className="w-5 h-5" />
                       </button>
@@ -388,7 +390,7 @@ export default function OrganizersAdmin() {
                               : "Activate Organizer"
                           }
                           onClick={() =>
-                            toggleStatus(organizer.id, organizer.status)
+                            toggleStatus(organizer._id, organizer.status)
                           }
                         >
                           {organizer.status === "active" ? (
@@ -418,10 +420,232 @@ export default function OrganizersAdmin() {
 
       {/* Summary */}
       <div className="mt-6 text-sm text-gray-500">
-        Showing {filteredOrganizers.length} of {organizers.length} organizers
+        Showing {filteredOrganizers.length} of{" "}
+        {organizersList ? organizersList.length : 0} organizers
         {activeFilter !== "all" && ` (filtered by: ${activeFilter})`}
         {searchTerm && ` (search: "${searchTerm}")`}
       </div>
+
+      {/* Organizer Details Modal */}
+      {showDetailsModal && currentOrganizer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-black bg-opacity-50 outline-none focus:outline-none">
+          <div className="relative w-full max-w-2xl mx-auto my-6">
+            {/* Modal content */}
+            <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
+              {/* Header */}
+              <div className="flex items-start justify-between p-5 border-b border-gray-200 rounded-t">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Organizer Profile
+                </h3>
+                <button
+                  className="float-right p-1 ml-auto text-3xl font-semibold leading-none text-gray-500 bg-transparent border-0 outline-none focus:outline-none"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="relative flex-auto p-6">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Name
+                      </h4>
+                      <p className="text-base text-gray-900">
+                        {currentOrganizer.name}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Email
+                      </h4>
+                      <p className="text-base text-gray-900">
+                        {currentOrganizer.email}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Status
+                      </h4>
+                      <StatusBadge status={currentOrganizer.status} />
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Joined Date
+                      </h4>
+                      <p className="text-base text-gray-900">
+                        {formatDate(currentOrganizer.createdAt)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Total Events
+                      </h4>
+                      <p className="text-base text-gray-900">
+                        {currentOrganizer.totalEvents || 0}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Phone
+                      </h4>
+                      <p className="text-base text-gray-900">
+                        {currentOrganizer.phone || "Not provided"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {currentOrganizer.bio && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Bio</h4>
+                      <p className="text-base text-gray-900">
+                        {currentOrganizer.bio}
+                      </p>
+                    </div>
+                  )}
+
+                  {currentOrganizer.address && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Address
+                      </h4>
+                      <p className="text-base text-gray-900">
+                        {currentOrganizer.address}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end p-6 border-t border-gray-200 rounded-b">
+                <button
+                  className="px-4 py-2 mr-2 text-sm font-medium text-purple-700 bg-white border border-purple-300 rounded-md hover:bg-purple-50"
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    viewOrganizerEvents(selectedOrganizerId);
+                  }}
+                >
+                  <Calendar className="inline w-4 h-4 mr-1" />
+                  View Events
+                </button>
+                <button
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Organizer Events Modal */}
+      {showEventsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-black bg-opacity-50 outline-none focus:outline-none">
+          <div className="relative w-full max-w-4xl mx-auto my-6">
+            {/* Modal content */}
+            <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
+              {/* Header */}
+              <div className="flex items-start justify-between p-5 border-b border-gray-200 rounded-t">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Organizer Events
+                </h3>
+                <button
+                  className="float-right p-1 ml-auto text-3xl font-semibold leading-none text-gray-500 bg-transparent border-0 outline-none focus:outline-none"
+                  onClick={() => setShowEventsModal(false)}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="relative flex-auto p-6">
+                {eventsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                  </div>
+                ) : organizerEvents && organizerEvents.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                            Event Name
+                          </th>
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                            Date
+                          </th>
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                            Location
+                          </th>
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                            Tickets Sold
+                          </th>
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {organizerEvents.map((event) => (
+                          <tr key={event._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">
+                                {event.title}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">
+                                {formatDate(event.eventDate)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">
+                                {event.location}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">
+                                {event.ticketsSold || 0}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <StatusBadge status={event.status} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-gray-500">
+                    This organizer has no events yet.
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end p-6 border-t border-gray-200 rounded-b">
+                <button
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                  onClick={() => setShowEventsModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
