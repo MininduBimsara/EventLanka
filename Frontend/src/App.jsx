@@ -96,12 +96,12 @@ function App() {
             </Route>
 
             {/* Admin Routes*/}
-            <Route path="/admin" element="AdminLayout">
+            <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="settings" element={<AdminSettings />} />
-              <Route path="eventapprovals" element={<EventApprovals />} />
+              <Route path="event-approvals" element={<EventApprovals />} />
               <Route path="organizers" element={<OrganizersAdmin />} />
-              <Route path="refundrequests" element={<RefundRequests />} />
+              <Route path="refund-requests" element={<RefundRequests />} />
               <Route path="reports" element={<Reports />} />
               <Route path="transactions" element={<AdminTransactions />} />
               <Route path="users" element={<AdminUsers />} />

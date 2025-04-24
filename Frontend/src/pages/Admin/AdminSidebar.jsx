@@ -1,16 +1,19 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  Home,
-  PlusCircle,
+  LayoutDashboard,
+  Settings,
+  FileCheck,
   Users,
+  ArrowLeftRight,
+  BarChart2,
+  PlusCircle,
+  Trello,
   Tag,
   Image,
-  Trello,
-  BarChart2,
   User,
-  Settings,
-  LayoutDashboard,
+  FileText,
+  Home,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -24,57 +27,53 @@ const Sidebar = () => {
       path: "/",
     },
     {
-      title: "Dashboard",
+      title: "Admin Dashboard",
       icon: <LayoutDashboard className="w-5 h-5" />,
-      path: "/organizer/dashboard",
+      path: "/admin/dashboard",
     },
     {
-      title: "Create Event",
-      icon: <PlusCircle className="w-5 h-5" />,
-      path: "/organizer/create-event",
-    },
-    {
-      title: "Manage Events",
-      icon: <Trello className="w-5 h-5" />,
-      path: "/organizer/manage-events",
-    },
-    {
-      title: "Attendees",
-      icon: <Users className="w-5 h-5" />,
-      path: "/organizer/attendees",
-    },
-    {
-      title: "Discounts",
-      icon: <Tag className="w-5 h-5" />,
-      path: "/organizer/discounts",
-    },
-    {
-      title: "Media Manager",
-      icon: <Image className="w-5 h-5" />,
-      path: "/organizer/media",
-    },
-    {
-      title: "Sales Analytics",
-      icon: <BarChart2 className="w-5 h-5" />,
-      path: "/organizer/sales-analytics",
-    },
-    {
-      title: "Profile",
-      icon: <User className="w-5 h-5" />,
-      path: "/organizer/profile",
-    },
-    {
-      title: "Settings",
+      title: "Admin Settings",
       icon: <Settings className="w-5 h-5" />,
-      path: "/organizer/settings",
+      path: "/admin/settings",
     },
+    {
+      title: "Event Approvals",
+      icon: <FileCheck className="w-5 h-5" />,
+      path: "/admin/event-approvals",
+    },
+    {
+      title: "Organizers",
+      icon: <Users className="w-5 h-5" />,
+      path: "/admin/organizers",
+    },
+    {
+      title: "Refund Requests",
+      icon: <ArrowLeftRight className="w-5 h-5" />,
+      path: "/admin/refund-requests",
+    },
+    {
+      title: "Reports",
+      icon: <BarChart2 className="w-5 h-5" />,
+      path: "/admin/reports",
+    },
+    {
+      title: "Transactions",
+      icon: <ArrowLeftRight className="w-5 h-5" />,
+      path: "/admin/transactions",
+    },
+    {
+      title: "Users",
+      icon: <Users className="w-5 h-5" />,
+      path: "/admin/users",
+    },
+    
   ];
 
   return (
-    <div className="flex flex-col w-64 h-screen bg-white border-r border-gray-100 shadow-sm">
+    <div className="flex flex-col w-64 h-screen text-gray-300 bg-gray-900 shadow-md">
       <div className="p-6">
-        <h1 className="text-xl font-bold text-blue-600">Event Platform</h1>
-        <p className="text-sm text-gray-600">Organizer Portal</p>
+        <h1 className="text-xl font-bold text-yellow-500">Admin Portal</h1>
+        <p className="text-sm text-gray-400">Event Management System</p>
       </div>
 
       <div className="flex-1 px-4 py-2 overflow-y-auto">
@@ -85,22 +84,22 @@ const Sidebar = () => {
               onClick={() => navigate(item.path)}
               className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors ${
                 location.pathname === item.path
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-800 text-yellow-400"
+                  : "text-gray-300 hover:bg-gray-800"
               }`}
             >
               <div
                 className={`p-2 mr-3 rounded-full ${
                   location.pathname === item.path
-                    ? "bg-blue-100"
-                    : "bg-gray-100"
+                    ? "bg-gray-700"
+                    : "bg-gray-700"
                 }`}
               >
                 {React.cloneElement(item.icon, {
                   className: `w-4 h-4 ${
                     location.pathname === item.path
-                      ? "text-blue-500"
-                      : "text-gray-500"
+                      ? "text-yellow-400"
+                      : "text-gray-400"
                   }`,
                 })}
               </div>
@@ -110,16 +109,16 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <div className="w-64 p-4 mt-auto border-t border-gray-100">
+      <div className="w-64 p-4 mt-auto border-t border-gray-700">
         <div className="flex items-center">
-          <div className="w-10 h-10 mr-3 overflow-hidden bg-gray-200 rounded-full">
-            <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="w-10 h-10 mr-3 overflow-hidden bg-gray-700 rounded-full">
+            <div className="flex items-center justify-center h-full text-gray-300">
               <User className="w-6 h-6" />
             </div>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-800">John Doe</p>
-            <p className="text-xs text-gray-500">Event Organizer</p>
+            <p className="text-sm font-medium text-gray-300">Admin User</p>
+            <p className="text-xs text-gray-500">System Administrator</p>
           </div>
         </div>
       </div>
