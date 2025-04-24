@@ -38,6 +38,7 @@ import RefundRequests from "./pages/Admin/RefundRequests";
 import Reports from "./pages/Admin/Reports";
 import AdminTransactions from "./pages/Admin/Transactions";
 import AdminUsers from "./pages/Admin/Users";
+import AdminLayout from "./pages/Admin/AdminLayout";
 
 //User Pages
 import EditProfile from "./pages/User/EditProfile";
@@ -95,7 +96,7 @@ function App() {
             </Route>
 
             {/* Admin Routes*/}
-            <Route path="/admin">
+            <Route path="/admin" element="AdminLayout">
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="eventapprovals" element={<EventApprovals />} />
