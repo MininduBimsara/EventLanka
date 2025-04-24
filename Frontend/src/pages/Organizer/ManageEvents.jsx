@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   getOrganizerEvents,
+  getOrganizerEventById,
   deleteOrganizerEvent,
 } from "../../Redux/Slicers/OrganizerSlice";
 import {
@@ -16,7 +17,204 @@ import {
   ChevronUp,
   Loader,
   AlertCircle,
+  X,
 } from "lucide-react";
+import axios from "axios";
+
+// Event Details Modal Component
+const EventDetailsModal = ({ event, onClose }) => {
+  if (!event) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-2xl p-6 mx-4 bg-white rounded-lg shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Event Details</h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-200"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[70vh]">
+          {/* Event header with image */}
+          {event.image && (
+            <div className="mb-4">
+              <img
+                src={event.image}
+                alt={event.title}
+                className="object-cover w-full h-48 rounded-lg"
+              />
+            </div>
+          )}
+
+          {/* Event basics */}
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {event.title}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {new Date(event.date).toLocaleDateString()} at{" "}
+              {new Date(event.date).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+            <div className="mt-1">
+              <StatusBadge status={event.event_status} />
+            </div>
+          </div>
+
+          {/* Event details */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <h4 className="font-medium text-gray-700">Description</h4>
+              <p className="text-gray-600">{event.description}</p>
+            </div>
+
+            <div>
+              <h4 className="font-medium text-gray-700">Location</h4>
+              <p className="text-gray-600">{event.location || "Online"}</p>
+
+              <h4 className="mt-3 font-medium text-gray-700">Category</h4>
+              <p className="text-gray-600">
+                {event.category || "Uncategorized"}
+              </p>
+
+              <h4 className="mt-3 font-medium text-gray-700">Tickets</h4>
+              <p className="text-gray-600">
+                Sold: {event.ticket_sales?.totalSold || 0} | Revenue:{" "}
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                }).format(event.ticket_sales?.totalEarnings || 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Attendees Modal Component
+const AttendeesModal = ({ attendees, eventTitle, loading, onClose }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-2xl p-6 mx-4 bg-white rounded-lg shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Attendees for {eventTitle}</h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-200"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[70vh]">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+              <span className="ml-2">Loading attendees...</span>
+            </div>
+          ) : attendees && attendees.length > 0 ? (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                    Ticket Type
+                  </th>
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                    Purchase Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {attendees.map((attendee, index) => (
+                  <tr key={attendee._id || index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {attendee.name ||
+                          `${attendee.firstName} ${attendee.lastName}`}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                      {attendee.email}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                      {attendee.ticketType || "Standard"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                      {new Date(
+                        attendee.purchaseDate || attendee.createdAt
+                      ).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="py-8 text-center text-gray-500">
+              No attendees found for this event.
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Status Badge Component
+const StatusBadge = ({ status }) => {
+  let bgColor = "";
+
+  switch (status) {
+    case "approved":
+      bgColor = "bg-green-100 text-green-800";
+      break;
+    case "pending":
+      bgColor = "bg-yellow-100 text-yellow-800";
+      break;
+    case "rejected":
+      bgColor = "bg-red-100 text-red-800";
+      break;
+    default:
+      bgColor = "bg-gray-100 text-gray-800";
+  }
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${bgColor}`}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+};
 
 const ManageEvents = () => {
   const dispatch = useDispatch();
@@ -32,6 +230,14 @@ const ManageEvents = () => {
   const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  // Modal states
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showAttendeesModal, setShowAttendeesModal] = useState(false);
+  const [attendees, setAttendees] = useState([]);
+  const [loadingAttendees, setLoadingAttendees] = useState(false);
+  const [loadingEventDetails, setLoadingEventDetails] = useState(false);
 
   // Fetch events when component mounts
   useEffect(() => {
@@ -53,14 +259,58 @@ const ManageEvents = () => {
     navigate(`/organizer/update-event/${id}`);
   };
 
-  // Navigate to view event details
-  const handleView = (id) => {
-    navigate(`/event/${id}`);
+  // View event details in modal
+  const handleView = async (id) => {
+    // Find the event in current list or fetch it
+    const event = events.find((e) => (e._id || e.id) === id);
+
+    if (event) {
+      setSelectedEvent(event);
+      setShowEventModal(true);
+    } else {
+      try {
+        setLoadingEventDetails(true);
+        // Use the existing Redux function to fetch event details
+        const resultAction = await dispatch(getOrganizerEventById(id));
+        if (getOrganizerEventById.fulfilled.match(resultAction)) {
+          setSelectedEvent(resultAction.payload);
+          setShowEventModal(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch event details:", error);
+      } finally {
+        setLoadingEventDetails(false);
+      }
+    }
   };
 
-  // Navigate to view attendees
-  const handleViewAttendees = (id) => {
-    navigate(`/organizer/event/${id}/attendees`);
+  // View attendees in modal with direct API call
+  const handleViewAttendees = async (id) => {
+    // Find the event for its title
+    const event = events.find((e) => (e._id || e.id) === id);
+
+    if (event) {
+      setSelectedEvent(event);
+      setLoadingAttendees(true);
+      setShowAttendeesModal(true);
+
+      try {
+        // Direct API call since we don't have a Redux action for attendees
+        const ORGANIZER_API_URL = "http://localhost:5000/api/organizer";
+        const response = await axios.get(
+          `${ORGANIZER_API_URL}/events/${id}/attendees`,
+          {
+            withCredentials: true,
+          }
+        );
+        setAttendees(response.data || []);
+      } catch (error) {
+        console.error("Failed to fetch attendees:", error);
+        setAttendees([]);
+      } finally {
+        setLoadingAttendees(false);
+      }
+    }
   };
 
   // Handle event deletion with API call
@@ -68,6 +318,17 @@ const ManageEvents = () => {
     if (window.confirm("Are you sure you want to delete this event?")) {
       dispatch(deleteOrganizerEvent(id));
     }
+  };
+
+  // Close modals
+  const closeEventModal = () => {
+    setShowEventModal(false);
+    setSelectedEvent(null);
+  };
+
+  const closeAttendeesModal = () => {
+    setShowAttendeesModal(false);
+    setAttendees([]);
   };
 
   // Filter and sort events
@@ -92,12 +353,10 @@ const ManageEvents = () => {
     } else if (sortField === "status") {
       comparison = a.event_status.localeCompare(b.event_status);
     } else if (sortField === "ticketsSold") {
-      // Assuming you have ticket sales data in your API response
       const aSold = a.ticket_sales?.totalSold || 0;
       const bSold = b.ticket_sales?.totalSold || 0;
       comparison = aSold - bSold;
     } else if (sortField === "earnings") {
-      // Assuming you have earnings data in your API response
       const aEarnings = a.ticket_sales?.totalEarnings || 0;
       const bEarnings = b.ticket_sales?.totalEarnings || 0;
       comparison = aEarnings - bEarnings;
@@ -128,33 +387,6 @@ const ManageEvents = () => {
       style: "currency",
       currency: "USD",
     }).format(amount);
-  };
-
-  // Status badge component with correct API status names
-  const StatusBadge = ({ status }) => {
-    let bgColor = "";
-
-    switch (status) {
-      case "approved":
-        bgColor = "bg-green-100 text-green-800";
-        break;
-      case "pending":
-        bgColor = "bg-yellow-100 text-yellow-800";
-        break;
-      case "rejected":
-        bgColor = "bg-red-100 text-red-800";
-        break;
-      default:
-        bgColor = "bg-gray-100 text-gray-800";
-    }
-
-    return (
-      <span
-        className={`px-2 py-1 rounded-full text-xs font-semibold ${bgColor}`}
-      >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
   };
 
   // Show loading state
@@ -447,6 +679,21 @@ const ManageEvents = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Event Details Modal */}
+      {showEventModal && (
+        <EventDetailsModal event={selectedEvent} onClose={closeEventModal} />
+      )}
+
+      {/* Attendees Modal */}
+      {showAttendeesModal && (
+        <AttendeesModal
+          attendees={attendees}
+          eventTitle={selectedEvent?.title || ""}
+          loading={loadingAttendees}
+          onClose={closeAttendeesModal}
+        />
       )}
     </div>
   );

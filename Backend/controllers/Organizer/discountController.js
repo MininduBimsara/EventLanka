@@ -62,6 +62,11 @@ exports.create = asyncHandler(async (req, res) => {
 exports.getAll = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
 
+  // Validate eventId
+  if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
+    return res.status(400).json({ message: "Invalid event ID" });
+  }
+
   // Check if user is authorized (event organizer or admin)
   const event = await Event.findById(eventId);
   if (!event) {

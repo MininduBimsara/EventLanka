@@ -69,8 +69,14 @@ export const getOrganizerEventById = createAsyncThunk(
   "organizer/getEventById",
   async (eventId, { rejectWithValue }) => {
     try {
+      const config = {
+        headers: {},
+        withCredentials: true, // Include cookies with the request
+      };
+
       const response = await axios.get(
-        `${ORGANIZER_API_URL}/events/${eventId}`
+        `${ORGANIZER_API_URL}/events/${eventId}`,
+        config
       );
       return response.data;
     } catch (error) {
@@ -85,7 +91,11 @@ export const deleteOrganizerEvent = createAsyncThunk(
   "organizer/deleteEvent",
   async (eventId, { rejectWithValue }) => {
     try {
-      await axios.delete(`${ORGANIZER_API_URL}/events/${eventId}`);
+      const config = {
+        headers: {},
+        withCredentials: true, // Include cookies with the request
+      };
+      await axios.delete(`${ORGANIZER_API_URL}/events/${eventId}`, config);
       return eventId;
     } catch (error) {
       return rejectWithValue(
@@ -250,9 +260,14 @@ export const createDiscount = createAsyncThunk(
   "organizer/createDiscount",
   async (discountData, { rejectWithValue }) => {
     try {
+      const config = {
+        headers: {},
+        withCredentials: true, // Include cookies with the request
+      };
       const response = await axios.post(
         `${ORGANIZER_API_URL}/discounts`,
-        discountData
+        discountData,
+        config
       );
       return response.data;
     } catch (error) {
@@ -267,9 +282,14 @@ export const updateDiscount = createAsyncThunk(
   "organizer/updateDiscount",
   async ({ discountId, discountData }, { rejectWithValue }) => {
     try {
+      const config = {
+        headers: {},
+        withCredentials: true, // Include cookies with the request
+      };
       const response = await axios.put(
         `${ORGANIZER_API_URL}/discounts/${discountId}`,
-        discountData
+        discountData,
+        config
       );
       return response.data;
     } catch (error) {
@@ -284,7 +304,11 @@ export const deleteDiscount = createAsyncThunk(
   "organizer/deleteDiscount",
   async (discountId, { rejectWithValue }) => {
     try {
-      await axios.delete(`${ORGANIZER_API_URL}/discounts/${discountId}`);
+      const config = {
+        headers: {},
+        withCredentials: true, // Include cookies with the request
+      };
+      await axios.delete(`${ORGANIZER_API_URL}/discounts/${discountId}`, config);
       return discountId;
     } catch (error) {
       return rejectWithValue(
@@ -510,7 +534,9 @@ const initialState = {
   // Discount states
   discounts: {},
   currentDiscount: null,
+  selectedEvent: null,
   validatedDiscount: null,
+  discountValidation: null,
 
   // Sales states
   eventSales: null,

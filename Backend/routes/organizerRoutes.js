@@ -72,7 +72,7 @@ router.post(
 );
 router.put("/events/:id", protect, organizerOnly, eventController.updateEvent);
 router.get("/events", protect, organizerOnly, eventController.getEvents);
-router.get("/events/:id", eventController.getEventById);
+router.get("/events/:id", protect, eventController.getEventById);
 router.delete("/events/:id", protect, eventController.deleteEvent);
 // router.put(
 //   "/events/:id/status",
