@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   PlusCircle,
@@ -18,14 +18,17 @@ import {
 } from "../../Redux/Slicers/OrganizerSlice"; // Adjust path as needed
 import { fetchEvents } from "../../Redux/Slicers/EventSlice"; // Import the action to fetch all events
 
+
 export default function Discounts() {
   const dispatch = useDispatch();
+
+  // Access Organizer slice state
   const { discounts, isLoading, error } = useSelector(
     (state) => state.organizer
   );
-  const { events = [], loadingEvents } = useSelector(
-    (state) => state.events || {}
-  ); // Get events and loading state with fallback
+
+const events = useSelector((state) => state.events?.events || []);
+const loadingEvents = useSelector((state) => state.events?.loading);
 
   const [selectedEvent, setSelectedEvent] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -46,6 +49,7 @@ export default function Discounts() {
 
   // Fetch all events when component mounts
   useEffect(() => {
+    setLoadingState(true);
     dispatch(fetchEvents())
       .unwrap()
       .then(() => {
@@ -291,7 +295,7 @@ export default function Discounts() {
                   value={event._id}
                   className="text-gray-700"
                 >
-                  {event.name}
+                  {event.title || event.name}
                 </option>
               ))}
             </select>
@@ -458,7 +462,7 @@ export default function Discounts() {
                     <option value="">Select an event</option>
                     {events?.map((event) => (
                       <option key={event._id} value={event._id}>
-                        {event.name}
+                        {event.title || event.name}
                       </option>
                     ))}
                   </select>

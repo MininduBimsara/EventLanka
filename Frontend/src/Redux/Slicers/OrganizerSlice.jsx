@@ -322,9 +322,14 @@ export const getEventDiscounts = createAsyncThunk(
   "organizer/getEventDiscounts",
   async (eventId, { rejectWithValue }) => {
     try {
+      const config = {
+        headers: {},
+        withCredentials: true, // Include cookies with the request
+      };
       const response = await axios.get(
-        `${ORGANIZER_API_URL}/events/${eventId}/discounts`
+        `${ORGANIZER_API_URL}/events/${eventId}/discounts`,config
       );
+      console.log("API Response:", response.data);
       return { eventId, discounts: response.data };
     } catch (error) {
       return rejectWithValue(
@@ -874,7 +879,7 @@ const organizerSlice = createSlice({
       })
       .addCase(getEventDiscounts.fulfilled, (state, action) => {
         state.loading = false;
-        state.discounts[action.payload.eventId] = action.payload.discounts;
+        state.discounts = action.payload.discounts;
       })
       .addCase(getEventDiscounts.rejected, (state, action) => {
         state.loading = false;

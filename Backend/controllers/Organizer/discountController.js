@@ -1,6 +1,7 @@
 const Discount = require("../../models/Discount");
 const Event = require("../../models/Event");
 const asyncHandler = require("express-async-handler");
+const mongoose = require("mongoose");
 
 // Create a new discount code
 exports.create = asyncHandler(async (req, res) => {
