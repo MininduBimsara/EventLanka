@@ -55,6 +55,12 @@ router.put(
   adminOnly,
   usersController.updateUserStatus
 );
+router.get(
+  "/non-admin-users",
+  protect,
+  adminOnly,
+  usersController.getAllNonAdminUsers
+);
 
 router.get("/organizers", protect, adminOnly, usersController.getOrganizers);
 router.get(

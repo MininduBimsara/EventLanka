@@ -1,67 +1,30 @@
 import { useState, useEffect } from "react";
 import { Search, Filter, User, Ban, Eye, Check, X } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUsers, updateUserStatus } from "../../Redux/Slicers/adminSlice"; // Adjust the import path as needed
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState([]);
+  const dispatch = useDispatch();
+  const { usersList: allUsers, loading } = useSelector(
+    (state) => state.admin.users
+  );
+
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
 
-  // Mock data - would be replaced with actual API call
+  // Fetch users on component mount
   useEffect(() => {
-    const mockUsers = [
-      {
-        id: 1,
-        name: "John Doe",
-        email: "john.doe@example.com",
-        role: "admin",
-        signupDate: "2024-12-01",
-        status: "active",
-      },
-      {
-        id: 2,
-        name: "Jane Smith",
-        email: "jane.smith@example.com",
-        role: "organizer",
-        signupDate: "2025-01-15",
-        status: "active",
-      },
-      {
-        id: 3,
-        name: "Bob Johnson",
-        email: "bob.johnson@example.com",
-        role: "user",
-        signupDate: "2025-02-20",
-        status: "banned",
-      },
-      {
-        id: 4,
-        name: "Alice Williams",
-        email: "alice.williams@example.com",
-        role: "user",
-        signupDate: "2025-03-10",
-        status: "active",
-      },
-      {
-        id: 5,
-        name: "Michael Brown",
-        email: "michael.brown@example.com",
-        role: "organizer",
-        signupDate: "2025-01-05",
-        status: "active",
-      },
-    ];
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
-    setUsers(mockUsers);
-    setFilteredUsers(mockUsers);
-    setLoading(false);
-  }, []);
-
-  // Apply search and filter
+  // Apply search and filter when users, query, or filter changes
   useEffect(() => {
-    let result = [...users];
+    // Make sure allUsers exists and is an array before proceeding
+    if (!allUsers || !Array.isArray(allUsers)) return;
+
+    let result = [...allUsers];
 
     // Apply status filter
     if (activeFilter !== "all") {
@@ -69,9 +32,8 @@ export default function AdminUsers() {
         result = result.filter((user) => user.status === "active");
       } else if (activeFilter === "banned") {
         result = result.filter((user) => user.status === "banned");
-      } else if (activeFilter === "organizers") {
-        result = result.filter((user) => user.role === "organizer");
       }
+      // Removed the organizers filter
     }
 
     // Apply search
@@ -79,30 +41,37 @@ export default function AdminUsers() {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (user) =>
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query)
+          user.name?.toLowerCase().includes(query) ||
+          user.email?.toLowerCase().includes(query)
       );
     }
 
     setFilteredUsers(result);
-  }, [users, searchQuery, activeFilter]);
+  }, [allUsers, searchQuery, activeFilter]);
 
   const toggleBan = (userId) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((user) => {
-        if (user.id === userId) {
-          const newStatus = user.status === "active" ? "banned" : "active";
+    // Make sure allUsers exists and is an array before proceeding
+    if (!allUsers || !Array.isArray(allUsers)) return;
 
-          // If the currently selected user is being updated, update the selected user too
-          if (selectedUser && selectedUser.id === userId) {
-            setSelectedUser({ ...user, status: newStatus });
-          }
+    // Find the user to get current status
+    const user = allUsers.find((u) => u._id === userId);
+    if (!user) return;
 
-          return { ...user, status: newStatus };
-        }
-        return user;
+    // Determine new status
+    const newStatus = user.status === "active" ? "banned" : "active";
+
+    // Dispatch action to update status
+    dispatch(
+      updateUserStatus({
+        userId,
+        statusData: { status: newStatus },
       })
-    );
+    ).then(() => {
+      // If the currently selected user is being updated, update the selected user too
+      if (selectedUser && selectedUser._id === userId) {
+        setSelectedUser({ ...selectedUser, status: newStatus });
+      }
+    });
   };
 
   const viewUserDetails = (user) => {
@@ -182,16 +151,7 @@ export default function AdminUsers() {
           >
             Banned
           </button>
-          <button
-            className={`px-4 py-2 rounded-lg ${
-              activeFilter === "organizers"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100"
-            }`}
-            onClick={() => setActiveFilter("organizers")}
-          >
-            Organizers
-          </button>
+          {/* Removed the Organizers filter button */}
         </div>
       </div>
 
@@ -223,7 +183,7 @@ export default function AdminUsers() {
           <tbody className="divide-y divide-gray-200">
             {filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
-                <tr key={user.id}>
+                <tr key={user._id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <User className="mr-2 text-gray-400" size={18} />
@@ -245,7 +205,9 @@ export default function AdminUsers() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {new Date(user.signupDate).toLocaleDateString()}
+                    {new Date(
+                      user.createdAt || user.signupDate
+                    ).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -266,7 +228,7 @@ export default function AdminUsers() {
                       <Eye size={18} />
                     </button>
                     <button
-                      onClick={() => toggleBan(user.id)}
+                      onClick={() => toggleBan(user._id)}
                       className={`${
                         user.status === "active"
                           ? "text-red-600 hover:text-red-900"
@@ -355,20 +317,53 @@ export default function AdminUsers() {
                     Signup Date
                   </label>
                   <div className="mt-1 text-gray-900">
-                    {new Date(selectedUser.signupDate).toLocaleDateString()}
+                    {new Date(
+                      selectedUser.createdAt || selectedUser.signupDate
+                    ).toLocaleDateString()}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     User ID
                   </label>
-                  <div className="mt-1 text-gray-900">{selectedUser.id}</div>
+                  <div className="mt-1 text-gray-900">{selectedUser._id}</div>
                 </div>
+                {/* Display additional user details if available */}
+                {selectedUser.phone && (
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Phone
+                    </label>
+                    <div className="mt-1 text-gray-900">
+                      {selectedUser.phone}
+                    </div>
+                  </div>
+                )}
+                {selectedUser.address && (
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Address
+                    </label>
+                    <div className="mt-1 text-gray-900">
+                      {selectedUser.address}
+                    </div>
+                  </div>
+                )}
+                {selectedUser.city && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      City
+                    </label>
+                    <div className="mt-1 text-gray-900">
+                      {selectedUser.city}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end mt-6">
                 <button
-                  onClick={() => toggleBan(selectedUser.id)}
+                  onClick={() => toggleBan(selectedUser._id)}
                   className={`px-4 py-2 rounded-lg ${
                     selectedUser.status === "active"
                       ? "bg-red-600 text-white hover:bg-red-700"

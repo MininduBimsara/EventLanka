@@ -3,6 +3,9 @@ import axios from "axios";
 
 const API_URL = "http://localhost:5000/api/admin"; // Admin API URL
 
+// Set default axios config
+axios.defaults.withCredentials = true;
+
 // Dashboard & Settings Thunks
 export const fetchDashboardStats = createAsyncThunk(
   "admin/fetchDashboardStats",
@@ -135,6 +138,20 @@ export const fetchUsers = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch users"
+      );
+    }
+  }
+);
+
+export const fetchNonAdminUsers = createAsyncThunk(
+  "admin/fetchNonAdminUsers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/non-admin-users`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch non-admin users"
       );
     }
   }
@@ -569,6 +586,19 @@ const adminSlice = createSlice({
         }
       })
       .addCase(updateUserStatus.rejected, (state, action) => {
+        state.users.loading = false;
+        state.error = action.payload;
+      })
+      // Non-Admin Users
+      .addCase(fetchNonAdminUsers.pending, (state) => {
+        state.users.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchNonAdminUsers.fulfilled, (state, action) => {
+        state.users.loading = false;
+        state.users.usersList = action.payload; // Assuming this is where non-admin users are stored
+      })
+      .addCase(fetchNonAdminUsers.rejected, (state, action) => {
         state.users.loading = false;
         state.error = action.payload;
       })
