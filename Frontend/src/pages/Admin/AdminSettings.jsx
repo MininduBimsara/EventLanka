@@ -176,7 +176,7 @@ const AdminSettings = () => {
                   <div className="flex items-center">
                     <label
                       htmlFor="commission"
-                      className="block w-64 text-sm font-medium text-gray-700"
+                      className="block w-64 font-medium text-gray-700 text-md"
                     >
                       Platform Commission Rate (%)
                     </label>
@@ -190,7 +190,7 @@ const AdminSettings = () => {
                         step="0.1"
                         value={settings.commission}
                         onChange={handleChange}
-                        className="block w-24 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="block w-24 px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                       />
                       <span className="ml-2 text-gray-500">%</span>
                     </div>
@@ -207,7 +207,7 @@ const AdminSettings = () => {
                   <div className="flex items-center">
                     <label
                       htmlFor="taxRate"
-                      className="block w-64 text-sm font-medium text-gray-700"
+                      className="block w-64 font-medium text-gray-700 text-md"
                     >
                       Standard Tax Rate (%)
                     </label>
@@ -221,7 +221,7 @@ const AdminSettings = () => {
                         step="0.1"
                         value={settings.taxRate}
                         onChange={handleChange}
-                        className="block w-24 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="block w-24 px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                       />
                       <span className="ml-2 text-gray-500">%</span>
                     </div>
@@ -238,7 +238,7 @@ const AdminSettings = () => {
                   <div className="flex items-center">
                     <label
                       htmlFor="notificationPreferences.email"
-                      className="block w-64 text-sm font-medium text-gray-700"
+                      className="block w-64 font-medium text-gray-700 text-md"
                     >
                       Email Notifications
                     </label>
@@ -249,7 +249,7 @@ const AdminSettings = () => {
                         name="notificationPreferences.email"
                         checked={settings.notificationPreferences.email}
                         onChange={handleChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 px-3 py-2 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -257,7 +257,7 @@ const AdminSettings = () => {
                   <div className="flex items-center">
                     <label
                       htmlFor="notificationPreferences.sms"
-                      className="block w-64 text-sm font-medium text-gray-700"
+                      className="block w-64 font-medium text-gray-700 text-md"
                     >
                       SMS Notifications
                     </label>
@@ -268,7 +268,7 @@ const AdminSettings = () => {
                         name="notificationPreferences.sms"
                         checked={settings.notificationPreferences.sms}
                         onChange={handleChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 px-3 py-2 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -284,7 +284,7 @@ const AdminSettings = () => {
                   <div className="flex flex-col">
                     <label
                       htmlFor="branding.logo"
-                      className="block mb-1 text-sm font-medium text-gray-700"
+                      className="block mb-1 font-medium text-gray-700 text-md"
                     >
                       Logo URL
                     </label>
@@ -294,7 +294,7 @@ const AdminSettings = () => {
                       name="branding.logo"
                       value={settings.branding.logo}
                       onChange={handleChange}
-                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                       placeholder="https://example.com/logo.png"
                     />
                   </div>
@@ -303,7 +303,7 @@ const AdminSettings = () => {
                     <div className="flex flex-col">
                       <label
                         htmlFor="branding.primaryColor"
-                        className="block mb-1 text-sm font-medium text-gray-700"
+                        className="block mb-1 font-medium text-gray-700 text-md"
                       >
                         Primary Color
                       </label>
@@ -327,7 +327,7 @@ const AdminSettings = () => {
                               },
                             })
                           }
-                          className="block w-full ml-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                          className="block w-full px-3 py-2 ml-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                         />
                       </div>
                     </div>
@@ -335,7 +335,7 @@ const AdminSettings = () => {
                     <div className="flex flex-col">
                       <label
                         htmlFor="branding.secondaryColor"
-                        className="block mb-1 text-sm font-medium text-gray-700"
+                        className="block mb-1 font-medium text-gray-700 text-md"
                       >
                         Secondary Color
                       </label>
@@ -359,7 +359,7 @@ const AdminSettings = () => {
                               },
                             })
                           }
-                          className="block w-full ml-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                          className="block w-full px-3 py-2 ml-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                         />
                       </div>
                     </div>
@@ -368,7 +368,7 @@ const AdminSettings = () => {
                   <div className="flex flex-col">
                     <label
                       htmlFor="branding.theme"
-                      className="block mb-1 text-sm font-medium text-gray-700"
+                      className="block mb-1 font-medium text-gray-700 text-md"
                     >
                       Theme
                     </label>
@@ -377,7 +377,7 @@ const AdminSettings = () => {
                       name="branding.theme"
                       value={settings.branding.theme}
                       onChange={handleChange}
-                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                     >
                       <option value="default">Default</option>
                       <option value="dark">Dark</option>
@@ -387,12 +387,12 @@ const AdminSettings = () => {
                   </div>
 
                   <div className="mt-4">
-                    <h3 className="mb-2 text-sm font-medium text-gray-700">
+                    <h3 className="mb-2 font-medium text-gray-700 text-md">
                       Preview
                     </h3>
                     <div className="flex space-x-4">
                       <div
-                        className="flex items-center justify-center w-24 h-12 text-sm text-white rounded-md"
+                        className="flex items-center justify-center w-24 h-12 text-white rounded-md text-md"
                         style={{
                           backgroundColor: settings.branding.primaryColor,
                         }}
@@ -400,7 +400,7 @@ const AdminSettings = () => {
                         Primary
                       </div>
                       <div
-                        className="flex items-center justify-center w-24 h-12 text-sm text-white rounded-md"
+                        className="flex items-center justify-center w-24 h-12 text-white rounded-md text-md"
                         style={{
                           backgroundColor: settings.branding.secondaryColor,
                         }}
@@ -437,7 +437,7 @@ const AdminSettings = () => {
                   <div className="flex flex-col">
                     <label
                       htmlFor="oldPassword"
-                      className="block mb-1 text-sm font-medium text-gray-700"
+                      className="block mb-1 font-medium text-gray-700 text-md"
                     >
                       Current Password
                     </label>
@@ -447,7 +447,7 @@ const AdminSettings = () => {
                       name="oldPassword"
                       value={passwordData.oldPassword}
                       onChange={handlePasswordChange}
-                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                       placeholder="Enter current password"
                       required
                     />
@@ -456,7 +456,7 @@ const AdminSettings = () => {
                   <div className="flex flex-col">
                     <label
                       htmlFor="newPassword"
-                      className="block mb-1 text-sm font-medium text-gray-700"
+                      className="block mb-1 font-medium text-gray-700 text-md"
                     >
                       New Password
                     </label>
@@ -466,7 +466,7 @@ const AdminSettings = () => {
                       name="newPassword"
                       value={passwordData.newPassword}
                       onChange={handlePasswordChange}
-                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                       placeholder="Enter new password"
                       required
                       minLength={8}
@@ -476,7 +476,7 @@ const AdminSettings = () => {
                   <div className="flex flex-col">
                     <label
                       htmlFor="confirmPassword"
-                      className="block mb-1 text-sm font-medium text-gray-700"
+                      className="block mb-1 font-medium text-gray-700 text-md"
                     >
                       Confirm Password
                     </label>
@@ -486,7 +486,7 @@ const AdminSettings = () => {
                       name="confirmPassword"
                       value={passwordData.confirmPassword}
                       onChange={handlePasswordChange}
-                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
                       placeholder="Confirm new password"
                       required
                       minLength={8}
