@@ -338,7 +338,7 @@ export default function OrganizersAdmin() {
                 <tr key={organizer._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {organizer.name}
+                      {organizer.username}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -454,7 +454,7 @@ export default function OrganizersAdmin() {
                         Name
                       </h4>
                       <p className="text-base text-gray-900">
-                        {currentOrganizer.name}
+                        {currentOrganizer.username}
                       </p>
                     </div>
 
@@ -588,7 +588,7 @@ export default function OrganizersAdmin() {
                             Location
                           </th>
                           <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                            Tickets Sold
+                            Duration(hrs)
                           </th>
                           <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             Status
@@ -605,7 +605,7 @@ export default function OrganizersAdmin() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-500">
-                                {formatDate(event.eventDate)}
+                                {formatDate(event.date)}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -615,11 +615,11 @@ export default function OrganizersAdmin() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-500">
-                                {event.ticketsSold || 0}
+                                {event.duration || 0}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <StatusBadge status={event.status} />
+                              <StatusBadge status={event.event_status} />
                             </td>
                           </tr>
                         ))}
