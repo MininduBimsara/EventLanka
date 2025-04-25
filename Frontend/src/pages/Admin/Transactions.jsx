@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Download, Search, ChevronDown, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTransactions } from "../../Redux/Slicers/adminSlice"; // Adjust path as needed
@@ -8,6 +8,10 @@ const AdminTransactions = () => {
   const { transactions, loading } = useSelector((state) => state.admin.finance);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Refs for dropdown click outside detection
+  const paymentMethodRef = useRef(null);
+  const statusRef = useRef(null);
 
   // Filter states
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
@@ -22,6 +26,26 @@ const AdminTransactions = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 10;
+
+  // Handle clicks outside the dropdowns to close them
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        paymentMethodRef.current &&
+        !paymentMethodRef.current.contains(event.target)
+      ) {
+        setIsPaymentMethodDropdownOpen(false);
+      }
+      if (statusRef.current && !statusRef.current.contains(event.target)) {
+        setIsStatusDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Fetch transactions from API when component mounts or filters change
   useEffect(() => {
@@ -152,8 +176,8 @@ const AdminTransactions = () => {
 
         {/* Filters and actions section */}
         <div className="p-4 mb-6 bg-white rounded-lg shadow">
-          <div className="flex flex-col mb-4 md:flex-row md:items-center md:justify-between">
-            <h2 className="mb-2 text-lg font-medium md:mb-0">Filters</h2>
+          <div className="flex flex-wrap items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">Filters</h2>
             <div className="flex space-x-2">
               <button
                 onClick={resetFilters}
@@ -173,9 +197,9 @@ const AdminTransactions = () => {
           </div>
 
           {/* Search and filters row */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
             {/* Search */}
-            <div className="relative">
+            <div className="relative lg:col-span-1">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <Search size={18} className="text-gray-400" />
               </div>
@@ -189,7 +213,7 @@ const AdminTransactions = () => {
             </div>
 
             {/* Date Range */}
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-2 lg:col-span-2">
               <input
                 type="date"
                 value={dateRange.start}
@@ -198,7 +222,7 @@ const AdminTransactions = () => {
                 }
                 className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <span className="flex items-center text-gray-500">to</span>
+              <span className="text-gray-500">to</span>
               <input
                 type="date"
                 value={dateRange.end}
@@ -210,7 +234,7 @@ const AdminTransactions = () => {
             </div>
 
             {/* Payment Method Dropdown */}
-            <div className="relative">
+            <div className="relative lg:col-span-1" ref={paymentMethodRef}>
               <button
                 onClick={() =>
                   setIsPaymentMethodDropdownOpen(!isPaymentMethodDropdownOpen)
@@ -221,7 +245,7 @@ const AdminTransactions = () => {
                 <ChevronDown size={18} className="text-gray-500" />
               </button>
               {isPaymentMethodDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                   <ul className="py-1 overflow-y-auto max-h-48">
                     <li
                       className="px-3 py-2 cursor-pointer hover:bg-gray-100"
@@ -250,7 +274,7 @@ const AdminTransactions = () => {
             </div>
 
             {/* Status Dropdown */}
-            <div className="relative">
+            <div className="relative lg:col-span-1" ref={statusRef}>
               <button
                 onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                 className="flex items-center justify-between w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -259,7 +283,7 @@ const AdminTransactions = () => {
                 <ChevronDown size={18} className="text-gray-500" />
               </button>
               {isStatusDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                   <ul className="py-1 overflow-y-auto max-h-48">
                     <li
                       className="px-3 py-2 cursor-pointer hover:bg-gray-100"
