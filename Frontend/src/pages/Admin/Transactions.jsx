@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Download, Search, ChevronDown, X } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTransactions } from "../../Redux/Slicers/adminSlice"; // Adjust path as needed
 
 const AdminTransactions = () => {
-  // Sample transaction data - in a real app this would come from an API
-  const [transactions, setTransactions] = useState([]);
+  const dispatch = useDispatch();
+  const { transactions, loading } = useSelector((state) => state.admin.finance);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Filter states
@@ -22,181 +23,56 @@ const AdminTransactions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 10;
 
+  // Fetch transactions from API when component mounts or filters change
   useEffect(() => {
-    // Simulate API fetch
-    const fetchTransactions = async () => {
-      setLoading(true);
-      try {
-        // Mock data - replace with actual API call
-        const mockTransactions = [
-          {
-            id: "TX123456",
-            user: "John Smith",
-            amount: "$129.99",
-            event: "Premium Subscription",
-            paymentMethod: "Credit Card",
-            date: "2025-04-05",
-            status: "Completed",
-          },
-          {
-            id: "TX123457",
-            user: "Emma Johnson",
-            amount: "$59.99",
-            event: "Monthly Subscription",
-            paymentMethod: "PayPal",
-            date: "2025-04-04",
-            status: "Completed",
-          },
-          {
-            id: "TX123458",
-            user: "Michael Brown",
-            amount: "$25.00",
-            event: "Event Ticket",
-            paymentMethod: "Debit Card",
-            date: "2025-04-03",
-            status: "Pending",
-          },
-          {
-            id: "TX123459",
-            user: "Sophia Davis",
-            amount: "$199.99",
-            event: "Annual Plan",
-            paymentMethod: "Credit Card",
-            date: "2025-04-02",
-            status: "Completed",
-          },
-          {
-            id: "TX123460",
-            user: "James Wilson",
-            amount: "$39.99",
-            event: "Digital Product",
-            paymentMethod: "PayPal",
-            date: "2025-04-01",
-            status: "Failed",
-          },
-          {
-            id: "TX123461",
-            user: "Olivia Martinez",
-            amount: "$79.99",
-            event: "Workshop Access",
-            paymentMethod: "Credit Card",
-            date: "2025-03-31",
-            status: "Completed",
-          },
-          {
-            id: "TX123462",
-            user: "Robert Taylor",
-            amount: "$19.99",
-            event: "E-book Purchase",
-            paymentMethod: "Debit Card",
-            date: "2025-03-30",
-            status: "Refunded",
-          },
-          {
-            id: "TX123463",
-            user: "Ava Anderson",
-            amount: "$149.99",
-            event: "Course Enrollment",
-            paymentMethod: "Credit Card",
-            date: "2025-03-29",
-            status: "Completed",
-          },
-          {
-            id: "TX123464",
-            user: "William Thomas",
-            amount: "$9.99",
-            event: "App Purchase",
-            paymentMethod: "PayPal",
-            date: "2025-03-28",
-            status: "Pending",
-          },
-          {
-            id: "TX123465",
-            user: "Isabella Jackson",
-            amount: "$299.99",
-            event: "Premium Plan",
-            paymentMethod: "Credit Card",
-            date: "2025-03-27",
-            status: "Completed",
-          },
-          {
-            id: "TX123466",
-            user: "Daniel White",
-            amount: "$49.99",
-            event: "Webinar Ticket",
-            paymentMethod: "Debit Card",
-            date: "2025-03-26",
-            status: "Failed",
-          },
-          {
-            id: "TX123467",
-            user: "Mia Harris",
-            amount: "$89.99",
-            event: "Consultation Fee",
-            paymentMethod: "PayPal",
-            date: "2025-03-25",
-            status: "Completed",
-          },
-        ];
+    const params = {};
+    if (dateRange.start) params.startDate = dateRange.start;
+    if (dateRange.end) params.endDate = dateRange.end;
+    if (paymentMethodFilter) params.payment_method = paymentMethodFilter;
+    if (statusFilter) params.status = statusFilter;
 
-        setTransactions(mockTransactions);
-        setFilteredTransactions(mockTransactions);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    dispatch(fetchTransactions(params));
+  }, [
+    dispatch,
+    dateRange.start,
+    dateRange.end,
+    paymentMethodFilter,
+    statusFilter,
+  ]);
 
-    fetchTransactions();
-  }, []);
-
+  // Apply client-side search filter
   useEffect(() => {
-    // Apply filters and search
+    if (!transactions) return;
+
     let results = transactions;
 
-    // Apply search term filter
+    // Apply search term filter locally
     if (searchTerm) {
       results = results.filter(
         (transaction) =>
-          transaction.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          transaction.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          transaction.event.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply date range filter
-    if (dateRange.start && dateRange.end) {
-      results = results.filter((transaction) => {
-        const transactionDate = new Date(transaction.date);
-        const startDate = new Date(dateRange.start);
-        const endDate = new Date(dateRange.end);
-        endDate.setHours(23, 59, 59, 999); // Set to end of day
-        return transactionDate >= startDate && transactionDate <= endDate;
-      });
-    }
-
-    // Apply payment method filter
-    if (paymentMethodFilter) {
-      results = results.filter(
-        (transaction) => transaction.paymentMethod === paymentMethodFilter
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter) {
-      results = results.filter(
-        (transaction) => transaction.status === statusFilter
+          (transaction.id || transaction._id || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (transaction.user || transaction.userId || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (transaction.event || transaction.eventId || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredTransactions(results);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, dateRange, paymentMethodFilter, statusFilter, transactions]);
+  }, [searchTerm, transactions]);
 
-  // Get payment methods and statuses for filter dropdowns
-  const paymentMethods = [...new Set(transactions.map((t) => t.paymentMethod))];
-  const statuses = [...new Set(transactions.map((t) => t.status))];
+  // Extract unique payment methods and statuses for filter dropdowns
+  const paymentMethods = transactions
+    ? [...new Set(transactions.map((t) => t.payment_method))]
+    : [];
+  const statuses = transactions
+    ? [...new Set(transactions.map((t) => t.status))]
+    : [];
 
   // Handle CSV export
   const exportToCSV = () => {
@@ -210,12 +86,12 @@ const AdminTransactions = () => {
       "Status",
     ];
     const data = filteredTransactions.map((t) => [
-      t.id,
-      t.user,
-      t.amount,
-      t.event,
-      t.paymentMethod,
-      t.date,
+      t._id || t.id,
+      t.userId || t.user,
+      `$${t.amount}`,
+      t.eventId || t.event,
+      t.payment_method,
+      new Date(t.createdAt || t.date).toISOString().split("T")[0],
       t.status,
     ]);
 
@@ -288,7 +164,7 @@ const AdminTransactions = () => {
             </div>
           </div>
 
-          {/* Search and filters row */}
+          {/* Search and filters row - Fixed layout */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Search */}
             <div className="relative">
@@ -304,40 +180,45 @@ const AdminTransactions = () => {
               />
             </div>
 
-            {/* Date Range */}
-            <div className="flex space-x-2">
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, start: e.target.value })
-                }
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="flex items-center text-gray-500">to</span>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, end: e.target.value })
-                }
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            {/* Date Range - Fixed to prevent overlap */}
+            <div className="flex items-center space-x-2">
+              <div className="w-5/12">
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, start: e.target.value })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <span className="flex-none text-gray-500">to</span>
+              <div className="w-5/12">
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, end: e.target.value })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
 
-            {/* Payment Method Dropdown */}
-            <div className="relative">
+            {/* Payment Method Dropdown - Fixed positioning */}
+            <div className="relative z-30">
               <button
-                onClick={() =>
-                  setIsPaymentMethodDropdownOpen(!isPaymentMethodDropdownOpen)
-                }
+                onClick={() => {
+                  setIsPaymentMethodDropdownOpen(!isPaymentMethodDropdownOpen);
+                  if (isStatusDropdownOpen) setIsStatusDropdownOpen(false);
+                }}
                 className="flex items-center justify-between w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <span>{paymentMethodFilter || "Payment Method"}</span>
                 <ChevronDown size={18} className="text-gray-500" />
               </button>
               {isPaymentMethodDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                <div className="absolute z-40 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                   <ul className="py-1 overflow-y-auto max-h-48">
                     <li
                       className="px-3 py-2 cursor-pointer hover:bg-gray-100"
@@ -365,17 +246,21 @@ const AdminTransactions = () => {
               )}
             </div>
 
-            {/* Status Dropdown */}
-            <div className="relative">
+            {/* Status Dropdown - Fixed positioning */}
+            <div className="relative z-20">
               <button
-                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                onClick={() => {
+                  setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                  if (isPaymentMethodDropdownOpen)
+                    setIsPaymentMethodDropdownOpen(false);
+                }}
                 className="flex items-center justify-between w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <span>{statusFilter || "Status"}</span>
                 <ChevronDown size={18} className="text-gray-500" />
               </button>
               {isStatusDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                <div className="absolute z-40 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                   <ul className="py-1 overflow-y-auto max-h-48">
                     <li
                       className="px-3 py-2 cursor-pointer hover:bg-gray-100"
@@ -405,7 +290,7 @@ const AdminTransactions = () => {
           </div>
         </div>
 
-        {/* Transactions Table */}
+        {/* Transactions Table with fixed structure */}
         <div className="overflow-hidden bg-white rounded-lg shadow">
           <div className="overflow-x-auto">
             {loading ? (
@@ -420,48 +305,48 @@ const AdminTransactions = () => {
                 </p>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 table-fixed">
                 <thead className="bg-gray-50">
                   <tr>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       ID
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       User
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Amount
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Event
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Payment Method
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Date
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Status
                     </th>
@@ -470,34 +355,38 @@ const AdminTransactions = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentTransactions.map((transaction, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
-                        {transaction.id}
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900 truncate">
+                        {transaction._id || transaction.id}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {transaction.user}
+                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
+                        {transaction.userId || transaction.user}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {transaction.amount}
+                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
+                        ${transaction.amount}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {transaction.event}
+                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
+                        {transaction.eventId || transaction.event}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {transaction.paymentMethod}
+                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
+                        {transaction.payment_method}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {transaction.date}
+                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
+                        {
+                          new Date(transaction.createdAt || transaction.date)
+                            .toISOString()
+                            .split("T")[0]
+                        }
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            transaction.status === "Completed"
+                            transaction.status?.toLowerCase() === "completed"
                               ? "bg-green-100 text-green-800"
-                              : transaction.status === "Pending"
+                              : transaction.status?.toLowerCase() === "pending"
                               ? "bg-yellow-100 text-yellow-800"
-                              : transaction.status === "Failed"
+                              : transaction.status?.toLowerCase() === "failed"
                               ? "bg-red-100 text-red-800"
-                              : transaction.status === "Refunded"
+                              : transaction.status?.toLowerCase() === "refunded"
                               ? "bg-purple-100 text-purple-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
@@ -512,7 +401,7 @@ const AdminTransactions = () => {
             )}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination - Fixed layout */}
           {filteredTransactions.length > 0 && (
             <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
               <div className="flex justify-between flex-1 sm:hidden">
@@ -577,8 +466,22 @@ const AdminTransactions = () => {
                       <span className="sr-only">Previous</span>
                       &larr;
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (number) => (
+                    {/* Limit number of pagination buttons shown */}
+                    {Array.from(
+                      {
+                        length: Math.min(5, totalPages),
+                      },
+                      (_, i) => {
+                        // Center current page when possible
+                        let startPage = Math.max(1, currentPage - 2);
+                        if (currentPage > totalPages - 2) {
+                          startPage = Math.max(1, totalPages - 4);
+                        }
+                        return i + startPage;
+                      }
+                    )
+                      .filter((num) => num <= totalPages)
+                      .map((number) => (
                         <button
                           key={number}
                           onClick={() => paginate(number)}
@@ -590,8 +493,7 @@ const AdminTransactions = () => {
                         >
                           {number}
                         </button>
-                      )
-                    )}
+                      ))}
                     <button
                       onClick={() => paginate(currentPage + 1)}
                       disabled={currentPage === totalPages}
