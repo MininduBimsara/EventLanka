@@ -20,6 +20,20 @@ router.put(
   adminController.changeAdminPassword
 );
 
+/* 👤 Admin Profile */
+router.get(
+  "/profile",
+  protect,
+  adminOnly,
+  adminController.getAdminProfile
+);
+router.put(
+  "/profile",
+  protect,
+  adminOnly,
+  adminController.updateAdminProfile
+);
+
 /* 📅 Event Approvals */
 router.get(
   "/event-approvals",
