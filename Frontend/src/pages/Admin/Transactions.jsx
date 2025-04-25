@@ -48,18 +48,20 @@ const AdminTransactions = () => {
 
     // Apply search term filter locally
     if (searchTerm) {
-      results = results.filter(
-        (transaction) =>
-          (transaction.id || transaction._id || "")
+      results = results.filter((transaction) => {
+        // Get the user name from populated field
+        const userName = transaction.user_id?.username || "";
+        // Get the event title from populated field
+        const eventTitle = transaction.event_id?.title || "";
+
+        return (
+          (transaction._id || "")
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          (transaction.user || transaction.userId || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (transaction.event || transaction.eventId || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-      );
+          userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          eventTitle.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      });
     }
 
     setFilteredTransactions(results);
@@ -86,12 +88,12 @@ const AdminTransactions = () => {
       "Status",
     ];
     const data = filteredTransactions.map((t) => [
-      t._id || t.id,
-      t.userId || t.user,
+      t._id,
+      t.user_id?.username || "Unknown User",
       `$${t.amount}`,
-      t.eventId || t.event,
+      t.event_id?.title || "Unknown Event",
       t.payment_method,
-      new Date(t.createdAt || t.date).toISOString().split("T")[0],
+      new Date(t.createdAt).toISOString().split("T")[0],
       t.status,
     ]);
 
@@ -135,6 +137,12 @@ const AdminTransactions = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0];
+  };
+
   return (
     <div className="min-h-screen p-6 bg-gray-50">
       <div className="mx-auto max-w-7xl">
@@ -164,7 +172,7 @@ const AdminTransactions = () => {
             </div>
           </div>
 
-          {/* Search and filters row - Fixed layout */}
+          {/* Search and filters row */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Search */}
             <div className="relative">
@@ -180,45 +188,40 @@ const AdminTransactions = () => {
               />
             </div>
 
-            {/* Date Range - Fixed to prevent overlap */}
-            <div className="flex items-center space-x-2">
-              <div className="w-5/12">
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) =>
-                    setDateRange({ ...dateRange, start: e.target.value })
-                  }
-                  className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <span className="flex-none text-gray-500">to</span>
-              <div className="w-5/12">
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) =>
-                    setDateRange({ ...dateRange, end: e.target.value })
-                  }
-                  className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+            {/* Date Range */}
+            <div className="flex space-x-2">
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, start: e.target.value })
+                }
+                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="flex items-center text-gray-500">to</span>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, end: e.target.value })
+                }
+                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
-            {/* Payment Method Dropdown - Fixed positioning */}
-            <div className="relative z-30">
+            {/* Payment Method Dropdown */}
+            <div className="relative">
               <button
-                onClick={() => {
-                  setIsPaymentMethodDropdownOpen(!isPaymentMethodDropdownOpen);
-                  if (isStatusDropdownOpen) setIsStatusDropdownOpen(false);
-                }}
+                onClick={() =>
+                  setIsPaymentMethodDropdownOpen(!isPaymentMethodDropdownOpen)
+                }
                 className="flex items-center justify-between w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <span>{paymentMethodFilter || "Payment Method"}</span>
                 <ChevronDown size={18} className="text-gray-500" />
               </button>
               {isPaymentMethodDropdownOpen && (
-                <div className="absolute z-40 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                   <ul className="py-1 overflow-y-auto max-h-48">
                     <li
                       className="px-3 py-2 cursor-pointer hover:bg-gray-100"
@@ -246,21 +249,17 @@ const AdminTransactions = () => {
               )}
             </div>
 
-            {/* Status Dropdown - Fixed positioning */}
-            <div className="relative z-20">
+            {/* Status Dropdown */}
+            <div className="relative">
               <button
-                onClick={() => {
-                  setIsStatusDropdownOpen(!isStatusDropdownOpen);
-                  if (isPaymentMethodDropdownOpen)
-                    setIsPaymentMethodDropdownOpen(false);
-                }}
+                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                 className="flex items-center justify-between w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <span>{statusFilter || "Status"}</span>
                 <ChevronDown size={18} className="text-gray-500" />
               </button>
               {isStatusDropdownOpen && (
-                <div className="absolute z-40 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                   <ul className="py-1 overflow-y-auto max-h-48">
                     <li
                       className="px-3 py-2 cursor-pointer hover:bg-gray-100"
@@ -290,7 +289,7 @@ const AdminTransactions = () => {
           </div>
         </div>
 
-        {/* Transactions Table with fixed structure */}
+        {/* Transactions Table */}
         <div className="overflow-hidden bg-white rounded-lg shadow">
           <div className="overflow-x-auto">
             {loading ? (
@@ -305,48 +304,48 @@ const AdminTransactions = () => {
                 </p>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200 table-fixed">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th
                       scope="col"
-                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       ID
                     </th>
                     <th
                       scope="col"
-                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       User
                     </th>
                     <th
                       scope="col"
-                      className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Amount
                     </th>
                     <th
                       scope="col"
-                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Event
                     </th>
                     <th
                       scope="col"
-                      className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Payment Method
                     </th>
                     <th
                       scope="col"
-                      className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Date
                     </th>
                     <th
                       scope="col"
-                      className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                     >
                       Status
                     </th>
@@ -355,38 +354,34 @@ const AdminTransactions = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentTransactions.map((transaction, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900 truncate">
-                        {transaction._id || transaction.id}
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
+                        {transaction._id}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
-                        {transaction.userId || transaction.user}
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {transaction.user_id?.username || "Unknown User"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                         ${transaction.amount}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
-                        {transaction.eventId || transaction.event}
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {transaction.event_id?.title || "Unknown Event"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                         {transaction.payment_method}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 truncate">
-                        {
-                          new Date(transaction.createdAt || transaction.date)
-                            .toISOString()
-                            .split("T")[0]
-                        }
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {formatDate(transaction.createdAt)}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            transaction.status?.toLowerCase() === "completed"
+                            transaction.status === "completed"
                               ? "bg-green-100 text-green-800"
-                              : transaction.status?.toLowerCase() === "pending"
+                              : transaction.status === "pending"
                               ? "bg-yellow-100 text-yellow-800"
-                              : transaction.status?.toLowerCase() === "failed"
+                              : transaction.status === "failed"
                               ? "bg-red-100 text-red-800"
-                              : transaction.status?.toLowerCase() === "refunded"
+                              : transaction.status === "refunded"
                               ? "bg-purple-100 text-purple-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
@@ -401,7 +396,7 @@ const AdminTransactions = () => {
             )}
           </div>
 
-          {/* Pagination - Fixed layout */}
+          {/* Pagination */}
           {filteredTransactions.length > 0 && (
             <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
               <div className="flex justify-between flex-1 sm:hidden">
@@ -466,22 +461,8 @@ const AdminTransactions = () => {
                       <span className="sr-only">Previous</span>
                       &larr;
                     </button>
-                    {/* Limit number of pagination buttons shown */}
-                    {Array.from(
-                      {
-                        length: Math.min(5, totalPages),
-                      },
-                      (_, i) => {
-                        // Center current page when possible
-                        let startPage = Math.max(1, currentPage - 2);
-                        if (currentPage > totalPages - 2) {
-                          startPage = Math.max(1, totalPages - 4);
-                        }
-                        return i + startPage;
-                      }
-                    )
-                      .filter((num) => num <= totalPages)
-                      .map((number) => (
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (number) => (
                         <button
                           key={number}
                           onClick={() => paginate(number)}
@@ -493,7 +474,8 @@ const AdminTransactions = () => {
                         >
                           {number}
                         </button>
-                      ))}
+                      )
+                    )}
                     <button
                       onClick={() => paginate(currentPage + 1)}
                       disabled={currentPage === totalPages}

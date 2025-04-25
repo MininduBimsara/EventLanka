@@ -51,7 +51,10 @@ exports.getTransactions = async (req, res) => {
     if (payment_method) filter.payment_method = payment_method;
     if (status) filter.status = status;
 
-    const transactions = await Payment.find(filter);
+    const transactions = await Payment.find(filter)
+      .populate("user_id", "username") // Populate user_id with the user's name
+      .populate("event_id", "title"); // Populate event_id with the event's name
+
     res.json(transactions);
   } catch (err) {
     res.status(500).json({ error: "Error fetching transactions" });
