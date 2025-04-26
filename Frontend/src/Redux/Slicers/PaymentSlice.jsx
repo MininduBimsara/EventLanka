@@ -40,6 +40,27 @@ export const fetchPaymentHistory = createAsyncThunk(
   }
 );
 
+// Async thunk for downloading receipt
+// Async thunk for downloading receipt
+export const downloadReceipt = createAsyncThunk(
+  "payments/downloadReceipt",
+  async (transactionId, { rejectWithValue }) => {
+    try {
+      // Use window.open approach instead of the blob method
+      window.open(
+        `${PAYMENT_API_URL}/receipt/${transactionId}`,
+        "_blank"
+      );
+      return { success: true, transactionId };
+    } catch (error) {
+      console.error("Receipt download error:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to download receipt"
+      );
+    }
+  }
+);
+
 // Initial state for the payments slice
 const initialState = {
   paymentHistory: [],
@@ -48,6 +69,7 @@ const initialState = {
   error: null,
   success: false,
   message: "",
+  downloading: false,
 };
 
 // Create the payments slice
@@ -105,6 +127,20 @@ const paymentSlice = createSlice({
       })
       .addCase(fetchPaymentHistory.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Download Receipt
+      .addCase(downloadReceipt.pending, (state) => {
+        state.downloading = true;
+        state.error = null;
+      })
+      .addCase(downloadReceipt.fulfilled, (state) => {
+        state.downloading = false;
+        state.success = true;
+      })
+      .addCase(downloadReceipt.rejected, (state, action) => {
+        state.downloading = false;
         state.error = action.payload;
       });
   },

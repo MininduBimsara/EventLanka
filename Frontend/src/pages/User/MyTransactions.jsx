@@ -13,7 +13,10 @@ import {
 } from "react-icons/fa";
 import { useTheme } from "../../Context/ThemeContext";
 import UserNavbar from "../../components/User/UserNavbar";
-import { fetchPaymentHistory } from "../../Redux/Slicers/PaymentSlice";
+import {
+  fetchPaymentHistory,
+  downloadReceipt,
+} from "../../Redux/Slicers/PaymentSlice";
 
 const MyTransactions = () => {
   // Use theme context
@@ -21,7 +24,7 @@ const MyTransactions = () => {
 
   // Redux state and dispatch
   const dispatch = useDispatch();
-  const { paymentHistory, loading, error } = useSelector(
+  const { paymentHistory, loading, error, downloading } = useSelector(
     (state) => state.payments
   );
 
@@ -99,10 +102,8 @@ const MyTransactions = () => {
     });
 
   // Function to download receipt
-  const handleDownloadReceipt = (id) => {
-    // In a real application, this would generate and download a PDF receipt
-    // You might want to add an API endpoint for this
-    alert(`Downloading receipt for transaction ${id}`);
+  const handleDownloadReceipt = (transactionId) => {
+    dispatch(downloadReceipt(transactionId));
   };
 
   // Format date function
@@ -237,9 +238,15 @@ const MyTransactions = () => {
               }`}
             >
               <h3 className="mb-2 text-lg font-medium">
-                Error Loading Transactions
+                {error.includes("ERR_BLOCKED_BY_CLIENT")
+                  ? "Browser Security Notice"
+                  : "Error Loading Transactions"}
               </h3>
-              <p>{error}</p>
+              <p>
+                {error.includes("ERR_BLOCKED_BY_CLIENT")
+                  ? "Your browser security or ad blocker flagged the download request. If the PDF did not download automatically, please try again or temporarily disable any ad blockers."
+                  : error}
+              </p>
               <button
                 className="px-4 py-2 mt-3 text-white rounded bg-amber-500 hover:bg-amber-600"
                 onClick={() => dispatch(fetchPaymentHistory())}
@@ -473,9 +480,23 @@ const MyTransactions = () => {
                             onClick={() =>
                               handleDownloadReceipt(transaction.id)
                             }
-                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white rounded-md bg-amber-500 hover:bg-amber-600 transition-colors shadow-sm"
+                            disabled={downloading}
+                            className={`inline-flex items-center px-3 py-1.5 text-sm font-medium text-white rounded-md transition-colors shadow-sm ${
+                              downloading
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-amber-500 hover:bg-amber-600"
+                            }`}
                           >
-                            <FaFileDownload className="mr-1.5" /> Receipt
+                            {downloading ? (
+                              <>
+                                <FaSpinner className="w-4 h-4 mr-1.5 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <FaFileDownload className="mr-1.5" /> Receipt
+                              </>
+                            )}
                           </button>
                         </td>
                       </tr>
