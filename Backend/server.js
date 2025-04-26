@@ -68,6 +68,7 @@ const googleAuthRoutes = require("./routes/googleAuthroutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const organizerRoutes = require("./routes/organizerRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 
 app.use("/api/auth", authRoutes);
@@ -77,6 +78,7 @@ app.use("/api/googleauth", googleAuthRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/organizer", organizerRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 
 const PORT = process.env.PORT || 5000;

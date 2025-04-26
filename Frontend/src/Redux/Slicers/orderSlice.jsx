@@ -3,6 +3,9 @@ import axios from "axios";
 
 const API_URL = "http://localhost:5000/api/orders"; // Orders API URL
 
+// Set default axios config
+axios.defaults.withCredentials = true;
+
 // Async thunk for creating a new order
 export const createOrder = createAsyncThunk(
   "orders/createOrder",
@@ -43,6 +46,22 @@ export const fetchOrderById = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch order details"
+      );
+    }
+  }
+);
+
+// Async thunk for cancelling an order
+export const cancelOrder = createAsyncThunk(
+  "orders/cancelOrder",
+  async (orderId, { rejectWithValue }) => {
+    try {
+      // Using PUT method based on your backend implementation
+      const response = await axios.put(`${API_URL}/${orderId}/cancel`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to cancel order"
       );
     }
   }
@@ -162,6 +181,32 @@ const ordersSlice = createSlice({
       .addCase(fetchOrderById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Cancel an order
+      .addCase(cancelOrder.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.cancelSuccess = false;
+      })
+      .addCase(cancelOrder.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cancelSuccess = true;
+        // Update the order status in the orders array
+        state.orders = state.orders.map((order) =>
+          order._id === action.payload.order._id ? action.payload.order : order
+        );
+        // Also update currentOrder if it's the one we just cancelled
+        if (
+          state.currentOrder &&
+          state.currentOrder._id === action.payload.order._id
+        ) {
+          state.currentOrder = action.payload.order;
+        }
+      })
+      .addCase(cancelOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.cancelSuccess = false;
       })
 
       // Update order

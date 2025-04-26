@@ -217,4 +217,56 @@ exports.validateCode = asyncHandler(async (req, res) => {
   });
 });
 
+
+// Validate a discount code
+exports.validateCode = asyncHandler(async (req, res) => {
+  const { code, subtotal } = req.body;
+
+  const discount = await Discount.findOne({
+    code: code.toUpperCase(),
+    is_active: true,
+  });
+
+  if (!discount) {
+    return res.status(404).json({ valid: false, message: "Invalid discount code" });
+  }
+
+  // Check if code has expired
+  const now = new Date();
+  if (discount.end_date && now > new Date(discount.end_date)) {
+    return res.status(400).json({ valid: false, message: "Discount code has expired" });
+  }
+
+  // Check if code has reached maximum uses
+  if (discount.usage_limit && discount.usage_count >= discount.usage_limit) {
+    return res
+      .status(400)
+      .json({ valid: false, message: "Discount code has reached maximum uses" });
+  }
+
+  // Check if minimum purchase amount is met
+  if (subtotal < discount.minimum_purchase_amount) {
+    return res.status(400).json({
+      valid: false,
+      message: `Minimum purchase amount of $${discount.minimum_purchase_amount} required for this discount`,
+    });
+  }
+
+  // Calculate discount amount
+  let discountAmount = 0;
+  if (discount.discount_type === "percentage") {
+    discountAmount = (subtotal * discount.discount_value) / 100;
+  } else {
+    discountAmount = discount.discount_value;
+  }
+
+  res.status(200).json({
+    valid: true,
+    discountAmount,
+    discountId: discount._id,
+    discountType: discount.discount_type,
+    discountValue: discount.discount_value,
+  });
+});
+
 module.exports = exports;
