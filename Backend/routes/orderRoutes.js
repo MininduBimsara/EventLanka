@@ -1,5 +1,6 @@
 const express = require('express');
 const orderController = require("../controllers/Common/orderController");
+const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ router.use(protect);
 router.post('/', orderController.createOrder);
 
 // Route to get all orders
-router.get('/', orderController.getAllOrders);
+router.get("/", orderController.getOrders);
 
 // Route to get a specific order by ID
 router.get('/:id', orderController.getOrderById);
@@ -19,6 +20,9 @@ router.get('/:id', orderController.getOrderById);
 router.put('/:id', orderController.updateOrder);
 
 // Route to delete an order by ID
-router.delete('/:id', orderController.deleteOrder);
+router.delete("/:id", orderController.deleteOrder);
+
+// Route to cancel an order
+router.put('/:id/cancel', orderController.cancelOrder);
 
 module.exports = router;

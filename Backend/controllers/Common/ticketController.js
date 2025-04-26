@@ -3,6 +3,8 @@ const Event = require("../../models/Event"); // Import the Event model (to check
 const Order = require("../../models/Order"); // Import the Order model (to create an order)
 const User = require("../../models/User"); // Import the User model (to check user validity)
 const asyncHandler = require("express-async-handler");
+const QRCode = require("qrcode");
+const PDFDocument = require("pdfkit");
 
 // ===========================
 // CREATE A TICKET (Buy Ticket)
@@ -150,3 +152,155 @@ exports.cancelTicket = asyncHandler(async (req, res) => {
   await ticket.deleteOne();
   res.status(200).json({ message: "Ticket canceled successfully" });
 });
+
+
+// Download ticket as PDF
+exports.downloadTicket = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+  const { format } = req.params; // pdf
+
+  const ticket = await Ticket.findById(ticketId)
+    .populate("user_id", "username email")
+    .populate("event_id", "title date location organizer_id banner");
+
+  if (!ticket) {
+    return res.status(404).json({ message: "Ticket not found" });
+  }
+
+  // Check if user is authorized (ticket owner, admin, or event organizer)
+  const isAuthorized =
+    ticket.user_id._id.toString() === req.user.id ||
+    req.user.role === "admin" ||
+    (ticket.event_id && ticket.event_id.organizer_id.toString() === req.user.id);
+
+  if (!isAuthorized) {
+    return res.status(403).json({ message: "Unauthorized to access this ticket" });
+  }
+
+  // Generate QR code
+  const qrData = JSON.stringify({
+    ticketId: ticket._id,
+    eventId: ticket.event_id._id,
+    userId: ticket.user_id._id,
+    type: ticket.ticket_type,
+    quantity: ticket.quantity,
+    timestamp: Date.now(),
+  });
+
+  const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+    errorCorrectionLevel: "H",
+    margin: 2,
+    width: 150,
+  });
+
+  // Create PDF with pdfkit
+  if (format === "pdf") {
+    const doc = new PDFDocument({ margin: 50 });
+    const fileName = `ticket-${ticketId}.pdf`;
+
+    // Set response headers for PDF download
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    // Pipe the PDF directly to the response
+    doc.pipe(res);
+
+    // Format the event date
+    const eventDate = ticket.event_id.date 
+      ? new Date(ticket.event_id.date).toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "TBD";
+
+    // Add title and event info
+    doc.fontSize(25).text("E-TICKET", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(16).text(ticket.event_id.title, { align: "center" });
+    doc.moveDown(0.5);
+    
+    // Add event details
+    doc.fontSize(12).text(`Date: ${eventDate}`);
+    doc.moveDown(0.5);
+    doc.text(`Location: ${ticket.event_id.location || "TBD"}`);
+    doc.moveDown(0.5);
+    doc.text(`Ticket Type: ${ticket.ticket_type}`);
+    doc.moveDown(0.5);
+    doc.text(`Quantity: ${ticket.quantity}`);
+    doc.moveDown(0.5);
+    doc.text(`Ticket ID: ${ticket._id}`);
+    doc.moveDown(0.5);
+    doc.text(`Attendee: ${ticket.user_id.username}`);
+    doc.moveDown(0.5);
+    doc.text(`Email: ${ticket.user_id.email}`);
+    
+    // Add QR code
+    doc.moveDown(2);
+    doc.text("Scan QR code at the event entrance:", { align: "center" });
+    doc.moveDown();
+    
+    // Add the QR code image
+    doc.image(qrCodeDataURL, {
+      fit: [150, 150],
+      align: "center",
+    });
+
+    // Add footer
+    doc.moveDown(2);
+    doc.fontSize(10).text("This ticket is valid for one-time entry only.", { align: "center" });
+    doc.text("Please do not share this ticket with others.", { align: "center" });
+    
+    // Finalize the PDF
+    doc.end();
+  } else {
+    res.status(400).json({ message: "Invalid format. Use 'pdf'" });
+  }
+});
+
+// Generate QR code for a ticket
+exports.generateQRCode = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+
+  const ticket = await Ticket.findById(ticketId)
+    .populate("user_id", "username email")
+    .populate("event_id", "title date location");
+
+  if (!ticket) {
+    return res.status(404).json({ message: "Ticket not found" });
+  }
+
+  // Check if user is authorized (ticket owner, admin, or event organizer)
+  const isAuthorized =
+    ticket.user_id._id.toString() === req.user.id ||
+    req.user.role === "admin" ||
+    (ticket.event_id && ticket.event_id.organizer_id.toString() === req.user.id);
+
+  if (!isAuthorized) {
+    return res.status(403).json({ message: "Unauthorized to access this ticket" });
+  }
+
+  // Generate QR code data
+  const qrData = JSON.stringify({
+    ticketId: ticket._id,
+    eventId: ticket.event_id._id,
+    userId: ticket.user_id._id,
+    type: ticket.ticket_type,
+    quantity: ticket.quantity,
+    timestamp: Date.now(),
+  });
+
+  // Generate QR code as data URL
+  const qrCode = await QRCode.toDataURL(qrData, {
+    errorCorrectionLevel: 'H',
+    margin: 2,
+    width: 250
+  });
+
+  res.status(200).json({ qrCode });
+});
+
+module.exports = exports;

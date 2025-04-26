@@ -3,6 +3,9 @@ import axios from "axios";
 
 const API_URL = "http://localhost:5000/api/orders"; // Orders API URL
 
+// Set default axios config
+axios.defaults.withCredentials = true;
+
 // Async thunk for creating a new order
 export const createOrder = createAsyncThunk(
   "orders/createOrder",
@@ -48,6 +51,22 @@ export const fetchOrderById = createAsyncThunk(
   }
 );
 
+// Async thunk for cancelling an order
+export const cancelOrder = createAsyncThunk(
+  "orders/cancelOrder",
+  async (orderId, { rejectWithValue }) => {
+    try {
+      // Using PUT method based on your backend implementation
+      const response = await axios.put(`${API_URL}/${orderId}/cancel`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to cancel order"
+      );
+    }
+  }
+);
+
 // Async thunk for updating an order
 export const updateOrder = createAsyncThunk(
   "orders/updateOrder",
@@ -78,6 +97,42 @@ export const deleteOrder = createAsyncThunk(
   }
 );
 
+// Async thunk for generating QR code for a ticket
+export const generateTicketQRCode = createAsyncThunk(
+  "orders/generateTicketQRCode",
+  async (ticketId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/tickets/${ticketId}/qrcode`
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to generate QR code"
+      );
+    }
+  }
+);
+
+// Async thunk for downloading ticket as PDF
+export const downloadTicketPDF = createAsyncThunk(
+  "orders/downloadTicketPDF",
+  async (ticketId, { rejectWithValue }) => {
+    try {
+      // For PDFs, use window.open approach for streaming
+      window.open(
+        `http://localhost:5000/api/tickets/${ticketId}/download/pdf`,
+        "_blank"
+      );
+      return { ticketId, success: true };
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to download ticket"
+      );
+    }
+  }
+);
+
 // Initial state for orders slice
 const initialState = {
   orders: [],
@@ -87,6 +142,9 @@ const initialState = {
   createSuccess: false,
   updateSuccess: false,
   deleteSuccess: false,
+  qrCode: null,
+  qrCodeLoading: false,
+  downloadSuccess: false,
 };
 
 const ordersSlice = createSlice({
@@ -163,6 +221,32 @@ const ordersSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Cancel an order
+      .addCase(cancelOrder.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.cancelSuccess = false;
+      })
+      .addCase(cancelOrder.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cancelSuccess = true;
+        // Update the order status in the orders array
+        state.orders = state.orders.map((order) =>
+          order._id === action.payload.order._id ? action.payload.order : order
+        );
+        // Also update currentOrder if it's the one we just cancelled
+        if (
+          state.currentOrder &&
+          state.currentOrder._id === action.payload.order._id
+        ) {
+          state.currentOrder = action.payload.order;
+        }
+      })
+      .addCase(cancelOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.cancelSuccess = false;
+      })
 
       // Update order
       .addCase(updateOrder.pending, (state) => {
@@ -213,6 +297,33 @@ const ordersSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.deleteSuccess = false;
+      })
+      // Generate QR code for ticket
+      .addCase(generateTicketQRCode.pending, (state) => {
+        state.qrCodeLoading = true;
+        state.error = null;
+      })
+      .addCase(generateTicketQRCode.fulfilled, (state, action) => {
+        state.qrCodeLoading = false;
+        state.qrCode = action.payload.qrCode;
+      })
+      .addCase(generateTicketQRCode.rejected, (state, action) => {
+        state.qrCodeLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(downloadTicketPDF.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.downloadSuccess = false;
+      })
+      .addCase(downloadTicketPDF.fulfilled, (state) => {
+        state.loading = false;
+        state.downloadSuccess = true;
+      })
+      .addCase(downloadTicketPDF.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.downloadSuccess = false;
       });
   },
 });
