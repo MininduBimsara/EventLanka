@@ -4,6 +4,9 @@ import axios from "axios";
 // Base URL for payment API endpoints
 const PAYMENT_API_URL = "http://localhost:5000/api/payments";
 
+// Set default axios config
+axios.defaults.withCredentials = true;
+
 // Async thunk for processing a payment
 export const processPayment = createAsyncThunk(
   "payments/process",
