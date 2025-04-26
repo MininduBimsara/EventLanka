@@ -1,10 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-// import { fetchEventById } from "../../../Redux/Slicers/EventSlice"; // Update path as needed
+import { fetchEventById } from "../../../Redux/Slicers/EventSlice"; // Update path as needed
 
 const EventCard = ({ event }) => {
   const navigate = useNavigate();
   // const dispatch = useDispatch();
+
+  const API_URL = "http://localhost:5000/api/events";
+
+  const bannerUrl = event.banner
+    ? `${API_URL}${event.banner}`
+    : "https://via.placeholder.com/600x300.png?text=No+Banner";
 
   const handleButtonClick = () => {
     if (!event.bookingAvailable) return;
@@ -24,7 +30,7 @@ const EventCard = ({ event }) => {
         <div className="relative h-48 overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-800">
           {event.banner ? (
             <img
-              src={`${process.env.REACT_APP_API_URL}${event.banner}`}
+              src={bannerUrl}
               alt={event.title}
               className="object-cover w-full h-full"
             />
