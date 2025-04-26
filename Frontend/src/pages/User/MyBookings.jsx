@@ -2,7 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../../Context/ThemeContext";
-import { fetchOrders, cancelOrder } from "../../Redux/Slicers/orderSlice"; // Import the relevant thunks
+import {
+  fetchOrders,
+  cancelOrder,
+  generateTicketQRCode,
+  downloadTicketPDF,
+} from "../../Redux/Slicers/orderSlice"; // Import the new thunks
 import {
   FaDownload,
   FaTimes,
@@ -14,53 +19,64 @@ import {
   FaCheck,
   FaMoon,
   FaSun,
+  FaQrcode, // Added QR code icon
 } from "react-icons/fa";
 import UserNavbar from "../../components/User/UserNavbar";
+import Modal from "../../components/User/Modal"; // Assume you have a Modal component
 
 const MyBookings = () => {
   const { darkMode, toggleTheme } = useTheme();
   const dispatch = useDispatch();
 
   // Get orders data from Redux store
-  const { orders, loading, error } = useSelector((state) => state.orders);
+  const { orders, loading, error, qrCode, qrCodeLoading } = useSelector(
+    (state) => state.orders
+  );
+
+  // State for QR code modal
+  const [qrCodeModal, setQrCodeModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   // Fetch orders when component mounts
   useEffect(() => {
-    dispatch(fetchOrders());
+    dispatch(fetchOrders())
+      .unwrap()
+      .catch((error) => {
+        console.error("Failed to fetch orders:", error);
+      });
   }, [dispatch]);
 
-  // Format the orders data to match our component structure
+  // Format the orders data
   const formatOrders = (orders) => {
-    return orders.map((order) => ({
-      id: order.order_number || order._id,
-      eventName:
-        order.tickets && order.tickets.length > 0
-          ? order.tickets[0].event_name
-          : "Event",
-      date:
-        order.tickets && order.tickets.length > 0
-          ? new Date(order.tickets[0].event_date).toLocaleDateString()
-          : "TBD",
-      time:
-        order.tickets && order.tickets.length > 0
-          ? new Date(order.tickets[0].event_date).toLocaleTimeString([], {
+    return orders.map((order) => {
+      const firstTicket =
+        order.tickets && order.tickets.length > 0 ? order.tickets[0] : null;
+      const eventData =
+        firstTicket && firstTicket.event_id ? firstTicket.event_id : null;
+
+      return {
+        id: order.order_number || order._id,
+        orderId: order._id,
+        tickets: order.tickets || [],
+        eventName: eventData ? eventData.title : "Event",
+        date: eventData ? new Date(eventData.date).toLocaleDateString() : "TBD",
+        time: eventData
+          ? new Date(eventData.date).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })
           : "TBD",
-      location:
-        order.tickets && order.tickets.length > 0
-          ? order.tickets[0].venue
-          : "TBD",
-      ticketType:
-        order.tickets && order.tickets.length > 0
-          ? order.tickets[0].ticket_type
-          : "Regular",
-      ticketCount: order.tickets ? order.tickets.length : 0,
-      amount: order.total_amount,
-      status: order.status.charAt(0).toUpperCase() + order.status.slice(1), // Capitalize first letter
-      imageUrl: "/api/placeholder/150/100", // Placeholder image
-    }));
+        location: eventData ? eventData.location : "TBD",
+        ticketType: firstTicket ? firstTicket.ticket_type : "Regular",
+        ticketCount: order.tickets ? order.tickets.length : 0,
+        amount: order.total_amount,
+        status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
+        imageUrl:
+          eventData && eventData.banner
+            ? eventData.banner
+            : "/api/placeholder/150/100",
+      };
+    });
   };
 
   // Filter state
@@ -71,9 +87,7 @@ const MyBookings = () => {
 
   // Cancel booking
   const handleCancelBooking = (id) => {
-    // Show confirmation modal in a real application
     if (window.confirm("Are you sure you want to cancel this booking?")) {
-      // Find the real order id from the order number
       const orderToCancel = orders.find(
         (order) => order.order_number === id || order._id === id
       );
@@ -84,18 +98,37 @@ const MyBookings = () => {
     }
   };
 
-  // Download ticket/QR code
-  const handleDownloadTicket = (id) => {
-    // In a real application, this would either:
-    // 1. Generate and download a PDF ticket
-    // 2. Open a modal with QR code to scan
-    alert(`Downloading ticket for booking ${id}`);
+  // Show QR code modal
+  const handleShowQRCode = (ticket) => {
+    setSelectedTicket(ticket);
+    dispatch(generateTicketQRCode(ticket._id))
+      .unwrap()
+      .then(() => {
+        setQrCodeModal(true);
+      })
+      .catch((error) => {
+        console.error("Failed to generate QR code:", error);
+        alert("Failed to generate QR code. Please try again.");
+      });
     setOpenActionMenu(null);
   };
 
+  // Download ticket
+  const handleDownloadTicket = (ticketId) => {
+    dispatch(downloadTicketPDF(ticketId));
+    setOpenActionMenu(null);
+  };
+
+  // Get formatted orders
+  const selectFormattedOrders = useSelector((state) => {
+    if (!state.orders.orders || state.orders.orders.length === 0) {
+      return [];
+    }
+    return formatOrders(state.orders.orders);
+  });
+
   // Filter bookings based on status
-  const formattedOrders = orders ? formatOrders(orders) : [];
-  const filteredBookings = formattedOrders.filter((booking) => {
+  const filteredBookings = selectFormattedOrders.filter((booking) => {
     if (filter === "all") return true;
     return booking.status.toLowerCase() === filter.toLowerCase();
   });
@@ -132,6 +165,7 @@ const MyBookings = () => {
     statusCancelled: darkMode
       ? "bg-red-900 text-red-300"
       : "bg-red-100 text-red-800",
+    modalBg: darkMode ? "bg-gray-800" : "bg-white",
   };
 
   return (
@@ -290,17 +324,32 @@ const MyBookings = () => {
                                 className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg z-10 ${themeClasses.actionMenu}`}
                               >
                                 <div className="py-1">
-                                  {booking.status !== "Cancelled" && (
-                                    <button
-                                      onClick={() =>
-                                        handleDownloadTicket(booking.id)
-                                      }
-                                      className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
-                                    >
-                                      <FaDownload className="mr-3 text-blue-500" />
-                                      Download Ticket
-                                    </button>
-                                  )}
+                                  {booking.status !== "Cancelled" &&
+                                    booking.tickets &&
+                                    booking.tickets.length > 0 && (
+                                      <>
+                                        <button
+                                          onClick={() =>
+                                            handleShowQRCode(booking.tickets[0])
+                                          }
+                                          className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        >
+                                          <FaQrcode className="mr-3 text-blue-500" />
+                                          Show QR Code
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleDownloadTicket(
+                                              booking.tickets[0]._id
+                                            )
+                                          }
+                                          className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        >
+                                          <FaDownload className="mr-3 text-blue-500" />
+                                          Download Ticket
+                                        </button>
+                                      </>
+                                    )}
                                   {booking.status === "Pending" && (
                                     <button
                                       onClick={() =>
@@ -363,14 +412,28 @@ const MyBookings = () => {
                               <FaTimes className="mr-1.5" /> Cancel
                             </button>
                           )}
-                          {booking.status !== "Cancelled" && (
-                            <button
-                              onClick={() => handleDownloadTicket(booking.id)}
-                              className="flex items-center px-4 py-2 text-sm text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
-                            >
-                              <FaDownload className="mr-1.5" /> Ticket
-                            </button>
-                          )}
+                          {booking.status !== "Cancelled" &&
+                            booking.tickets &&
+                            booking.tickets.length > 0 && (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    handleShowQRCode(booking.tickets[0])
+                                  }
+                                  className="flex items-center px-4 py-2 text-sm text-white transition bg-green-600 rounded-md hover:bg-green-700"
+                                >
+                                  <FaQrcode className="mr-1.5" /> QR Code
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleDownloadTicket(booking.tickets[0]._id)
+                                  }
+                                  className="flex items-center px-4 py-2 text-sm text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
+                                >
+                                  <FaDownload className="mr-1.5" /> Ticket
+                                </button>
+                              </>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -381,6 +444,89 @@ const MyBookings = () => {
           )
         )}
       </div>
+
+      {/* QR Code Modal */}
+      {qrCodeModal && (
+        <Modal
+          isOpen={qrCodeModal}
+          onClose={() => setQrCodeModal(false)}
+          title="Your Ticket QR Code"
+          size="md"
+        >
+          <div className={`p-6 ${themeClasses.modalBg} rounded-lg`}>
+            {qrCodeLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-12 h-12 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6 text-center">
+                  <h3 className="mb-2 text-xl font-bold">
+                    Scan at the event entrance
+                  </h3>
+                  <p className={`${themeClasses.subText}`}>
+                    Present this QR code to the event staff for check-in
+                  </p>
+                </div>
+
+                {qrCode && (
+                  <div className="flex justify-center mb-6">
+                    <img
+                      src={qrCode}
+                      alt="Ticket QR Code"
+                      className="w-64 h-64 border-2 border-gray-200 rounded-lg"
+                    />
+                  </div>
+                )}
+
+                {selectedTicket && (
+                  <div
+                    className={`p-4 rounded-lg ${
+                      darkMode ? "bg-gray-700" : "bg-gray-100"
+                    }`}
+                  >
+                    <p className="mb-2">
+                      <span className={themeClasses.subText}>Ticket Type:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedTicket.ticket_type}
+                      </span>
+                    </p>
+                    <p className="mb-2">
+                      <span className={themeClasses.subText}>Quantity:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedTicket.quantity}
+                      </span>
+                    </p>
+                    <p>
+                      <span className={themeClasses.subText}>Ticket ID:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedTicket._id}
+                      </span>
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-center mt-6 space-x-4">
+                  <button
+                    onClick={() => setQrCodeModal(false)}
+                    className="px-4 py-2 text-gray-700 transition bg-gray-200 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                  >
+                    Close
+                  </button>
+                  {selectedTicket && (
+                    <button
+                      onClick={() => handleDownloadTicket(selectedTicket._id)}
+                      className="flex items-center px-4 py-2 text-sm text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
+                    >
+                      <FaDownload className="mr-1.5" /> Download PDF
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
     </>
   );
 };

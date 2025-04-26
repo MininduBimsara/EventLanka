@@ -102,7 +102,13 @@ exports.getOrders = asyncHandler(async (req, res) => {
   }
 
   const orders = await Order.find({ user_id: req.user._id })
-    .populate("tickets")
+    .populate({
+      path: "tickets",
+      populate: {
+        path: "event_id",
+        model: "Event",
+      },
+    })
     .populate("discount_id");
 
   res.status(200).json(orders);
@@ -119,7 +125,13 @@ exports.getOrderById = asyncHandler(async (req, res) => {
   }
 
   const order = await Order.findById(req.params.id)
-    .populate("tickets")
+    .populate({
+      path: "tickets",
+      populate: {
+        path: "event_id",
+        model: "Event",
+      },
+    })
     .populate("discount_id");
 
   if (!order || order.user_id.toString() !== req.user._id.toString()) {
