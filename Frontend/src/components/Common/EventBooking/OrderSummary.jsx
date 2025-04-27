@@ -1,34 +1,36 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-const OrderSummary = ({ tickets, ticketPrices, totalPrice }) => {
+const OrderSummary = ({ tickets, ticketTypes, totalPrice }) => {
+  // Get selected tickets (filter those with quantity > 0)
+  const selectedTickets = ticketTypes
+    ? ticketTypes.filter(
+        (ticket) => tickets[ticket.type] && tickets[ticket.type] > 0
+      )
+    : [];
+
+  // Check if any tickets are selected
+  const hasTickets = selectedTickets.length > 0;
+
   return (
     <div className="p-6 mb-8 bg-gray-50 rounded-xl">
       <h2 className="mb-4 text-2xl font-bold text-gray-800">Order Summary</h2>
 
       <div className="mb-4 space-y-3">
-        {tickets.vip > 0 && (
-          <div className="flex justify-between">
-            <span>VIP Pass x {tickets.vip}</span>
+        {selectedTickets.map((ticket) => (
+          <div key={ticket.type} className="flex justify-between">
+            <span>
+              {ticket.type} Pass x {tickets[ticket.type]}
+            </span>
             <span className="font-medium">
-              ${(tickets.vip * ticketPrices.vip).toFixed(2)}
+              ${(tickets[ticket.type] * ticket.price).toFixed(2)}
             </span>
           </div>
-        )}
-        {tickets.standard > 0 && (
-          <div className="flex justify-between">
-            <span>Standard Pass x {tickets.standard}</span>
-            <span className="font-medium">
-              ${(tickets.standard * ticketPrices.standard).toFixed(2)}
-            </span>
-          </div>
-        )}
-        {tickets.economy > 0 && (
-          <div className="flex justify-between">
-            <span>Economy Pass x {tickets.economy}</span>
-            <span className="font-medium">
-              ${(tickets.economy * ticketPrices.economy).toFixed(2)}
-            </span>
+        ))}
+
+        {!hasTickets && (
+          <div className="py-2 text-center text-gray-500">
+            No tickets selected
           </div>
         )}
       </div>

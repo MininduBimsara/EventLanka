@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   FaFileDownload,
   FaSearch,
@@ -8,71 +9,42 @@ import {
   FaMoon,
   FaSun,
   FaFilter,
+  FaSpinner,
 } from "react-icons/fa";
 import { useTheme } from "../../Context/ThemeContext";
-import UserNavbar from "../../components/User/UserNavbar"; // Import the UserNavbar component
-
+import UserNavbar from "../../components/User/UserNavbar";
+import {
+  fetchPaymentHistory,
+  downloadReceipt,
+} from "../../Redux/Slicers/PaymentSlice";
 
 const MyTransactions = () => {
-  // Use theme context instead of local state
+  // Use theme context
   const { darkMode, toggleTheme } = useTheme();
+
+  // Redux state and dispatch
+  const dispatch = useDispatch();
+  const { paymentHistory, loading, error, downloading } = useSelector(
+    (state) => state.payments
+  );
 
   // Filter state
   const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Mock data for transactions
-  const [transactions, setTransactions] = useState([
-    {
-      id: "TRX-1234",
-      date: "2025-04-09",
-      eventName: "Jazz Festival 2025",
-      amount: 5000,
-      paymentMethod: "Credit Card",
-      status: "Completed",
-    },
-    {
-      id: "TRX-1235",
-      date: "2025-04-02",
-      eventName: "Tech Conference",
-      amount: 2500,
-      paymentMethod: "PayPal",
-      status: "Completed",
-    },
-    {
-      id: "TRX-1236",
-      date: "2025-03-28",
-      eventName: "Food Festival",
-      amount: 3500,
-      paymentMethod: "Credit Card",
-      status: "Completed",
-    },
-    {
-      id: "TRX-1237",
-      date: "2025-03-15",
-      eventName: "DJ Night",
-      amount: 1500,
-      paymentMethod: "Credit Card",
-      status: "Refunded",
-    },
-    {
-      id: "TRX-1238",
-      date: "2025-03-10",
-      eventName: "Beach Party",
-      amount: 2000,
-      paymentMethod: "PayPal",
-      status: "Refunded",
-    },
-  ]);
-
   // Sorting state
   const [sortConfig, setSortConfig] = useState({
-    key: "date",
+    key: "createdAt",
     direction: "desc",
   });
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch payment history on component mount
+  useEffect(() => {
+    dispatch(fetchPaymentHistory());
+  }, [dispatch]);
 
   // Sorting function
   const handleSort = (key) => {
@@ -83,11 +55,28 @@ const MyTransactions = () => {
     setSortConfig({ key, direction });
   };
 
-  // Apply sorting and filtering
-  const sortedTransactions = [...transactions]
+  // Format the backend data to match the frontend structure
+  const formatTransactions = () => {
+    if (!paymentHistory || paymentHistory.length === 0) return [];
+
+    return paymentHistory.map((payment) => ({
+      id: payment.transaction_id || payment._id,
+      date: payment.createdAt || new Date().toISOString(),
+      eventName: payment.event_id?.title || "Unknown Event",
+      amount: payment.amount || 0,
+      paymentMethod: payment.payment_method || "Unknown",
+      status: payment.status || "Pending",
+    }));
+  };
+
+  // Apply sorting and filtering to the transactions
+  const sortedTransactions = formatTransactions()
     .filter((transaction) => {
       // Apply status filter
-      if (statusFilter !== "all" && transaction.status !== statusFilter) {
+      if (
+        statusFilter !== "all" &&
+        transaction.status.toLowerCase() !== statusFilter.toLowerCase()
+      ) {
         return false;
       }
 
@@ -113,15 +102,22 @@ const MyTransactions = () => {
     });
 
   // Function to download receipt
-  const handleDownloadReceipt = (id) => {
-    // In a real application, this would generate and download a PDF receipt
-    alert(`Downloading receipt for transaction ${id}`);
+  const handleDownloadReceipt = (transactionId) => {
+    dispatch(downloadReceipt(transactionId));
+  };
+
+  // Format date function
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
     <>
-      <UserNavbar /> {/* Include the UserNavbar component */}
-      {/* Main content area */}
+      <UserNavbar />
       <div
         className={`min-h-screen ${
           darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-800"
@@ -202,8 +198,8 @@ const MyTransactions = () => {
                       <input
                         type="radio"
                         name="status"
-                        checked={statusFilter === "Completed"}
-                        onChange={() => setStatusFilter("Completed")}
+                        checked={statusFilter === "completed"}
+                        onChange={() => setStatusFilter("completed")}
                       />
                       <span>Completed</span>
                     </label>
@@ -211,8 +207,8 @@ const MyTransactions = () => {
                       <input
                         type="radio"
                         name="status"
-                        checked={statusFilter === "Refunded"}
-                        onChange={() => setStatusFilter("Refunded")}
+                        checked={statusFilter === "refunded"}
+                        onChange={() => setStatusFilter("refunded")}
                       />
                       <span>Refunded</span>
                     </label>
@@ -222,7 +218,46 @@ const MyTransactions = () => {
             </div>
           </div>
 
-          {sortedTransactions.length === 0 ? (
+          {/* Loading state */}
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <FaSpinner className="w-8 h-8 mr-2 animate-spin text-amber-500" />
+              <span className="text-lg font-medium">
+                Loading transactions...
+              </span>
+            </div>
+          )}
+
+          {/* Error state */}
+          {error && (
+            <div
+              className={`p-6 rounded-lg shadow-md ${
+                darkMode
+                  ? "bg-red-900 text-white"
+                  : "bg-red-50 text-red-800 border border-red-200"
+              }`}
+            >
+              <h3 className="mb-2 text-lg font-medium">
+                {error.includes("ERR_BLOCKED_BY_CLIENT")
+                  ? "Browser Security Notice"
+                  : "Error Loading Transactions"}
+              </h3>
+              <p>
+                {error.includes("ERR_BLOCKED_BY_CLIENT")
+                  ? "Your browser security or ad blocker flagged the download request. If the PDF did not download automatically, please try again or temporarily disable any ad blockers."
+                  : error}
+              </p>
+              <button
+                className="px-4 py-2 mt-3 text-white rounded bg-amber-500 hover:bg-amber-600"
+                onClick={() => dispatch(fetchPaymentHistory())}
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {/* No results */}
+          {!loading && !error && sortedTransactions.length === 0 && (
             <div
               className={`p-8 text-center rounded-lg ${
                 darkMode ? "bg-gray-800" : "bg-white shadow-md"
@@ -235,7 +270,10 @@ const MyTransactions = () => {
                   : "You haven't made any transactions yet."}
               </p>
             </div>
-          ) : (
+          )}
+
+          {/* Transactions table */}
+          {!loading && !error && sortedTransactions.length > 0 && (
             <div
               className={`rounded-lg overflow-hidden shadow-md ${
                 darkMode ? "" : "border border-gray-200"
@@ -405,29 +443,26 @@ const MyTransactions = () => {
                         }`}
                       >
                         <td className="p-4 font-medium">{transaction.id}</td>
-                        <td className="p-4">
-                          {new Date(transaction.date).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            }
-                          )}
-                        </td>
+                        <td className="p-4">{formatDate(transaction.date)}</td>
                         <td className="p-4">{transaction.eventName}</td>
                         <td className="p-4 font-medium">
                           LKR {transaction.amount.toLocaleString()}
                         </td>
-                        <td className="p-4">{transaction.paymentMethod}</td>
+                        <td className="p-4">
+                          {transaction.paymentMethod.charAt(0).toUpperCase() +
+                            transaction.paymentMethod
+                              .slice(1)
+                              .replace(/([A-Z])/g, " $1")}
+                        </td>
                         <td className="p-4">
                           <span
                             className={`px-3 py-1 text-xs font-medium rounded-full ${
-                              transaction.status === "Completed"
+                              transaction.status.toLowerCase() === "completed"
                                 ? darkMode
                                   ? "bg-green-900 text-green-300"
                                   : "bg-green-100 text-green-800"
-                                : transaction.status === "Refunded"
+                                : transaction.status.toLowerCase() ===
+                                  "refunded"
                                 ? darkMode
                                   ? "bg-yellow-900 text-yellow-300"
                                   : "bg-yellow-100 text-yellow-800"
@@ -436,7 +471,8 @@ const MyTransactions = () => {
                                 : "bg-gray-100 text-gray-800"
                             }`}
                           >
-                            {transaction.status}
+                            {transaction.status.charAt(0).toUpperCase() +
+                              transaction.status.slice(1)}
                           </span>
                         </td>
                         <td className="p-4 text-right">
@@ -444,9 +480,23 @@ const MyTransactions = () => {
                             onClick={() =>
                               handleDownloadReceipt(transaction.id)
                             }
-                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white rounded-md bg-amber-500 hover:bg-amber-600 transition-colors shadow-sm"
+                            disabled={downloading}
+                            className={`inline-flex items-center px-3 py-1.5 text-sm font-medium text-white rounded-md transition-colors shadow-sm ${
+                              downloading
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-amber-500 hover:bg-amber-600"
+                            }`}
                           >
-                            <FaFileDownload className="mr-1.5" /> Receipt
+                            {downloading ? (
+                              <>
+                                <FaSpinner className="w-4 h-4 mr-1.5 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <FaFileDownload className="mr-1.5" /> Receipt
+                              </>
+                            )}
                           </button>
                         </td>
                       </tr>
