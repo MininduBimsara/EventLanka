@@ -22,21 +22,9 @@ const EventBookingPage = () => {
     (state) => state.events
   );
 
-  const [tickets, setTickets] = useState({
-    vip: 0,
-    standard: 0,
-    economy: 0,
-  });
-
+  // Initialize tickets state as an empty object
+  const [tickets, setTickets] = useState({});
   const [totalPrice, setTotalPrice] = useState(0);
-
-  // Define ticketPrices based on your event data model
-  // This could also be dynamically loaded from currentEvent.ticket_types
-  const ticketPrices = {
-    vip: 199.99,
-    standard: 99.99,
-    economy: 49.99,
-  };
 
   // Fetch event data if not already in store
   useEffect(() => {
@@ -45,23 +33,53 @@ const EventBookingPage = () => {
     }
   }, [dispatch, id, currentEvent]);
 
+  // Initialize tickets state when currentEvent changes
+  useEffect(() => {
+    if (currentEvent && currentEvent.ticket_types) {
+      // Create a new tickets state object with all ticket types set to 0
+      const initialTickets = {};
+      currentEvent.ticket_types.forEach((ticket) => {
+        initialTickets[ticket.type] = 0;
+      });
+      setTickets(initialTickets);
+    }
+  }, [currentEvent]);
+
   // Calculate total price whenever tickets change
   useEffect(() => {
-    calculateTotal();
-  }, [tickets]);
+    if (currentEvent && currentEvent.ticket_types) {
+      let total = 0;
 
-  const calculateTotal = () => {
-    const total =
-      tickets.vip * ticketPrices.vip +
-      tickets.standard * ticketPrices.standard +
-      tickets.economy * ticketPrices.economy;
-    setTotalPrice(total);
-  };
+      // Calculate total based on selected tickets
+      Object.keys(tickets).forEach((ticketType) => {
+        const ticketInfo = currentEvent.ticket_types.find(
+          (t) => t.type === ticketType
+        );
+        if (ticketInfo && tickets[ticketType]) {
+          total += tickets[ticketType] * ticketInfo.price;
+        }
+      });
+
+      setTotalPrice(total);
+    }
+  }, [tickets, currentEvent]);
 
   const handleTicketChange = (type, action) => {
     setTickets((prev) => {
-      const newValue =
-        action === "increase" ? prev[type] + 1 : Math.max(0, prev[type] - 1);
+      // Get the ticket info to check availability
+      const ticketInfo = currentEvent.ticket_types.find((t) => t.type === type);
+
+      // Calculate new value based on action
+      let newValue =
+        action === "increase"
+          ? (prev[type] || 0) + 1
+          : Math.max(0, (prev[type] || 0) - 1);
+
+      // Ensure we don't exceed availability
+      if (ticketInfo && newValue > ticketInfo.availability) {
+        newValue = ticketInfo.availability;
+      }
+
       return { ...prev, [type]: newValue };
     });
   };
@@ -117,25 +135,30 @@ const EventBookingPage = () => {
     );
   }
 
+  // Get the API URL for images
+  const API_URL = "http://localhost:5000";
+
   // Format event data for components
   const eventData = {
-    title: currentEvent.name || currentEvent.title,
+    title: currentEvent.title,
     image: currentEvent.banner
-      ? `${process.env.REACT_APP_API_URL}${currentEvent.banner}`
+      ? `${API_URL}${currentEvent.banner}`
       : "/api/placeholder/800/400",
     date: new Date(currentEvent.date).toLocaleDateString(),
-    time: currentEvent.time || new Date(currentEvent.date).toLocaleTimeString(),
-    location: currentEvent.venue || currentEvent.location,
-    organizer:
-      currentEvent.featuredArtists?.[0] ||
-      currentEvent.organizer ||
-      "Event Organizer",
+    time: new Date(currentEvent.date).toLocaleTimeString(),
+    location: currentEvent.location,
+    organizer: currentEvent.organizer_id || "Event Organizer",
     organizerEmail: currentEvent.organizerEmail || "contact@example.com",
-    description:
-      currentEvent.description ||
-      `Join us for an amazing ${currentEvent.category} event`,
-    featuredArtists: currentEvent.featuredArtists || [],
+    description: currentEvent.description,
+    category: currentEvent.category,
+    duration: currentEvent.duration,
   };
+
+  // Create highlights based on available data
+  const highlights = [];
+  if (eventData.category) highlights.push(`Category: ${eventData.category}`);
+  if (eventData.duration)
+    highlights.push(`Duration: ${eventData.duration} hour(s)`);
 
   return (
     <>
@@ -162,15 +185,7 @@ const EventBookingPage = () => {
             {/* Event Highlights Component */}
             <EventHighlights
               highlights={
-                eventData.featuredArtists.length > 0
-                  ? eventData.featuredArtists.map(
-                      (artist) => `Performance by ${artist}`
-                    )
-                  : [
-                      "Live performances by top artists",
-                      "Food and drinks available",
-                      "Family-friendly event",
-                    ]
+                highlights.length > 0 ? highlights : ["Book your tickets now!"]
               }
             />
 
@@ -180,17 +195,17 @@ const EventBookingPage = () => {
               email={eventData.organizerEmail}
             />
 
-            {/* Ticket Selection Component */}
+            {/* Ticket Selection Component - Pass actual ticket types from event */}
             <TicketSelection
               tickets={tickets}
-              ticketPrices={ticketPrices}
+              ticketTypes={currentEvent.ticket_types}
               handleTicketChange={handleTicketChange}
             />
 
-            {/* Order Summary Component */}
+            {/* Order Summary Component - Pass actual ticket types from event */}
             <OrderSummary
               tickets={tickets}
-              ticketPrices={ticketPrices}
+              ticketTypes={currentEvent.ticket_types}
               totalPrice={totalPrice}
             />
 
@@ -201,6 +216,7 @@ const EventBookingPage = () => {
                 onClick={() =>
                   alert("Booking functionality would be implemented here!")
                 }
+                disabled={totalPrice === 0}
               >
                 COMPLETE BOOKING
               </button>
