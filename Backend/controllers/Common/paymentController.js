@@ -6,6 +6,7 @@ const asyncHandler = require("express-async-handler");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
+const stripe = require("../path/to/stripeConfig");
 
 // ===========================
 // PROCESS PAYMENT
@@ -78,6 +79,31 @@ exports.processPayment = asyncHandler(async (req, res) => {
     message: "Payment processed successfully",
     payment,
     order,
+  });
+});
+
+
+exports.createPaymentIntent = asyncHandler(async (req, res) => {
+  const { orderId } = req.body;
+
+  // Get order details
+  const order = await Order.findById(orderId).populate("tickets");
+
+  // Calculate amount in cents (Stripe uses smallest currency unit)
+  const amount = Math.round(order.total_amount * 100);
+
+  // Create payment intent
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount,
+    currency: "lkr", // Change to your currency
+    metadata: {
+      orderId: orderId,
+      userId: req.user._id.toString(),
+    },
+  });
+
+  res.status(200).json({
+    clientSecret: paymentIntent.client_secret,
   });
 });
 
