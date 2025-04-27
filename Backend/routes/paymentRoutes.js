@@ -11,5 +11,6 @@ router.use(protect);
 router.post("/process", paymentController.processPayment);
 router.get("/history", paymentController.getPaymentHistory);
 router.get("/receipt/:transactionId", paymentController.generateReceipt);
+router.post("/create-payment-intent", paymentController.createPaymentIntent);
 
 module.exports = router;
