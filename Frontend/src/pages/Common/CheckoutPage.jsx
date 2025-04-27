@@ -6,24 +6,7 @@ import PaymentForm from "./PaymentForm";
 import NavBar from "../../components/Common/Navbar";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
-// Create an async thunk for creating an order
-export const createOrder = createAsyncThunk(
-  "orders/createOrder",
-  async (orderData, { rejectWithValue }) => {
-    try {
-      const response = await axios.post(
-        "http://localhost:5000/api/orders/create",
-        orderData
-      );
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to create order"
-      );
-    }
-  }
-);
+import { createOrder } from "../../Redux/Slicers/orderSlice";
 
 // Set PayPal options
 const paypalOptions = {
@@ -39,8 +22,9 @@ const CheckoutPage = () => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [currentEvent, setCurrentEvent] = useState(null); // Add state for current event
 
-  const { currentUser } = useSelector((state) => state.auth || {});
+  const { user: currentUser } = useSelector((state) => state.user || {});
   const { loading, error, success } = useSelector(
     (state) => state.payments || {}
   );
@@ -52,7 +36,9 @@ const CheckoutPage = () => {
       try {
         const parsedOrder = JSON.parse(orderData);
         setPendingOrder(parsedOrder);
-        createBackendOrder(parsedOrder);
+
+        // Fetch the event details first to get ticket IDs
+        fetchEventDetails(parsedOrder.eventId);
       } catch (error) {
         console.error("Error parsing order data:", error);
         setErrorMessage("Invalid order data. Please try booking again.");
@@ -64,10 +50,28 @@ const CheckoutPage = () => {
     }
   }, []);
 
+  // Function to fetch event details
+  const fetchEventDetails = async (eventId) => {
+    try {
+      const response = await axios.get(`/api/events/${eventId}`);
+      setCurrentEvent(response.data);
+      // Create order after we have the event details
+      createBackendOrder(JSON.parse(localStorage.getItem("pendingOrder")));
+    } catch (error) {
+      console.error("Error fetching event details:", error);
+      setErrorMessage("Failed to fetch event details. Please try again.");
+    }
+  };
+
   // Create the order in the backend
   const createBackendOrder = async (orderData) => {
     if (!currentUser) {
       setErrorMessage("Please log in to complete your purchase.");
+      return;
+    }
+
+    if (!currentEvent) {
+      setErrorMessage("Event details not available. Please try again.");
       return;
     }
 
@@ -77,13 +81,27 @@ const CheckoutPage = () => {
       const orderPayload = {
         eventId: orderData.eventId,
         userId: currentUser._id,
-        tickets: Object.entries(orderData.ticketSelections).map(
-          ([type, quantity]) => ({
-            ticket_type: type,
-            quantity,
+        tickets: Object.entries(orderData.ticketSelections)
+          .map(([type, quantity]) => {
+            // Find the ticket ID that corresponds to this type
+            const ticketInfo = currentEvent.ticket_types.find(
+              (ticket) => ticket.type === type
+            );
+
+            // Only proceed if we found the ticket info
+            if (!ticketInfo) {
+              console.error(`Ticket type ${type} not found in event data`);
+              return null;
+            }
+
+            return {
+              ticket_type: ticketInfo._id, // Send the ID instead of the string
+              quantity,
+            };
           })
-        ),
+          .filter((ticket) => ticket && ticket.quantity > 0), // Only include valid tickets with quantity > 0
         totalAmount: orderData.totalAmount,
+        payment_method: "paypal",
       };
 
       const result = await dispatch(createOrder(orderPayload)).unwrap();
