@@ -93,7 +93,7 @@ const EventBookingPage = () => {
       eventName: currentEvent.title,
       ticketSelections: tickets,
       totalAmount: totalPrice,
-      // Include any other data needed for the order
+      ticketTypes: currentEvent.ticket_types,
     };
 
     // Store order data in localStorage (temporary solution)

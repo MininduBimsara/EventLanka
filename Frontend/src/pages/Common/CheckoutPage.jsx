@@ -4,9 +4,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import PaymentForm from "./PaymentForm";
 import NavBar from "../../components/Common/Navbar";
-import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { createOrder } from "../../Redux/Slicers/orderSlice";
+import { fetchEventById } from "../../Redux/Slicers/EventSlice"; // Import the thunk
 
 // Set PayPal options
 const paypalOptions = {
@@ -37,8 +37,15 @@ const CheckoutPage = () => {
         const parsedOrder = JSON.parse(orderData);
         setPendingOrder(parsedOrder);
 
-        // Fetch the event details first to get ticket IDs
-        fetchEventDetails(parsedOrder.eventId);
+        // If we already have ticket types from localStorage, use them directly
+        if (parsedOrder.ticketTypes) {
+          setCurrentEvent({ ticket_types: parsedOrder.ticketTypes });
+          // Create order with the data we already have
+          createBackendOrder(parsedOrder);
+        } else {
+          // Otherwise fetch event details
+          fetchEventDetails(parsedOrder.eventId);
+        }
       } catch (error) {
         console.error("Error parsing order data:", error);
         setErrorMessage("Invalid order data. Please try booking again.");
@@ -51,17 +58,21 @@ const CheckoutPage = () => {
   }, []);
 
   // Function to fetch event details
-  const fetchEventDetails = async (eventId) => {
-    try {
-      const response = await axios.get(`/api/events/${eventId}`);
-      setCurrentEvent(response.data);
-      // Create order after we have the event details
-      createBackendOrder(JSON.parse(localStorage.getItem("pendingOrder")));
-    } catch (error) {
-      console.error("Error fetching event details:", error);
-      setErrorMessage("Failed to fetch event details. Please try again.");
+const fetchEventDetails = async (eventId) => {
+  try {
+    const resultAction = await dispatch(fetchEventById(eventId)).unwrap();
+
+    if (!resultAction || !resultAction.ticket_types) {
+      throw new Error("Event details incomplete or invalid");
     }
-  };
+
+    setCurrentEvent(resultAction);
+    createBackendOrder(JSON.parse(localStorage.getItem("pendingOrder")));
+  } catch (error) {
+    console.error("Error fetching event details:", error);
+    setErrorMessage("Failed to fetch event details. Please try again.");
+  }
+};
 
   // Create the order in the backend
   const createBackendOrder = async (orderData) => {
