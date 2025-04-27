@@ -6,7 +6,7 @@ const asyncHandler = require("express-async-handler");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
-const stripe = require("../path/to/stripeConfig");
+const stripe = require("../../stripeConfig");
 
 // ===========================
 // PROCESS PAYMENT
