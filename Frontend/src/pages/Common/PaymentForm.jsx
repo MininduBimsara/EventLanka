@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useDispatch, useSelector } from "react-redux";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 import {
   createPaymentIntent,
+  processPayment,
   confirmPayment,
   setPaymentIntentId,
   setOrderId,
-} from "./PaymentSlice";
+} from "../../Redux/Slicers/PaymentSlice";
 
 const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
-  const stripe = useStripe();
-  const elements = useElements();
   const dispatch = useDispatch();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [orderDetails, setOrderDetails] = useState(null);
 
   const { clientSecret, intentLoading, loading, error, success } = useSelector(
     (state) => state.payments
   );
 
-  // Get the client secret when the component mounts
+  // Get the order details when the component mounts
   useEffect(() => {
     if (orderId) {
       dispatch(createPaymentIntent(orderId));
@@ -29,77 +29,70 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
     }
   }, [dispatch, orderId]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!stripe || !elements || !clientSecret) {
-      // Stripe.js has not yet loaded or client secret not available
-      return;
-    }
-
-    setIsProcessing(true);
-    setPaymentError(null);
-
-    try {
-      // Process the payment with Stripe using the client secret
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: {
-            name: document.getElementById("name").value,
-            email: document.getElementById("email").value,
-          },
-        },
-      });
-
-      if (result.error) {
-        setPaymentError(result.error.message);
-        onError && onError(result.error.message);
-      } else {
-        if (result.paymentIntent.status === "succeeded") {
-          // Store the payment intent ID
-          dispatch(setPaymentIntentId(result.paymentIntent.id));
-
-          // Confirm the payment on our backend
-          await dispatch(
-            confirmPayment({
-              paymentIntentId: result.paymentIntent.id,
-              orderId,
-            })
-          );
-
-          setPaymentSuccess(true);
-          onSuccess && onSuccess(result.paymentIntent);
-        }
-      }
-    } catch (error) {
-      setPaymentError("An unexpected error occurred. Please try again.");
-      onError && onError(error.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: "16px",
-        color: "#4B5563",
-        fontFamily: "ui-sans-serif, system-ui, sans-serif",
-        "::placeholder": {
-          color: "#9CA3AF",
-        },
-      },
-      invalid: {
-        color: "#EF4444",
-      },
-    },
-  };
-
-  // Calculate the amount display from the event name (assuming it's stored in format "Event Name - $XX.XX")
+  // Extract amount from eventName or use a default
   const amount = eventName.includes("$")
     ? eventName.split("$")[1].trim()
     : "0.00";
+
+  // Create order for PayPal
+  const createOrder = (data, actions) => {
+    return actions.order.create({
+      purchase_units: [
+        {
+          description: eventName,
+          amount: {
+            currency_code: "USD",
+            value: amount,
+          },
+        },
+      ],
+    });
+  };
+
+  // Handle approval
+  const onApprove = (data, actions) => {
+    setIsProcessing(true);
+
+    return actions.order.capture().then((details) => {
+      // Store the payment details
+      setOrderDetails(details);
+
+      // Store the payment intent ID (PayPal order ID in this case)
+      dispatch(setPaymentIntentId(details.id));
+
+      // Process the payment on our backend
+      const paymentData = {
+        orderId,
+        paymentMethod: "paypal",
+        amount: parseFloat(amount),
+        paypalOrderId: details.id,
+        paypalPayerId: details.payer.payer_id,
+      };
+
+      return dispatch(processPayment(paymentData))
+        .unwrap()
+        .then(() => {
+          // Confirm the payment on our backend
+          return dispatch(
+            confirmPayment({
+              paymentIntentId: details.id,
+              orderId,
+            })
+          ).unwrap();
+        })
+        .then(() => {
+          setPaymentSuccess(true);
+          onSuccess && onSuccess({ id: details.id });
+        })
+        .catch((err) => {
+          setPaymentError(err.message || "Payment processing failed");
+          onError && onError(err.message || "Payment processing failed");
+        })
+        .finally(() => {
+          setIsProcessing(false);
+        });
+    });
+  };
 
   return (
     <div className="relative max-w-md p-6 mx-auto overflow-hidden bg-white border-2 border-yellow-400 shadow-lg rounded-xl">
@@ -117,13 +110,13 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
         }}
       ></div>
       <div
-        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-10 -left-6 opacity-20 -rotate-30"
+        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-10 -left-6 opacity-20 -rotate-12"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23f8d12f' d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z'/%3E%3C/svg%3E")`,
         }}
       ></div>
       <div
-        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-12 -right-10 opacity-20 -rotate-15"
+        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-12 -right-10 opacity-20 -rotate-12"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23f8d12f' d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z'/%3E%3C/svg%3E")`,
         }}
@@ -155,7 +148,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           <div>
             <label
               htmlFor="name"
@@ -188,15 +181,32 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="card-element"
-              className="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Credit or Debit Card
-            </label>
-            <div className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-yellow-400 focus-within:border-transparent">
-              <CardElement id="card-element" options={cardElementOptions} />
+          <div className="pt-2">
+            <div className="w-full">
+              {isProcessing ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="w-8 h-8 border-t-4 border-b-4 border-yellow-400 rounded-full animate-spin"></div>
+                  <span className="ml-2 text-gray-600">
+                    Processing payment...
+                  </span>
+                </div>
+              ) : (
+                <PayPalButtons
+                  style={{
+                    color: "gold",
+                    layout: "vertical",
+                    shape: "rect",
+                    label: "pay",
+                  }}
+                  createOrder={createOrder}
+                  onApprove={onApprove}
+                  onError={(err) => {
+                    setPaymentError(err.message || "PayPal payment failed");
+                    onError && onError(err.message || "PayPal payment failed");
+                  }}
+                  disabled={isProcessing || intentLoading || loading}
+                />
+              )}
             </div>
           </div>
 
@@ -205,34 +215,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
               {paymentError || error}
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={
-              !stripe ||
-              !clientSecret ||
-              isProcessing ||
-              intentLoading ||
-              loading
-            }
-            className={`w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors ${
-              isProcessing || intentLoading || loading
-                ? "relative overflow-hidden bg-opacity-70"
-                : ""
-            }`}
-          >
-            {isProcessing || intentLoading || loading ? (
-              <>
-                <span>Processing...</span>
-                <span className="absolute inset-0 overflow-hidden">
-                  <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
-                </span>
-              </>
-            ) : (
-              `Pay $${amount}`
-            )}
-          </button>
-        </form>
+        </div>
       )}
 
       {/* Add custom styles for animation and festive font */}

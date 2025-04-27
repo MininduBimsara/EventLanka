@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-import PaymentForm from "../components/Payment/PaymentForm";
-import NavBar from "../components/Common/Navbar";
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
+import PaymentForm from "./PaymentForm";
+import NavBar from "../../components/Common/Navbar";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
-// Initialize Stripe
-const stripePromise = loadStripe(
-  process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || "pk_test_your_key_here"
-);
 
 // Create an async thunk for creating an order
 export const createOrder = createAsyncThunk(
@@ -30,6 +24,13 @@ export const createOrder = createAsyncThunk(
     }
   }
 );
+
+// Set PayPal options
+const paypalOptions = {
+  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID, // Make sure to add this to your .env file
+  currency: "USD",
+  intent: "capture",
+};
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -189,15 +190,15 @@ const CheckoutPage = () => {
               </div>
             )}
 
-            {/* Stripe Elements Integration */}
-            <Elements stripe={stripePromise}>
+            {/* PayPal Integration */}
+            <PayPalScriptProvider options={paypalOptions}>
               <PaymentForm
                 orderId={orderId}
                 eventName={pendingOrder?.eventName || "Event Booking"}
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}
               />
-            </Elements>
+            </PayPalScriptProvider>
 
             {/* Cancel Button */}
             <div className="mt-6 text-center">
