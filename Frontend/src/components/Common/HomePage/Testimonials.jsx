@@ -87,7 +87,7 @@ const Testimonials = () => {
       </div>
 
       {/* Animation styles */}
-      <style jsx>{`
+      <style >{`
         @keyframes gradient-x {
           0% {
             background-position: 0% 50%;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { motion } from "framer-motion";
 import { fetchEventById } from "../../Redux/Slicers/EventSlice";
 import OrganizerInfo from "../../components/Common/EventBooking/OrganizerInfo";
 import OrderSummary from "../../components/Common/EventBooking/OrderSummary";
