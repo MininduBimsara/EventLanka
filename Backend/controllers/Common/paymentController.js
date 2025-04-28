@@ -4,15 +4,241 @@ const Order = require("../../models/Order");
 const Ticket = require("../../models/Ticket");
 const asyncHandler = require("express-async-handler");
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const path = require("path");
-const stripe = require("../path/to/stripeConfig");
+const axios = require("axios"); // Using axios for PayPal API calls
+
+// PayPal Configuration
+const PAYPAL_CLIENT_ID = process.env.VITE_PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.VITE_PAYPAL_CLIENT_SECRET;
+const PAYPAL_API_BASE =
+  process.env.NODE_ENV === "production"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+
+// Function to get PayPal access token
+const getPayPalAccessToken = async () => {
+  try {
+    const auth = Buffer.from(
+      `${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`
+    ).toString("base64");
+    const response = await axios({
+      method: "post",
+      url: `${PAYPAL_API_BASE}/v1/oauth2/token`,
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      data: "grant_type=client_credentials",
+    });
+
+    return response.data.access_token;
+  } catch (error) {
+    console.error("Error getting PayPal access token:", error);
+    throw new Error("Failed to authenticate with PayPal");
+  }
+};
 
 // ===========================
-// PROCESS PAYMENT
+// CREATE PAYPAL ORDER
+// ===========================
+exports.createPayPalOrder = asyncHandler(async (req, res) => {
+  const { orderId, amount } = req.body;
+
+  // Ensure the user is authenticated
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "You must be logged in to process payment." });
+  }
+
+  // Find the order and populate the tickets to get the event_id
+  const order = await Order.findById(orderId).populate("tickets");
+
+  if (!order) {
+    return res.status(404).json({ message: "Order not found" });
+  }
+
+  // Check if the order belongs to the user
+  if (order.user_id.toString() !== req.user._id.toString()) {
+    return res.status(403).json({ message: "Not authorized" });
+  }
+
+  // Use the amount from the request or fall back to order amount
+  const paymentAmount = amount || order.total_amount;
+
+  if (!paymentAmount || paymentAmount <= 0) {
+    return res.status(400).json({ message: "Invalid order amount" });
+  }
+
+  try {
+    // Get PayPal access token
+    const accessToken = await getPayPalAccessToken();
+
+    // Create PayPal order
+    const response = await axios({
+      method: "post",
+      url: `${PAYPAL_API_BASE}/v2/checkout/orders`,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      data: {
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            reference_id: orderId,
+            description: `Event tickets for ${order.tickets[0]?.event_id}`,
+            amount: {
+              currency_code: "USD", // Change to your currency
+              value: paymentAmount.toString(),
+            },
+          },
+        ],
+        application_context: {
+          brand_name: "EventLanka",
+          landing_page: "BILLING",
+          user_action: "PAY_NOW",
+          return_url: `${req.headers.origin}/payment-success`,
+          cancel_url: `${req.headers.origin}/checkout?orderId=${orderId}`,
+        },
+      },
+    });
+
+    // Return PayPal order ID to the client
+    res.status(200).json({
+      orderId: order._id,
+      paypalOrderId: response.data.id,
+      clientSecret: response.data.id, // Use the PayPal order ID as the client secret
+      links: response.data.links,
+    });
+  } catch (error) {
+    console.error(
+      "Error creating PayPal order:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({
+      message: "Error creating PayPal order",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// ===========================
+// CAPTURE PAYPAL PAYMENT
+// ===========================
+exports.capturePayPalOrder = asyncHandler(async (req, res) => {
+  const { orderId, paypalOrderId } = req.body;
+
+  // Ensure the user is authenticated
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "You must be logged in to process payment." });
+  }
+
+  // Find the order
+  const order = await Order.findById(orderId).populate("tickets");
+
+  if (!order) {
+    return res.status(404).json({ message: "Order not found" });
+  }
+
+  // Check if the order belongs to the user
+  if (order.user_id.toString() !== req.user._id.toString()) {
+    return res.status(403).json({ message: "Not authorized" });
+  }
+
+  try {
+    // Get PayPal access token
+    const accessToken = await getPayPalAccessToken();
+
+    // Capture the approved PayPal order
+    const response = await axios({
+      method: "post",
+      url: `${PAYPAL_API_BASE}/v2/checkout/orders/${paypalOrderId}/capture`,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const captureData = response.data;
+
+    // Verify the payment was completed successfully
+    if (captureData.status !== "COMPLETED") {
+      return res.status(400).json({
+        message: "Payment was not completed successfully",
+        paypalStatus: captureData.status,
+      });
+    }
+
+    // Generate a transaction ID
+    const transactionId = `TXN-${Date.now()}-${Math.floor(
+      Math.random() * 1000
+    )}`;
+
+    // Create a payment record
+    const payment = await Payment.create({
+      user_id: req.user._id,
+      event_id: order.tickets[0].event_id,
+      amount: order.total_amount,
+      payment_method: "paypal",
+      status: "completed",
+      transaction_id: transactionId,
+      payment_details: {
+        paypal_order_id: paypalOrderId,
+        paypal_payer_id: captureData.payer?.payer_id || "unknown",
+        paypal_status: captureData.status,
+      },
+    });
+
+    // Update the order status
+    order.payment_status = "paid";
+    order.status = "completed";
+    order.paymentMethod = "paypal";
+    order.payment_details = {
+      transaction_id: transactionId,
+      provider: "PayPal",
+      paypal_order_id: paypalOrderId,
+    };
+    await order.save();
+
+    // Update the tickets payment status
+    await Ticket.updateMany(
+      { _id: { $in: order.tickets } },
+      { payment_status: "paid" }
+    );
+
+    // If there was a discount used, increment its usage count
+    if (order.discount_id) {
+      await Discount.findByIdAndUpdate(order.discount_id, {
+        $inc: { usage_count: 1 },
+      });
+    }
+
+    res.status(200).json({
+      message: "Payment captured successfully",
+      payment,
+      order,
+      paypalOrderId,
+    });
+  } catch (error) {
+    console.error(
+      "Error capturing PayPal payment:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({
+      message: "Error capturing PayPal payment",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// ===========================
+// PROCESS PAYMENT (Legacy method for compatibility)
 // ===========================
 exports.processPayment = asyncHandler(async (req, res) => {
-  const { orderId, amount, paymentMethod } = req.body;
+  const { orderId, amount, paymentMethod, paypalOrderId, paypalPayerId } =
+    req.body;
 
   // Ensure the user is authenticated
   if (!req.user) {
@@ -44,11 +270,18 @@ exports.processPayment = asyncHandler(async (req, res) => {
   // Create a payment record
   const payment = await Payment.create({
     user_id: req.user._id,
-    event_id: order.tickets[0].event_id, // Now this should work after population
+    event_id: order.tickets[0].event_id,
     amount: amount,
     payment_method: paymentMethod,
     status: "completed",
     transaction_id: transactionId,
+    payment_details:
+      paymentMethod === "paypal"
+        ? {
+            paypal_order_id: paypalOrderId,
+            paypal_payer_id: paypalPayerId || "unknown",
+          }
+        : {},
   });
 
   // Update the order status
@@ -57,8 +290,8 @@ exports.processPayment = asyncHandler(async (req, res) => {
   order.paymentMethod = paymentMethod;
   order.payment_details = {
     transaction_id: transactionId,
-    provider: paymentMethod === "creditCard" ? "Stripe" : "PayPal",
-    card_last4: paymentMethod === "creditCard" ? "4242" : null, // In production, this would come from the payment gateway
+    provider: paymentMethod === "paypal" ? "PayPal" : "Other",
+    paypal_order_id: paypalOrderId || null,
   };
   await order.save();
 
@@ -70,40 +303,19 @@ exports.processPayment = asyncHandler(async (req, res) => {
 
   // If there was a discount used, increment its usage count
   if (order.discount_id) {
-    await Discount.findByIdAndUpdate(order.discount_id, {
-      $inc: { usage_count: 1 },
-    });
+    try {
+      await Discount.findByIdAndUpdate(order.discount_id, {
+        $inc: { usage_count: 1 },
+      });
+    } catch (error) {
+      console.log("No discount model or error updating discount", error);
+    }
   }
 
   res.status(200).json({
     message: "Payment processed successfully",
     payment,
     order,
-  });
-});
-
-
-exports.createPaymentIntent = asyncHandler(async (req, res) => {
-  const { orderId } = req.body;
-
-  // Get order details
-  const order = await Order.findById(orderId).populate("tickets");
-
-  // Calculate amount in cents (Stripe uses smallest currency unit)
-  const amount = Math.round(order.total_amount * 100);
-
-  // Create payment intent
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount,
-    currency: "lkr", // Change to your currency
-    metadata: {
-      orderId: orderId,
-      userId: req.user._id.toString(),
-    },
-  });
-
-  res.status(200).json({
-    clientSecret: paymentIntent.client_secret,
   });
 });
 
@@ -122,6 +334,37 @@ exports.getPaymentHistory = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 });
 
   res.status(200).json(payments);
+});
+
+// ===========================
+// CONFIRM PAYMENT (This is still used by the front-end)
+// ===========================
+
+exports.confirmPayment = asyncHandler(async (req, res) => {
+  const { paypalOrderId, orderId } = req.body;
+
+  // Find the order
+  const order = await Order.findById(orderId);
+  if (!order) {
+    return res.status(404).json({ message: "Order not found" });
+  }
+
+  // Find the payment
+  const payment = await Payment.findOne({
+    "payment_details.paypal_order_id": paypalOrderId,
+  });
+
+  if (!payment) {
+    return res.status(404).json({ message: "Payment record not found" });
+  }
+
+  // We've already processed the payment in the processPayment step,
+  // So here we just return success
+  res.status(200).json({
+    message: "Payment confirmed successfully",
+    order,
+    payment,
+  });
 });
 
 // ===========================
@@ -327,18 +570,18 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     .font("Helvetica-Bold")
     .text("Payment Information", 300, currentY - 40);
 
+  // Adjust payment method display to handle PayPal specifically
+  const displayPaymentMethod =
+    payment.payment_method === "paypal"
+      ? "PayPal"
+      : payment.payment_method.charAt(0).toUpperCase() +
+        payment.payment_method.slice(1);
+
   doc
     .fillColor(secondaryColor)
     .fontSize(11)
     .font("Helvetica")
-    .text(
-      `Method: ${
-        payment.payment_method.charAt(0).toUpperCase() +
-          payment.payment_method.slice(1) || "N/A"
-      }`,
-      300,
-      currentY - 15
-    );
+    .text(`Method: ${displayPaymentMethod}`, 300, currentY - 15);
 
   doc
     .fillColor(secondaryColor)
@@ -387,64 +630,64 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     .text("Price", 350, currentY + 5)
     .text("Subtotal", 450, currentY + 5);
 
-currentY += 20;
-doc
-  .rect(50, currentY, doc.page.width - 100, 25)
-  .fillAndStroke(lightGrey, "#E0E0E0");
+  currentY += 20;
+  doc
+    .rect(50, currentY, doc.page.width - 100, 25)
+    .fillAndStroke(lightGrey, "#E0E0E0");
 
-// Description column
-doc
-  .fillColor(textColor)
-  .fontSize(11)
-  .font("Helvetica")
-  .text("Event Tickets", 60, currentY + 7, { width: 180 });
+  // Description column
+  doc
+    .fillColor(textColor)
+    .fontSize(11)
+    .font("Helvetica")
+    .text("Event Tickets", 60, currentY + 7, { width: 180 });
 
-// Quantity column - right aligned
-doc
-  .fillColor(textColor)
-  .fontSize(11)
-  .font("Helvetica")
-  .text(`${totalQuantity}`, 270, currentY + 7, { align: "right", width: 30 });
+  // Quantity column - right aligned
+  doc
+    .fillColor(textColor)
+    .fontSize(11)
+    .font("Helvetica")
+    .text(`${totalQuantity}`, 270, currentY + 7, { align: "right", width: 30 });
 
-// Price column - separate currency and amount
-doc
-  .fillColor(textColor)
-  .fontSize(11)
-  .font("Helvetica")
-  .text("LKR", 350, currentY + 7);
+  // Price column - separate currency and amount
+  doc
+    .fillColor(textColor)
+    .fontSize(11)
+    .font("Helvetica")
+    .text("LKR", 350, currentY + 7);
 
-doc
-  .fillColor(textColor)
-  .fontSize(11)
-  .font("Helvetica")
-  .text(
-    pricePerTicket.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-    }),
-    400,
-    currentY + 7,
-    { align: "right", width: 40 }
-  );
+  doc
+    .fillColor(textColor)
+    .fontSize(11)
+    .font("Helvetica")
+    .text(
+      pricePerTicket.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+      }),
+      400,
+      currentY + 7,
+      { align: "right", width: 40 }
+    );
 
-// Subtotal column - separate currency and amount
-doc
-  .fillColor(textColor)
-  .fontSize(11)
-  .font("Helvetica")
-  .text("LKR", 450, currentY + 7);
+  // Subtotal column - separate currency and amount
+  doc
+    .fillColor(textColor)
+    .fontSize(11)
+    .font("Helvetica")
+    .text("LKR", 450, currentY + 7);
 
-doc
-  .fillColor(textColor)
-  .fontSize(11)
-  .font("Helvetica")
-  .text(
-    payment.amount.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-    }),
-    500,
-    currentY + 7,
-    { align: "right", width: 40 }
-  );
+  doc
+    .fillColor(textColor)
+    .fontSize(11)
+    .font("Helvetica")
+    .text(
+      payment.amount.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+      }),
+      500,
+      currentY + 7,
+      { align: "right", width: 40 }
+    );
 
   // Summary box
   currentY += 40;
@@ -551,6 +794,5 @@ doc
   // Finalize the PDF
   doc.end();
 });
-
 
 module.exports = exports;

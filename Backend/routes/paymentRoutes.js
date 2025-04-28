@@ -10,7 +10,14 @@ router.use(protect);
 // Payment routes
 router.post("/process", paymentController.processPayment);
 router.get("/history", paymentController.getPaymentHistory);
-router.get("/receipt/:transactionId", paymentController.generateReceipt);
-router.post("/create-payment-intent", paymentController.createPaymentIntent);
+
+router.post("/create-paypal-order", paymentController.createPayPalOrder);
+router.post(
+  "/capture-paypal-order",
+  paymentController.capturePayPalOrder
+);
+
+router.post("/process", paymentController.processPayment);
+router.post("/confirm", paymentController.confirmPayment);
 
 module.exports = router;

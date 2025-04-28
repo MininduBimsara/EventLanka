@@ -7,19 +7,40 @@ const PAYMENT_API_URL = "http://localhost:5000/api/payments";
 // Set default axios config
 axios.defaults.withCredentials = true;
 
-// Async thunk for creating a payment intent
+// Async thunk for creating a payment intent (now preparing PayPal payment)
+// In PaymentSlice.jsx
 export const createPaymentIntent = createAsyncThunk(
   "payments/createIntent",
   async (orderId, { rejectWithValue }) => {
     try {
+      console.log("Creating PayPal order for orderId:", orderId);
+      
+      // Get the pending order from localStorage to include the amount
+      let amount = 0;
+      const storedOrder = localStorage.getItem("pendingOrder");
+      if (storedOrder) {
+        try {
+          const parsedOrder = JSON.parse(storedOrder);
+          amount = parsedOrder.totalAmount;
+          console.log("Using amount from stored order:", amount);
+        } catch (error) {
+          console.error("Error parsing stored order:", error);
+        }
+      }
+      
       const response = await axios.post(
-        `${PAYMENT_API_URL}/create-payment-intent`,
-        { orderId }
+        `${PAYMENT_API_URL}/create-paypal-order`,
+        { orderId, amount } // Include amount in request
       );
+      console.log("PayPal order creation response:", response.data);
       return response.data;
     } catch (error) {
+      console.error(
+        "PayPal order creation error:",
+        error.response?.data || error
+      );
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create payment intent"
+        error.response?.data?.message || "Failed to prepare payment"
       );
     }
   }
@@ -43,17 +64,22 @@ export const processPayment = createAsyncThunk(
   }
 );
 
-// Async thunk for confirming a payment after Stripe processing
+// Async thunk for confirming a payment after PayPal processing
 export const confirmPayment = createAsyncThunk(
   "payments/confirm",
   async ({ paymentIntentId, orderId }, { rejectWithValue }) => {
     try {
+      console.log("Confirming payment:", { paymentIntentId, orderId });
       const response = await axios.post(`${PAYMENT_API_URL}/confirm`, {
-        paymentIntentId,
+        paypalOrderId: paymentIntentId,
         orderId,
       });
       return response.data;
     } catch (error) {
+      console.error(
+        "Payment confirmation error:",
+        error.response?.data || error
+      );
       return rejectWithValue(
         error.response?.data?.message || "Payment confirmation failed"
       );
@@ -126,7 +152,7 @@ const paymentSlice = createSlice({
     clearCurrentPayment: (state) => {
       state.currentPayment = null;
     },
-    // Store payment intent ID from Stripe
+    // Store payment intent ID from PayPal
     setPaymentIntentId: (state, action) => {
       state.paymentIntentId = action.payload;
     },
@@ -137,7 +163,7 @@ const paymentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Create Payment Intent
+      // Create Payment Intent (PayPal preparation)
       .addCase(createPaymentIntent.pending, (state) => {
         state.intentLoading = true;
         state.error = null;

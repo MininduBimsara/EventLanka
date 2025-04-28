@@ -8,8 +8,14 @@ const asyncHandler = require("express-async-handler");
 // CREATE AN ORDER
 // ===========================
 exports.createOrder = asyncHandler(async (req, res) => {
-  const { tickets, totalAmount, discountId, discountAmount, paymentMethod } =
-    req.body;
+  const {
+    event_id,
+    tickets,
+    total_amount,
+    discount_id,
+    discount_amount,
+    payment_method,
+  } = req.body;
 
   // Ensure the user is authenticated
   if (!req.user) {
@@ -28,24 +34,31 @@ exports.createOrder = asyncHandler(async (req, res) => {
   // Generate a unique order number
   const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-  // Create the order
+  // Create tickets first
+  const ticketIds = [];
+  for (const ticketData of tickets) {
+    const ticket = await Ticket.create({
+      user_id: req.user._id, // Use authenticated user's ID
+      event_id: event_id,
+      ticket_type: ticketData.ticket_type, // This should be the string type
+      quantity: ticketData.quantity,
+      payment_status: "pending",
+    });
+    ticketIds.push(ticket._id);
+  }
+
+  // Create the order with ticket IDs
   const order = await Order.create({
     order_number: orderNumber,
     user_id: req.user._id,
-    tickets: tickets,
-    total_amount: totalAmount,
-    discount_id: discountId || null,
-    discount_amount: discountAmount || 0,
-    payment_method: paymentMethod,
-    payment_status: "pending", // Will be updated after payment processing
+    tickets: ticketIds,
+    total_amount: total_amount,
+    discount_id: discount_id || null,
+    discount_amount: discount_amount || 0,
+    payment_method: payment_method,
+    payment_status: "pending",
     status: "pending",
   });
-
-  // Update tickets with the order information
-  await Ticket.updateMany(
-    { _id: { $in: tickets } },
-    { payment_status: "pending" }
-  );
 
   res.status(201).json({
     message: "Order created successfully",

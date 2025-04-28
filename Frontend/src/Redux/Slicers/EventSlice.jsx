@@ -95,14 +95,17 @@ export const deleteEvent = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching a single event by ID
+// In EventSlice.jsx, modify the fetchEventById thunk
 export const fetchEventById = createAsyncThunk(
   "events/fetchEventById",
   async (eventId, { rejectWithValue }) => {
     try {
+      console.log("Fetching event with ID:", eventId);
       const response = await axios.get(`${API_URL}/${eventId}`, {
-        withCredentials: true, // Include cookies for auth
+        withCredentials: true,
       });
+      
+      console.log("Event API response:", response.data);
 
       // Check if booking is available
       if (!response.data.bookingAvailable) {
@@ -111,6 +114,7 @@ export const fetchEventById = createAsyncThunk(
 
       return response.data;
     } catch (error) {
+      console.error("API error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch event details"
       );

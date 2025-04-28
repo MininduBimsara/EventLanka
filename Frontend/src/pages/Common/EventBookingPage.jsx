@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { motion } from "framer-motion";
-import { fetchEventById } from "../../Redux/Slicers/EventSlice"; // Update path as needed
+import { fetchEventById } from "../../Redux/Slicers/EventSlice";
 import OrganizerInfo from "../../components/Common/EventBooking/OrganizerInfo";
 import OrderSummary from "../../components/Common/EventBooking/OrderSummary";
 import TicketSelection from "../../components/Common/EventBooking/TicketSelection";
@@ -16,6 +15,7 @@ import NavBar from "../../components/Common/Navbar";
 const EventBookingPage = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Get event data from Redux store
   const { currentEvent, loading, error, bookingError } = useSelector(
@@ -82,6 +82,24 @@ const EventBookingPage = () => {
 
       return { ...prev, [type]: newValue };
     });
+  };
+
+  // Handle booking completion
+  const handleCompleteBooking = () => {
+    // Create order data to pass to checkout
+    const orderData = {
+      eventId: currentEvent._id,
+      eventName: currentEvent.title,
+      ticketSelections: tickets,
+      totalAmount: totalPrice,
+      ticketTypes: currentEvent.ticket_types,
+    };
+
+    // Store order data in localStorage (temporary solution)
+    localStorage.setItem("pendingOrder", JSON.stringify(orderData));
+
+    // Navigate to checkout page
+    navigate("/checkout");
   };
 
   // Show loading state
@@ -213,9 +231,7 @@ const EventBookingPage = () => {
             <div className="px-6 py-4">
               <button
                 className="w-full py-4 text-lg font-bold text-white transition-all duration-300 bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                onClick={() =>
-                  alert("Booking functionality would be implemented here!")
-                }
+                onClick={handleCompleteBooking}
                 disabled={totalPrice === 0}
               >
                 COMPLETE BOOKING

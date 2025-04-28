@@ -125,31 +125,6 @@ const Pagination = ({ currentPage = 1, totalPages = 1, onPageChange }) => {
             </svg>
           </button>
         </div>
-
-        {/* Animation styles */}
-        <style jsx>{`
-          @keyframes gradient-event {
-            0% {
-              background-position: 0% 50%;
-            }
-            25% {
-              background-position: 50% 100%;
-            }
-            50% {
-              background-position: 100% 50%;
-            }
-            75% {
-              background-position: 50% 0%;
-            }
-            100% {
-              background-position: 0% 50%;
-            }
-          }
-          .animate-gradient-event {
-            background-size: 300% 300%;
-            animation: gradient-event 20s ease infinite;
-          }
-        `}</style>
       </nav>
     </div>
   );

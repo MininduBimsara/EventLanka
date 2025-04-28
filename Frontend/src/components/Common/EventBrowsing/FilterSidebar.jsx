@@ -8,13 +8,15 @@ const FilterSidebar = ({
   locations,
   handleLocationChange,
 }) => {
+  // Custom CSS class for the gradient animation
+  const gradientAnimationClass = "animate-gradient-event";
+
   return (
-    <aside
-      id="event-browsing-sidebar"
-      className="relative overflow-hidden rounded-xl"
-    >
+    <aside className="relative overflow-hidden rounded-xl">
       {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] opacity-90 animate-gradient-event"></div>
+      <div
+        className={`absolute inset-0 bg-gradient-to-b from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] opacity-90 ${gradientAnimationClass}`}
+      ></div>
 
       <div className="relative z-10 p-6">
         <h2 className="mb-4 text-lg font-bold text-white">Filters</h2>
@@ -129,31 +131,6 @@ const FilterSidebar = ({
           Reset Filters
         </button>
       </div>
-
-      {/* Animation styles */}
-      <style jsx>{`
-        @keyframes gradient-event {
-          0% {
-            background-position: 0% 50%;
-          }
-          25% {
-            background-position: 50% 100%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          75% {
-            background-position: 50% 0%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient-event {
-          background-size: 300% 300%;
-          animation: gradient-event 20s ease infinite;
-        }
-      `}</style>
     </aside>
   );
 };

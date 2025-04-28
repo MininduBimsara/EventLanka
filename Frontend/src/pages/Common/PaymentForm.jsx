@@ -1,105 +1,128 @@
 import React, { useState, useEffect } from "react";
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useDispatch, useSelector } from "react-redux";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 import {
   createPaymentIntent,
+  processPayment,
   confirmPayment,
   setPaymentIntentId,
   setOrderId,
-} from "./PaymentSlice";
+} from "../../Redux/Slicers/PaymentSlice";
 
 const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
-  const stripe = useStripe();
-  const elements = useElements();
   const dispatch = useDispatch();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [formVisible, setFormVisible] = useState(true);
 
   const { clientSecret, intentLoading, loading, error, success } = useSelector(
     (state) => state.payments
   );
 
-  // Get the client secret when the component mounts
+  // Get the order details when the component mounts
   useEffect(() => {
     if (orderId) {
+      // Load order details from localStorage
+      const storedOrder = localStorage.getItem("pendingOrder");
+      if (storedOrder) {
+        try {
+          const parsedOrder = JSON.parse(storedOrder);
+          setOrderDetails(parsedOrder);
+          console.log("Loaded order details from storage:", parsedOrder);
+        } catch (error) {
+          console.error("Error parsing stored order:", error);
+          setPaymentError("Error loading order details. Please try again.");
+        }
+      }
+
+      // Create payment intent
       dispatch(createPaymentIntent(orderId));
       dispatch(setOrderId(orderId));
     }
   }, [dispatch, orderId]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  // Extract amount from orderDetails
+  const amount = orderDetails?.totalAmount || 0;
 
-    if (!stripe || !elements || !clientSecret) {
-      // Stripe.js has not yet loaded or client secret not available
-      return;
+  // Create order for PayPal - properly format the amount
+  const createOrder = (data, actions) => {
+    if (!amount || amount <= 0) {
+      setPaymentError("Invalid order amount. Please try again.");
+      return Promise.reject("Invalid amount");
     }
 
-    setIsProcessing(true);
-    setPaymentError(null);
+    const paymentAmount = parseFloat(amount).toFixed(2);
+    console.log("Creating PayPal order for orderId:", orderId);
+    console.log("Using amount from stored order:", paymentAmount);
 
-    try {
-      // Process the payment with Stripe using the client secret
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: {
-            name: document.getElementById("name").value,
-            email: document.getElementById("email").value,
+    return actions.order.create({
+      purchase_units: [
+        {
+          description: eventName,
+          amount: {
+            currency_code: "USD",
+            value: paymentAmount,
           },
         },
-      });
+      ],
+      // Add application context to improve flow
+      application_context: {
+        shipping_preference: "NO_SHIPPING",
+      },
+    });
+  };
 
-      if (result.error) {
-        setPaymentError(result.error.message);
-        onError && onError(result.error.message);
-      } else {
-        if (result.paymentIntent.status === "succeeded") {
-          // Store the payment intent ID
-          dispatch(setPaymentIntentId(result.paymentIntent.id));
+  // Simplified onApprove - handle the PayPal approval
+  const onApprove = async (data, actions) => {
+    setIsProcessing(true);
+    console.log("Payment approved by user, capturing payment...");
 
-          // Confirm the payment on our backend
-          await dispatch(
-            confirmPayment({
-              paymentIntentId: result.paymentIntent.id,
-              orderId,
-            })
-          );
+    try {
+      // Capture the funds from the transaction
+      const details = await actions.order.capture();
+      console.log("PayPal capture details:", details);
 
-          setPaymentSuccess(true);
-          onSuccess && onSuccess(result.paymentIntent);
-        }
-      }
+      // Store the payment intent ID
+      dispatch(setPaymentIntentId(details.id));
+
+      // Process the payment on our backend
+      const paymentData = {
+        orderId,
+        paymentMethod: "paypal",
+        amount: parseFloat(amount),
+        paypalOrderId: details.id,
+        paypalPayerId: details.payer.payer_id,
+      };
+
+      await dispatch(processPayment(paymentData)).unwrap();
+
+      // Success handling
+      setPaymentSuccess(true);
+      setFormVisible(false);
+      if (onSuccess) onSuccess({ id: details.id });
+
+      return true; // This is important for PayPal to know the flow completed
     } catch (error) {
-      setPaymentError("An unexpected error occurred. Please try again.");
-      onError && onError(error.message);
+      console.error("Payment processing error:", error);
+      setPaymentError(error.message || "Payment processing failed");
+      if (onError) onError(error.message || "Payment processing failed");
+      return false;
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: "16px",
-        color: "#4B5563",
-        fontFamily: "ui-sans-serif, system-ui, sans-serif",
-        "::placeholder": {
-          color: "#9CA3AF",
-        },
-      },
-      invalid: {
-        color: "#EF4444",
-      },
-    },
+  // Handle errors from PayPal
+  const onError = (err) => {
+    console.error("PayPal error:", err);
+    setPaymentError(
+      "PayPal payment failed. Please try again or use another payment method."
+    );
+    if (onError) onError("PayPal payment failed");
   };
-
-  // Calculate the amount display from the event name (assuming it's stored in format "Event Name - $XX.XX")
-  const amount = eventName.includes("$")
-    ? eventName.split("$")[1].trim()
-    : "0.00";
 
   return (
     <div className="relative max-w-md p-6 mx-auto overflow-hidden bg-white border-2 border-yellow-400 shadow-lg rounded-xl">
@@ -117,13 +140,13 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
         }}
       ></div>
       <div
-        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-10 -left-6 opacity-20 -rotate-30"
+        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-10 -left-6 opacity-20 -rotate-12"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23f8d12f' d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z'/%3E%3C/svg%3E")`,
         }}
       ></div>
       <div
-        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-12 -right-10 opacity-20 -rotate-15"
+        className="absolute w-24 h-24 transform bg-no-repeat bg-contain -bottom-12 -right-10 opacity-20 -rotate-12"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23f8d12f' d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z'/%3E%3C/svg%3E")`,
         }}
@@ -135,10 +158,12 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
 
       <div className="flex items-center justify-between p-4 mb-6 border-l-4 border-red-600 rounded-lg bg-yellow-50">
         <span className="font-semibold text-gray-800">{eventName}</span>
-        <span className="text-lg font-bold text-red-600">${amount}</span>
+        <span className="text-lg font-bold text-red-600">
+          ${amount ? parseFloat(amount).toFixed(2) : "0.00"}
+        </span>
       </div>
 
-      {paymentSuccess || success ? (
+      {paymentSuccess ? (
         <div className="relative py-8 text-center">
           <div
             className="absolute inset-0 pointer-events-none opacity-60"
@@ -155,48 +180,77 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="name"
-              className="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-              required
-              placeholder="Jane Doe"
-            />
-          </div>
+        <div className="space-y-6">
+          {formVisible && (
+            <>
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block mb-1 text-sm font-medium text-gray-700"
+                >
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                  required
+                  placeholder="Jane Doe"
+                />
+              </div>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-              required
-              placeholder="jane@example.com"
-            />
-          </div>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block mb-1 text-sm font-medium text-gray-700"
+                >
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                  required
+                  placeholder="jane@example.com"
+                />
+              </div>
+            </>
+          )}
 
-          <div>
-            <label
-              htmlFor="card-element"
-              className="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Credit or Debit Card
-            </label>
-            <div className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-yellow-400 focus-within:border-transparent">
-              <CardElement id="card-element" options={cardElementOptions} />
+          <div className="pt-2">
+            <div className="w-full">
+              {isProcessing ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="w-8 h-8 border-t-4 border-b-4 border-yellow-400 rounded-full animate-spin"></div>
+                  <span className="ml-2 text-gray-600">
+                    Processing payment...
+                  </span>
+                </div>
+              ) : (
+                amount > 0 && (
+                  <PayPalButtons
+                    style={{
+                      color: "gold",
+                      layout: "vertical",
+                      shape: "rect",
+                      label: "pay",
+                    }}
+                    createOrder={createOrder}
+                    onApprove={onApprove}
+                    onError={onError}
+                    disabled={
+                      isProcessing || intentLoading || loading || amount <= 0
+                    }
+                  />
+                )
+              )}
+
+              {amount <= 0 && !isProcessing && (
+                <div className="p-3 text-center rounded-md text-amber-700 bg-amber-50">
+                  Loading order details... If this persists, please return to
+                  the event page and try again.
+                </div>
+              )}
             </div>
           </div>
 
@@ -205,38 +259,11 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
               {paymentError || error}
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={
-              !stripe ||
-              !clientSecret ||
-              isProcessing ||
-              intentLoading ||
-              loading
-            }
-            className={`w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors ${
-              isProcessing || intentLoading || loading
-                ? "relative overflow-hidden bg-opacity-70"
-                : ""
-            }`}
-          >
-            {isProcessing || intentLoading || loading ? (
-              <>
-                <span>Processing...</span>
-                <span className="absolute inset-0 overflow-hidden">
-                  <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
-                </span>
-              </>
-            ) : (
-              `Pay $${amount}`
-            )}
-          </button>
-        </form>
+        </div>
       )}
 
       {/* Add custom styles for animation and festive font */}
-      <style jsx>{`
+      <style>{`
         @import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap");
 
         .font-festive {
