@@ -8,14 +8,29 @@ const PAYMENT_API_URL = "http://localhost:5000/api/payments";
 axios.defaults.withCredentials = true;
 
 // Async thunk for creating a payment intent (now preparing PayPal payment)
+// In PaymentSlice.jsx
 export const createPaymentIntent = createAsyncThunk(
   "payments/createIntent",
   async (orderId, { rejectWithValue }) => {
     try {
       console.log("Creating PayPal order for orderId:", orderId);
+      
+      // Get the pending order from localStorage to include the amount
+      let amount = 0;
+      const storedOrder = localStorage.getItem("pendingOrder");
+      if (storedOrder) {
+        try {
+          const parsedOrder = JSON.parse(storedOrder);
+          amount = parsedOrder.totalAmount;
+          console.log("Using amount from stored order:", amount);
+        } catch (error) {
+          console.error("Error parsing stored order:", error);
+        }
+      }
+      
       const response = await axios.post(
-        `${PAYMENT_API_URL}/capture-paypal-order`,
-        { orderId }
+        `${PAYMENT_API_URL}/create-paypal-order`,
+        { orderId, amount } // Include amount in request
       );
       console.log("PayPal order creation response:", response.data);
       return response.data;

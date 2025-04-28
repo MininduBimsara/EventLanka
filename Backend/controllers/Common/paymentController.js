@@ -7,8 +7,8 @@ const PDFDocument = require("pdfkit");
 const axios = require("axios"); // Using axios for PayPal API calls
 
 // PayPal Configuration
-const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
-const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+const PAYPAL_CLIENT_ID = process.env.VITE_PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.VITE_PAYPAL_CLIENT_SECRET;
 const PAYPAL_API_BASE =
   process.env.NODE_ENV === "production"
     ? "https://api-m.paypal.com"
@@ -41,7 +41,7 @@ const getPayPalAccessToken = async () => {
 // CREATE PAYPAL ORDER
 // ===========================
 exports.createPayPalOrder = asyncHandler(async (req, res) => {
-  const { orderId } = req.body;
+  const { orderId, amount } = req.body;
 
   // Ensure the user is authenticated
   if (!req.user) {
@@ -60,6 +60,13 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
   // Check if the order belongs to the user
   if (order.user_id.toString() !== req.user._id.toString()) {
     return res.status(403).json({ message: "Not authorized" });
+  }
+
+  // Use the amount from the request or fall back to order amount
+  const paymentAmount = amount || order.total_amount;
+
+  if (!paymentAmount || paymentAmount <= 0) {
+    return res.status(400).json({ message: "Invalid order amount" });
   }
 
   try {
@@ -82,7 +89,7 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
             description: `Event tickets for ${order.tickets[0]?.event_id}`,
             amount: {
               currency_code: "USD", // Change to your currency
-              value: order.total_amount.toString(),
+              value: paymentAmount.toString(),
             },
           },
         ],
@@ -100,6 +107,7 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
     res.status(200).json({
       orderId: order._id,
       paypalOrderId: response.data.id,
+      clientSecret: response.data.id, // Use the PayPal order ID as the client secret
       links: response.data.links,
     });
   } catch (error) {
@@ -229,7 +237,8 @@ exports.capturePayPalOrder = asyncHandler(async (req, res) => {
 // PROCESS PAYMENT (Legacy method for compatibility)
 // ===========================
 exports.processPayment = asyncHandler(async (req, res) => {
-  const { orderId, amount, paymentMethod, paypalOrderId } = req.body;
+  const { orderId, amount, paymentMethod, paypalOrderId, paypalPayerId } =
+    req.body;
 
   // Ensure the user is authenticated
   if (!req.user) {
@@ -267,7 +276,12 @@ exports.processPayment = asyncHandler(async (req, res) => {
     status: "completed",
     transaction_id: transactionId,
     payment_details:
-      paymentMethod === "paypal" ? { paypal_order_id: paypalOrderId } : {},
+      paymentMethod === "paypal"
+        ? {
+            paypal_order_id: paypalOrderId,
+            paypal_payer_id: paypalPayerId || "unknown",
+          }
+        : {},
   });
 
   // Update the order status
@@ -289,9 +303,13 @@ exports.processPayment = asyncHandler(async (req, res) => {
 
   // If there was a discount used, increment its usage count
   if (order.discount_id) {
-    await Discount.findByIdAndUpdate(order.discount_id, {
-      $inc: { usage_count: 1 },
-    });
+    try {
+      await Discount.findByIdAndUpdate(order.discount_id, {
+        $inc: { usage_count: 1 },
+      });
+    } catch (error) {
+      console.log("No discount model or error updating discount", error);
+    }
   }
 
   res.status(200).json({
@@ -316,6 +334,37 @@ exports.getPaymentHistory = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 });
 
   res.status(200).json(payments);
+});
+
+// ===========================
+// CONFIRM PAYMENT (This is still used by the front-end)
+// ===========================
+
+exports.confirmPayment = asyncHandler(async (req, res) => {
+  const { paypalOrderId, orderId } = req.body;
+
+  // Find the order
+  const order = await Order.findById(orderId);
+  if (!order) {
+    return res.status(404).json({ message: "Order not found" });
+  }
+
+  // Find the payment
+  const payment = await Payment.findOne({
+    "payment_details.paypal_order_id": paypalOrderId,
+  });
+
+  if (!payment) {
+    return res.status(404).json({ message: "Payment record not found" });
+  }
+
+  // We've already processed the payment in the processPayment step,
+  // So here we just return success
+  res.status(200).json({
+    message: "Payment confirmed successfully",
+    order,
+    payment,
+  });
 });
 
 // ===========================

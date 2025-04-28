@@ -16,6 +16,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
+  const [formVisible, setFormVisible] = useState(true);
 
   const { clientSecret, intentLoading, loading, error, success } = useSelector(
     (state) => state.payments
@@ -24,40 +25,67 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
   // Get the order details when the component mounts
   useEffect(() => {
     if (orderId) {
+      // Load order details from localStorage
+      const storedOrder = localStorage.getItem("pendingOrder");
+      if (storedOrder) {
+        try {
+          const parsedOrder = JSON.parse(storedOrder);
+          setOrderDetails(parsedOrder);
+          console.log("Loaded order details from storage:", parsedOrder);
+        } catch (error) {
+          console.error("Error parsing stored order:", error);
+          setPaymentError("Error loading order details. Please try again.");
+        }
+      }
+
+      // Create payment intent
       dispatch(createPaymentIntent(orderId));
       dispatch(setOrderId(orderId));
     }
   }, [dispatch, orderId]);
 
-  // Extract amount from eventName or use a default
-  const amount = eventName.includes("$")
-    ? eventName.split("$")[1].trim()
-    : "0.00";
+  // Extract amount from orderDetails
+  const amount = orderDetails?.totalAmount || 0;
 
-  // Create order for PayPal
+  // Create order for PayPal - properly format the amount
   const createOrder = (data, actions) => {
+    if (!amount || amount <= 0) {
+      setPaymentError("Invalid order amount. Please try again.");
+      return Promise.reject("Invalid amount");
+    }
+
+    const paymentAmount = parseFloat(amount).toFixed(2);
+    console.log("Creating PayPal order for orderId:", orderId);
+    console.log("Using amount from stored order:", paymentAmount);
+
     return actions.order.create({
       purchase_units: [
         {
           description: eventName,
           amount: {
             currency_code: "USD",
-            value: amount,
+            value: paymentAmount,
           },
         },
       ],
+      // Add application context to improve flow
+      application_context: {
+        shipping_preference: "NO_SHIPPING",
+      },
     });
   };
 
-  // Handle approval
-  const onApprove = (data, actions) => {
+  // Simplified onApprove - handle the PayPal approval
+  const onApprove = async (data, actions) => {
     setIsProcessing(true);
+    console.log("Payment approved by user, capturing payment...");
 
-    return actions.order.capture().then((details) => {
-      // Store the payment details
-      setOrderDetails(details);
+    try {
+      // Capture the funds from the transaction
+      const details = await actions.order.capture();
+      console.log("PayPal capture details:", details);
 
-      // Store the payment intent ID (PayPal order ID in this case)
+      // Store the payment intent ID
       dispatch(setPaymentIntentId(details.id));
 
       // Process the payment on our backend
@@ -69,29 +97,31 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
         paypalPayerId: details.payer.payer_id,
       };
 
-      return dispatch(processPayment(paymentData))
-        .unwrap()
-        .then(() => {
-          // Confirm the payment on our backend
-          return dispatch(
-            confirmPayment({
-              paymentIntentId: details.id,
-              orderId,
-            })
-          ).unwrap();
-        })
-        .then(() => {
-          setPaymentSuccess(true);
-          onSuccess && onSuccess({ id: details.id });
-        })
-        .catch((err) => {
-          setPaymentError(err.message || "Payment processing failed");
-          onError && onError(err.message || "Payment processing failed");
-        })
-        .finally(() => {
-          setIsProcessing(false);
-        });
-    });
+      await dispatch(processPayment(paymentData)).unwrap();
+
+      // Success handling
+      setPaymentSuccess(true);
+      setFormVisible(false);
+      if (onSuccess) onSuccess({ id: details.id });
+
+      return true; // This is important for PayPal to know the flow completed
+    } catch (error) {
+      console.error("Payment processing error:", error);
+      setPaymentError(error.message || "Payment processing failed");
+      if (onError) onError(error.message || "Payment processing failed");
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle errors from PayPal
+  const onError = (err) => {
+    console.error("PayPal error:", err);
+    setPaymentError(
+      "PayPal payment failed. Please try again or use another payment method."
+    );
+    if (onError) onError("PayPal payment failed");
   };
 
   return (
@@ -128,10 +158,12 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
 
       <div className="flex items-center justify-between p-4 mb-6 border-l-4 border-red-600 rounded-lg bg-yellow-50">
         <span className="font-semibold text-gray-800">{eventName}</span>
-        <span className="text-lg font-bold text-red-600">${amount}</span>
+        <span className="text-lg font-bold text-red-600">
+          ${amount ? parseFloat(amount).toFixed(2) : "0.00"}
+        </span>
       </div>
 
-      {paymentSuccess || success ? (
+      {paymentSuccess ? (
         <div className="relative py-8 text-center">
           <div
             className="absolute inset-0 pointer-events-none opacity-60"
@@ -149,37 +181,41 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div>
-            <label
-              htmlFor="name"
-              className="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-              required
-              placeholder="Jane Doe"
-            />
-          </div>
+          {formVisible && (
+            <>
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block mb-1 text-sm font-medium text-gray-700"
+                >
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                  required
+                  placeholder="Jane Doe"
+                />
+              </div>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-              required
-              placeholder="jane@example.com"
-            />
-          </div>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block mb-1 text-sm font-medium text-gray-700"
+                >
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                  required
+                  placeholder="jane@example.com"
+                />
+              </div>
+            </>
+          )}
 
           <div className="pt-2">
             <div className="w-full">
@@ -191,21 +227,29 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
                   </span>
                 </div>
               ) : (
-                <PayPalButtons
-                  style={{
-                    color: "gold",
-                    layout: "vertical",
-                    shape: "rect",
-                    label: "pay",
-                  }}
-                  createOrder={createOrder}
-                  onApprove={onApprove}
-                  onError={(err) => {
-                    setPaymentError(err.message || "PayPal payment failed");
-                    onError && onError(err.message || "PayPal payment failed");
-                  }}
-                  disabled={isProcessing || intentLoading || loading}
-                />
+                amount > 0 && (
+                  <PayPalButtons
+                    style={{
+                      color: "gold",
+                      layout: "vertical",
+                      shape: "rect",
+                      label: "pay",
+                    }}
+                    createOrder={createOrder}
+                    onApprove={onApprove}
+                    onError={onError}
+                    disabled={
+                      isProcessing || intentLoading || loading || amount <= 0
+                    }
+                  />
+                )
+              )}
+
+              {amount <= 0 && !isProcessing && (
+                <div className="p-3 text-center rounded-md text-amber-700 bg-amber-50">
+                  Loading order details... If this persists, please return to
+                  the event page and try again.
+                </div>
               )}
             </div>
           </div>
@@ -219,7 +263,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
       )}
 
       {/* Add custom styles for animation and festive font */}
-      <style >{`
+      <style>{`
         @import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap");
 
         .font-festive {

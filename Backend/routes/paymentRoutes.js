@@ -17,4 +17,7 @@ router.post(
   paymentController.capturePayPalOrder
 );
 
+router.post("/process", paymentController.processPayment);
+router.post("/confirm", paymentController.confirmPayment);
+
 module.exports = router;

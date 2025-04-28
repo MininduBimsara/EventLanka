@@ -78,83 +78,98 @@ const CheckoutPage = () => {
   };
 
   // Create the order in the backend
-const createBackendOrder = async (orderData) => {
-  if (!currentUser) {
-    setErrorMessage("Please log in to complete your purchase.");
-    return;
-  }
-
-  // Validate event data
-  if (!currentEvent) {
-    console.error("Current event is null");
-    setErrorMessage("Event details not available. Please try again.");
-    return;
-  }
-
-  if (!currentEvent.ticket_types || currentEvent.ticket_types.length === 0) {
-    console.error("Event has no ticket types:", currentEvent);
-    setErrorMessage("This event doesn't have any available tickets.");
-    return;
-  }
-
-  console.log("Creating order with event:", currentEvent);
-  console.log("Order data from localStorage:", orderData);
-
-  setIsCreatingOrder(true);
-
-  try {
-    // Verify we have the required data
-    if (!orderData || !orderData.ticketSelections) {
-      throw new Error("Order data incomplete - missing ticket selections");
+  const createBackendOrder = async (orderData) => {
+    if (!currentUser) {
+      setErrorMessage("Please log in to complete your purchase.");
+      return;
     }
 
-    // Create the tickets array for the order
-    const ticketsArray = [];
+    // Validate event data
+    if (!currentEvent) {
+      console.error("Current event is null");
+      setErrorMessage("Event details not available. Please try again.");
+      return;
+    }
 
-    for (const [type, quantity] of Object.entries(orderData.ticketSelections)) {
-      if (quantity > 0) {
-        // Find the ticket type in the event data
-        const ticketInfo = currentEvent.ticket_types.find(
-          (ticket) => ticket.type === type
-        );
+    if (!currentEvent.ticket_types || currentEvent.ticket_types.length === 0) {
+      console.error("Event has no ticket types:", currentEvent);
+      setErrorMessage("This event doesn't have any available tickets.");
+      return;
+    }
 
-        if (ticketInfo) {
-          ticketsArray.push({
-            ticket_type: type, // Use the type string, not the ID
-            quantity: parseInt(quantity),
-            event_id: orderData.eventId, // Add the event ID
-          });
-        } else {
-          console.warn(`Ticket type ${type} not found in event data`);
+    console.log("Creating order with event:", currentEvent);
+    console.log("Order data from localStorage:", orderData);
+
+    setIsCreatingOrder(true);
+
+    try {
+      // Verify we have the required data
+      if (!orderData || !orderData.ticketSelections) {
+        throw new Error("Order data incomplete - missing ticket selections");
+      }
+
+      // Ensure we have a valid amount
+      if (!orderData.totalAmount || orderData.totalAmount <= 0) {
+        throw new Error("Invalid order amount");
+      }
+
+      // Create the tickets array for the order
+      const ticketsArray = [];
+
+      for (const [type, quantity] of Object.entries(
+        orderData.ticketSelections
+      )) {
+        if (quantity > 0) {
+          // Find the ticket type in the event data
+          const ticketInfo = currentEvent.ticket_types.find(
+            (ticket) => ticket.type === type
+          );
+
+          if (ticketInfo) {
+            ticketsArray.push({
+              ticket_type: type, // Use the type string, not the ID
+              quantity: parseInt(quantity),
+              event_id: orderData.eventId, // Add the event ID
+            });
+          } else {
+            console.warn(`Ticket type ${type} not found in event data`);
+          }
         }
       }
+
+      if (ticketsArray.length === 0) {
+        throw new Error("No valid tickets selected");
+      }
+
+      // Create the backend order - use field names that match your backend
+      const orderPayload = {
+        event_id: orderData.eventId,
+        tickets: ticketsArray,
+        total_amount: orderData.totalAmount,
+        payment_method: "paypal",
+      };
+
+      console.log("Submitting order payload:", orderPayload);
+      const result = await dispatch(createOrder(orderPayload)).unwrap();
+      console.log("Order creation result:", result);
+
+      // Make sure the order total is saved in localStorage for the payment form
+      const updatedOrderData = {
+        ...orderData,
+        orderId: result.order._id,
+      };
+      localStorage.setItem("pendingOrder", JSON.stringify(updatedOrderData));
+
+      setOrderId(result.order._id);
+    } catch (error) {
+      console.error("Order creation failed:", error);
+      setErrorMessage(
+        `Failed to create order: ${error.message || "Unknown error"}`
+      );
+    } finally {
+      setIsCreatingOrder(false);
     }
-
-    if (ticketsArray.length === 0) {
-      throw new Error("No valid tickets selected");
-    }
-
-    // Create the backend order - use field names that match your backend
-    const orderPayload = {
-      event_id: orderData.eventId,
-      tickets: ticketsArray,
-      total_amount: orderData.totalAmount,
-      payment_method: "paypal",
-    };
-
-    console.log("Submitting order payload:", orderPayload);
-    const result = await dispatch(createOrder(orderPayload)).unwrap();
-    console.log("Order creation result:", result);
-    setOrderId(result.order._id);
-  } catch (error) {
-    console.error("Order creation failed:", error);
-    setErrorMessage(
-      `Failed to create order: ${error.message || "Unknown error"}`
-    );
-  } finally {
-    setIsCreatingOrder(false);
-  }
-};
+  };
 
   const handlePaymentSuccess = (paymentIntent) => {
     // Clear the pending order from localStorage
