@@ -58,21 +58,30 @@ const CheckoutPage = () => {
   }, []);
 
   // Function to fetch event details
-const fetchEventDetails = async (eventId) => {
-  try {
-    const resultAction = await dispatch(fetchEventById(eventId)).unwrap();
+  const fetchEventDetails = async (eventId) => {
+    try {
+      // Dispatch action but don't unwrap yet
+      const resultAction = await dispatch(fetchEventById(eventId));
 
-    if (!resultAction || !resultAction.ticket_types) {
-      throw new Error("Event details incomplete or invalid");
+      // Check if the action was fulfilled
+      if (resultAction.type.endsWith("/fulfilled")) {
+        const eventData = resultAction.payload;
+
+        if (!eventData || !eventData.ticket_types) {
+          throw new Error("Event details incomplete or invalid");
+        }
+
+        setCurrentEvent(eventData);
+        createBackendOrder(JSON.parse(localStorage.getItem("pendingOrder")));
+      } else {
+        // Handle rejection
+        throw new Error(resultAction.error?.message || "Failed to fetch event");
+      }
+    } catch (error) {
+      console.error("Error fetching event details:", error);
+      setErrorMessage("Failed to fetch event details. Please try again.");
     }
-
-    setCurrentEvent(resultAction);
-    createBackendOrder(JSON.parse(localStorage.getItem("pendingOrder")));
-  } catch (error) {
-    console.error("Error fetching event details:", error);
-    setErrorMessage("Failed to fetch event details. Please try again.");
-  }
-};
+  };
 
   // Create the order in the backend
   const createBackendOrder = async (orderData) => {
