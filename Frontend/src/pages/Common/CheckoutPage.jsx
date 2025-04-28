@@ -4,13 +4,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import PaymentForm from "./PaymentForm";
 import NavBar from "../../components/Common/Navbar";
-import axios from "axios";
 import { createOrder } from "../../Redux/Slicers/orderSlice";
-import { fetchEventById } from "../../Redux/Slicers/EventSlice"; // Import the thunk
+import { fetchEventById } from "../../Redux/Slicers/EventSlice";
 
 // Set PayPal options
 const paypalOptions = {
-  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID, // Make sure to add this to your .env file
+  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID,
   currency: "USD",
   intent: "capture",
 };
@@ -22,12 +21,10 @@ const CheckoutPage = () => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [currentEvent, setCurrentEvent] = useState(null); // Add state for current event
+  const [currentEvent, setCurrentEvent] = useState(null);
 
   const { user: currentUser } = useSelector((state) => state.user || {});
-  const { loading, error, success } = useSelector(
-    (state) => state.payments || {}
-  );
+  const { event, loading } = useSelector((state) => state.events || {});
 
   // Retrieve pending order data from localStorage
   useEffect(() => {
@@ -37,15 +34,8 @@ const CheckoutPage = () => {
         const parsedOrder = JSON.parse(orderData);
         setPendingOrder(parsedOrder);
 
-        // If we already have ticket types from localStorage, use them directly
-        if (parsedOrder.ticketTypes) {
-          setCurrentEvent({ ticket_types: parsedOrder.ticketTypes });
-          // Create order with the data we already have
-          createBackendOrder(parsedOrder);
-        } else {
-          // Otherwise fetch event details
-          fetchEventDetails(parsedOrder.eventId);
-        }
+        // Always fetch fresh event details to ensure we have ticket types
+        fetchEventDetails(parsedOrder.eventId);
       } catch (error) {
         console.error("Error parsing order data:", error);
         setErrorMessage("Invalid order data. Please try booking again.");
@@ -57,84 +47,114 @@ const CheckoutPage = () => {
     }
   }, []);
 
+  // Monitor when event data is loaded and then create the order
+  useEffect(() => {
+    if (currentEvent && pendingOrder && !isCreatingOrder && !orderId) {
+      createBackendOrder(pendingOrder);
+    }
+  }, [currentEvent, pendingOrder]);
+
   // Function to fetch event details
   const fetchEventDetails = async (eventId) => {
     try {
-      // Dispatch action but don't unwrap yet
+      // Dispatch the action to fetch event details
       const resultAction = await dispatch(fetchEventById(eventId));
 
-      // Check if the action was fulfilled
-      if (resultAction.type.endsWith("/fulfilled")) {
+      // Check if action was successful
+      if (fetchEventById.fulfilled.match(resultAction)) {
         const eventData = resultAction.payload;
+        console.log("Event data loaded:", eventData);
 
-        if (!eventData || !eventData.ticket_types) {
-          throw new Error("Event details incomplete or invalid");
-        }
-
+        // Set current event with the loaded data
         setCurrentEvent(eventData);
-        createBackendOrder(JSON.parse(localStorage.getItem("pendingOrder")));
       } else {
-        // Handle rejection
+        // Handle error case
         throw new Error(resultAction.error?.message || "Failed to fetch event");
       }
     } catch (error) {
-      console.error("Error fetching event details:", error);
-      setErrorMessage("Failed to fetch event details. Please try again.");
+      console.error("Error in fetchEventDetails:", error);
+      setErrorMessage(`Failed to fetch event details: ${error.message}`);
     }
   };
 
   // Create the order in the backend
-  const createBackendOrder = async (orderData) => {
-    if (!currentUser) {
-      setErrorMessage("Please log in to complete your purchase.");
-      return;
+const createBackendOrder = async (orderData) => {
+  if (!currentUser) {
+    setErrorMessage("Please log in to complete your purchase.");
+    return;
+  }
+
+  // Validate event data
+  if (!currentEvent) {
+    console.error("Current event is null");
+    setErrorMessage("Event details not available. Please try again.");
+    return;
+  }
+
+  if (!currentEvent.ticket_types || currentEvent.ticket_types.length === 0) {
+    console.error("Event has no ticket types:", currentEvent);
+    setErrorMessage("This event doesn't have any available tickets.");
+    return;
+  }
+
+  console.log("Creating order with event:", currentEvent);
+  console.log("Order data from localStorage:", orderData);
+
+  setIsCreatingOrder(true);
+
+  try {
+    // Verify we have the required data
+    if (!orderData || !orderData.ticketSelections) {
+      throw new Error("Order data incomplete - missing ticket selections");
     }
 
-    if (!currentEvent) {
-      setErrorMessage("Event details not available. Please try again.");
-      return;
+    // Create the tickets array for the order
+    const ticketsArray = [];
+
+    for (const [type, quantity] of Object.entries(orderData.ticketSelections)) {
+      if (quantity > 0) {
+        // Find the ticket type in the event data
+        const ticketInfo = currentEvent.ticket_types.find(
+          (ticket) => ticket.type === type
+        );
+
+        if (ticketInfo) {
+          ticketsArray.push({
+            ticket_type: type, // Use the type string, not the ID
+            quantity: parseInt(quantity),
+            event_id: orderData.eventId, // Add the event ID
+          });
+        } else {
+          console.warn(`Ticket type ${type} not found in event data`);
+        }
+      }
     }
 
-    setIsCreatingOrder(true);
-    try {
-      // Create the backend order
-      const orderPayload = {
-        eventId: orderData.eventId,
-        userId: currentUser._id,
-        tickets: Object.entries(orderData.ticketSelections)
-          .map(([type, quantity]) => {
-            // Find the ticket ID that corresponds to this type
-            const ticketInfo = currentEvent.ticket_types.find(
-              (ticket) => ticket.type === type
-            );
-
-            // Only proceed if we found the ticket info
-            if (!ticketInfo) {
-              console.error(`Ticket type ${type} not found in event data`);
-              return null;
-            }
-
-            return {
-              ticket_type: ticketInfo._id, // Send the ID instead of the string
-              quantity,
-            };
-          })
-          .filter((ticket) => ticket && ticket.quantity > 0), // Only include valid tickets with quantity > 0
-        totalAmount: orderData.totalAmount,
-        payment_method: "paypal",
-      };
-
-      const result = await dispatch(createOrder(orderPayload)).unwrap();
-      setOrderId(result.order._id);
-      setIsCreatingOrder(false);
-    } catch (error) {
-      console.error("Order creation failed:", error);
-      setErrorMessage(
-        error.message || "Failed to create order. Please try again."
-      );
-      setIsCreatingOrder(false);
+    if (ticketsArray.length === 0) {
+      throw new Error("No valid tickets selected");
     }
-  };
+
+    // Create the backend order - use field names that match your backend
+    const orderPayload = {
+      event_id: orderData.eventId,
+      tickets: ticketsArray,
+      total_amount: orderData.totalAmount,
+      payment_method: "paypal",
+    };
+
+    console.log("Submitting order payload:", orderPayload);
+    const result = await dispatch(createOrder(orderPayload)).unwrap();
+    console.log("Order creation result:", result);
+    setOrderId(result.order._id);
+  } catch (error) {
+    console.error("Order creation failed:", error);
+    setErrorMessage(
+      `Failed to create order: ${error.message || "Unknown error"}`
+    );
+  } finally {
+    setIsCreatingOrder(false);
+  }
+};
 
   const handlePaymentSuccess = (paymentIntent) => {
     // Clear the pending order from localStorage
