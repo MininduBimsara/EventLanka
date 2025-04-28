@@ -219,7 +219,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
       )}
 
       {/* Add custom styles for animation and festive font */}
-      <style jsx>{`
+      <style >{`
         @import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap");
 
         .font-festive {
