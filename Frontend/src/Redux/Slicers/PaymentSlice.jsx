@@ -7,37 +7,25 @@ const PAYMENT_API_URL = "http://localhost:5000/api/payments";
 // Set default axios config
 axios.defaults.withCredentials = true;
 
-// Async thunk for creating a payment intent (now preparing PayPal payment)
+// Async thunk for creating a payment intent (PayPal order)
 export const createPaymentIntent = createAsyncThunk(
   "payments/createIntent",
   async (orderId, { rejectWithValue }) => {
     try {
+      console.log("Creating PayPal order for orderId:", orderId);
       const response = await axios.post(
-        `${PAYMENT_API_URL}/prepare-paypal-payment`,
+        `${PAYMENT_API_URL}/create-paypal-order`,
         { orderId }
       );
+      console.log("PayPal order creation response:", response.data);
       return response.data;
     } catch (error) {
+      console.error(
+        "PayPal order creation error:",
+        error.response?.data || error
+      );
       return rejectWithValue(
         error.response?.data?.message || "Failed to prepare payment"
-      );
-    }
-  }
-);
-
-// Async thunk for processing a payment
-export const processPayment = createAsyncThunk(
-  "payments/process",
-  async (paymentData, { rejectWithValue }) => {
-    try {
-      const response = await axios.post(
-        `${PAYMENT_API_URL}/process`,
-        paymentData
-      );
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Payment processing failed"
       );
     }
   }
@@ -48,12 +36,21 @@ export const confirmPayment = createAsyncThunk(
   "payments/confirm",
   async ({ paymentIntentId, orderId }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${PAYMENT_API_URL}/confirm`, {
-        paypalOrderId: paymentIntentId,
-        orderId,
-      });
+      console.log("Confirming payment:", { paymentIntentId, orderId });
+      const response = await axios.post(
+        `${PAYMENT_API_URL}/capture-paypal-order`,
+        {
+          paypalOrderId: paymentIntentId,
+          orderId,
+        }
+      );
+      console.log("Payment confirmation response:", response.data);
       return response.data;
     } catch (error) {
+      console.error(
+        "Payment confirmation error:",
+        error.response?.data || error
+      );
       return rejectWithValue(
         error.response?.data?.message || "Payment confirmation failed"
       );
@@ -81,7 +78,7 @@ export const downloadReceipt = createAsyncThunk(
   "payments/downloadReceipt",
   async (transactionId, { rejectWithValue }) => {
     try {
-      // Use window.open approach instead of the blob method
+      // Use window.open approach for direct download
       window.open(`${PAYMENT_API_URL}/receipt/${transactionId}`, "_blank");
       return { success: true, transactionId };
     } catch (error) {
@@ -144,36 +141,15 @@ const paymentSlice = createSlice({
       })
       .addCase(createPaymentIntent.fulfilled, (state, action) => {
         state.intentLoading = false;
-        state.clientSecret = action.payload.clientSecret;
+        // Make sure we extract the right information from the response
+        state.clientSecret =
+          action.payload.paypalOrderId || action.payload.clientSecret;
         state.success = true;
+        state.error = null;
       })
       .addCase(createPaymentIntent.rejected, (state, action) => {
         state.intentLoading = false;
-        state.error = action.payload;
-      })
-
-      // Process Payment
-      .addCase(processPayment.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(processPayment.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentPayment = action.payload;
-        // Add to payment history if not already there
-        if (
-          !state.paymentHistory.some(
-            (payment) => payment._id === action.payload._id
-          )
-        ) {
-          state.paymentHistory.unshift(action.payload); // Add to beginning of array
-        }
-        state.success = true;
-        state.message = "Payment processed successfully";
-      })
-      .addCase(processPayment.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || "Failed to create payment intent";
       })
 
       // Confirm Payment
@@ -183,24 +159,29 @@ const paymentSlice = createSlice({
       })
       .addCase(confirmPayment.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentPayment = action.payload;
+        state.currentPayment = action.payload.payment || action.payload;
+
         // Add to payment history if not already there
         if (
+          state.currentPayment &&
+          state.currentPayment._id &&
           !state.paymentHistory.some(
-            (payment) => payment._id === action.payload._id
+            (payment) => payment._id === state.currentPayment._id
           )
         ) {
-          state.paymentHistory.unshift(action.payload); // Add to beginning of array
+          state.paymentHistory.unshift(state.currentPayment);
         }
+
         state.success = true;
         state.message = "Payment confirmed successfully";
         state.clientSecret = null;
         state.paymentIntentId = null;
         state.orderId = null;
+        state.error = null;
       })
       .addCase(confirmPayment.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || "Payment confirmation failed";
       })
 
       // Fetch Payment History

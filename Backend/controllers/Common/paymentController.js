@@ -81,7 +81,7 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
             reference_id: orderId,
             description: `Event tickets for ${order.tickets[0]?.event_id}`,
             amount: {
-              currency_code: "LKR", // Change to your currency
+              currency_code: "USD", // Change to your currency
               value: order.total_amount.toString(),
             },
           },
