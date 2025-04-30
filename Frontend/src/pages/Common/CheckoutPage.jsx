@@ -236,18 +236,40 @@ const CheckoutPage = () => {
     navigate(`/payment-success/${paymentIntent.id}`);
   };
 
-  const handlePaymentError = (error) => {
-    console.error("Payment failed:", error);
+const handlePaymentError = (error) => {
+  console.error("Payment failed:", error);
 
-    // If the error is about a window closure, show a more helpful message
-    if (error.includes("Window closed") || error.includes("closed before")) {
-      setErrorMessage(
-        "The payment window was closed. If you completed payment in PayPal, please wait a moment while we verify it. Otherwise, you can try again."
-      );
-    } else {
-      setErrorMessage(`Payment failed: ${error}`);
+  const errorMessage =
+    typeof error === "string" ? error : error?.message || "Unknown error";
+
+  // Handle window closure errors with more specific guidance
+  if (
+    errorMessage.includes("Window closed") ||
+    errorMessage.includes("closed before") ||
+    errorMessage.includes("Window_closed")
+  ) {
+    // Don't immediately show error if it's just a window closure
+    // The PaymentForm will handle showing the pending payment status
+    setErrorMessage(
+      "The payment window was closed. If you completed payment in PayPal, please wait a moment while we verify it. Otherwise, you can try again."
+    );
+
+    // Check if we have a pending payment in localStorage that needs verification
+    const pendingPaymentData = localStorage.getItem("pendingPayment");
+    if (pendingPaymentData) {
+      try {
+        JSON.parse(pendingPaymentData); // Just verify it's valid JSON
+        // Don't set error message as the payment may still be processing
+        setErrorMessage("");
+      } catch (e) {
+        console.error("Invalid pending payment data:", e);
+      }
     }
-  };
+  } else {
+    // Handle other payment errors
+    setErrorMessage(`Payment failed: ${errorMessage}`);
+  }
+};
 
   const handleRetryPayment = () => {
     setErrorMessage("");

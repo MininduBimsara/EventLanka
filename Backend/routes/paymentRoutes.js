@@ -20,4 +20,8 @@ router.post(
 router.post("/process", paymentController.processPayment);
 router.post("/confirm", paymentController.confirmPayment);
 
+// Route to check payment status
+router.get("/status/:paymentIntentId", paymentController.checkPaymentStatus);
+
+
 module.exports = router;
