@@ -320,23 +320,6 @@ exports.processPayment = asyncHandler(async (req, res) => {
 });
 
 // ===========================
-// GET PAYMENT HISTORY (For Logged-in User)
-// ===========================
-exports.getPaymentHistory = asyncHandler(async (req, res) => {
-  if (!req.user) {
-    return res
-      .status(401)
-      .json({ message: "You must be logged in to view payment history." });
-  }
-
-  const payments = await Payment.find({ user_id: req.user._id })
-    .populate("event_id", "title date location")
-    .sort({ createdAt: -1 });
-
-  res.status(200).json(payments);
-});
-
-// ===========================
 // CONFIRM PAYMENT (This is still used by the front-end)
 // ===========================
 
@@ -366,6 +349,24 @@ exports.confirmPayment = asyncHandler(async (req, res) => {
     payment,
   });
 });
+
+// ===========================
+// GET PAYMENT HISTORY (For Logged-in User)
+// ===========================
+exports.getPaymentHistory = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "You must be logged in to view payment history." });
+  }
+
+  const payments = await Payment.find({ user_id: req.user._id })
+    .populate("event_id", "title date location")
+    .sort({ createdAt: -1 });
+
+  res.status(200).json(payments);
+});
+
 
 // ===========================
 // GENERATE RECEIPT

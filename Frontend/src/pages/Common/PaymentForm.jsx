@@ -17,10 +17,30 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
   const [formVisible, setFormVisible] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [paymentInProgress, setPaymentInProgress] = useState(false);
+  const [pendingPaymentId, setPendingPaymentId] = useState(null);
 
   const { clientSecret, intentLoading, loading, error, success } = useSelector(
     (state) => state.payments
   );
+
+  // Check for any pending payment on load
+  useEffect(() => {
+    const pendingPaymentData = localStorage.getItem("pendingPayment");
+    if (pendingPaymentData) {
+      try {
+        const pendingPayment = JSON.parse(pendingPaymentData);
+        if (pendingPayment.orderId === orderId) {
+          // We have a pending payment for this order
+          setPendingPaymentId(pendingPayment.paypalOrderId);
+          // We'll handle this after getting order details
+        }
+      } catch (error) {
+        console.error("Error parsing pending payment data:", error);
+      }
+    }
+  }, [orderId]);
 
   // Get the order details when the component mounts
   useEffect(() => {
@@ -32,6 +52,11 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
           const parsedOrder = JSON.parse(storedOrder);
           setOrderDetails(parsedOrder);
           console.log("Loaded order details from storage:", parsedOrder);
+
+          // If we have a pending payment ID, attempt to confirm it
+          if (pendingPaymentId) {
+            handlePendingPayment(pendingPaymentId, parsedOrder);
+          }
         } catch (error) {
           console.error("Error parsing stored order:", error);
           setPaymentError("Error loading order details. Please try again.");
@@ -42,47 +67,112 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
       dispatch(createPaymentIntent(orderId));
       dispatch(setOrderId(orderId));
     }
-  }, [dispatch, orderId]);
+  }, [dispatch, orderId, pendingPaymentId]);
+
+  // Handle pending payment confirmation
+  const handlePendingPayment = async (paypalOrderId, orderData) => {
+    setIsProcessing(true);
+    setPaymentInProgress(true);
+
+    try {
+      console.log("Attempting to confirm pending payment:", paypalOrderId);
+
+      // Store the payment ID in case of page refresh/error
+      dispatch(setPaymentIntentId(paypalOrderId));
+
+      // Try to confirm the payment
+      const confirmResult = await dispatch(
+        confirmPayment({
+          paymentIntentId: paypalOrderId,
+          orderId: orderData.orderId,
+        })
+      ).unwrap();
+
+      console.log("Payment confirmation result:", confirmResult);
+
+      // If confirmed successfully, complete the process
+      setPaymentSuccess(true);
+      setFormVisible(false);
+      localStorage.removeItem("pendingPayment");
+
+      if (onSuccess) onSuccess({ id: paypalOrderId });
+    } catch (error) {
+      console.error("Error confirming pending payment:", error);
+      setPaymentError(
+        "We couldn't verify your previous payment. Please try again or contact support."
+      );
+      localStorage.removeItem("pendingPayment");
+    } finally {
+      setIsProcessing(false);
+      setPaymentInProgress(false);
+    }
+  };
 
   // Extract amount from orderDetails
   const amount = orderDetails?.totalAmount || 0;
 
   // Create order for PayPal - properly format the amount
-  const createOrder = (data, actions) => {
-    if (!amount || amount <= 0) {
-      setPaymentError("Invalid order amount. Please try again.");
-      return Promise.reject("Invalid amount");
+const createOrder = async () => {
+  if (!amount || amount <= 0) {
+    setPaymentError("Invalid order amount. Please try again.");
+    return Promise.reject("Invalid amount");
+  }
+
+  try {
+    console.log("Requesting backend PayPal order for orderId:", orderId);
+
+    const result = await dispatch(createPaymentIntent(orderId)).unwrap();
+    const paypalOrderId = result.paypalOrderId;
+
+    if (!paypalOrderId) {
+      throw new Error("No PayPal order ID returned from backend");
     }
 
-    const paymentAmount = parseFloat(amount).toFixed(2);
-    console.log("Creating PayPal order for orderId:", orderId);
-    console.log("Using amount from stored order:", paymentAmount);
+    // Save it in localStorage in case the window is closed or refreshed
+    localStorage.setItem(
+      "pendingPayment",
+      JSON.stringify({
+        orderId,
+        paypalOrderId,
+        timestamp: Date.now(),
+      })
+    );
 
-    return actions.order.create({
-      purchase_units: [
-        {
-          description: eventName,
-          amount: {
-            currency_code: "USD",
-            value: paymentAmount,
-          },
-        },
-      ],
-      // Add application context to improve flow
-      application_context: {
-        shipping_preference: "NO_SHIPPING",
-      },
-    });
-  };
+    dispatch(setPaymentIntentId(paypalOrderId));
+    return paypalOrderId; // Returning PayPal order ID to PayPalButtons
+  } catch (error) {
+    console.error("Error creating PayPal order:", error);
+    setPaymentError("Could not initiate PayPal payment. Please try again.");
+    return Promise.reject(error.message || "PayPal order creation failed");
+  }
+};
 
-  // Simplified onApprove - handle the PayPal approval
+
+  // Enhanced onApprove with better error handling
   const onApprove = async (data, actions) => {
     setIsProcessing(true);
     console.log("Payment approved by user, capturing payment...");
 
     try {
-      // Capture the funds from the transaction
-      const details = await actions.order.capture();
+      // Store the PayPal order ID in localStorage in case of window closure
+      const paypalOrderId = data.orderID;
+      localStorage.setItem(
+        "pendingPayment",
+        JSON.stringify({
+          orderId: orderId,
+          paypalOrderId: paypalOrderId,
+          timestamp: Date.now(),
+        })
+      );
+
+      // Set a timeout to prevent hanging if capture takes too long
+      const capturePromise = actions.order.capture();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Payment capture timed out")), 30000)
+      );
+
+      // Race between capture and timeout
+      const details = await Promise.race([capturePromise, timeoutPromise]);
       console.log("PayPal capture details:", details);
 
       // Store the payment intent ID
@@ -102,26 +192,96 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
       // Success handling
       setPaymentSuccess(true);
       setFormVisible(false);
+
+      // Clear pending payment data
+      localStorage.removeItem("pendingPayment");
+
       if (onSuccess) onSuccess({ id: details.id });
 
-      return true; // This is important for PayPal to know the flow completed
+      return true;
     } catch (error) {
       console.error("Payment processing error:", error);
-      setPaymentError(error.message || "Payment processing failed");
+
+      // Special handling for "Window closed" error
+      if (
+        error.message?.includes("Window closed") ||
+        error.message?.includes("closed before") ||
+        error.name === "AbortError"
+      ) {
+        setPaymentError(
+          "The payment window was closed. Don't worry - if you completed payment in PayPal, it should be processed when you return to this page. If you'd like to try again now, click the button below."
+        );
+      } else {
+        setPaymentError(
+          error.message || "Payment processing failed. Please try again."
+        );
+      }
+
       if (onError) onError(error.message || "Payment processing failed");
       return false;
     } finally {
       setIsProcessing(false);
+      setPaymentInProgress(false);
     }
   };
 
   // Handle errors from PayPal
-  const onError = (err) => {
+  const handlePayPalError = (err) => {
     console.error("PayPal error:", err);
+    setPaymentInProgress(false);
+
+    if (
+      err.message?.includes("Window closed") ||
+      err.message?.includes("closed before")
+    ) {
+      // Don't immediately show error - the user might have completed payment
+      setPaymentError(
+        "The PayPal window was closed. If you completed payment in PayPal, please wait a moment while we verify it."
+      );
+
+      // Wait briefly then check if we have a pending payment
+      setTimeout(() => {
+        const pendingPaymentData = localStorage.getItem("pendingPayment");
+        if (pendingPaymentData) {
+          try {
+            const pendingPayment = JSON.parse(pendingPaymentData);
+            if (
+              pendingPayment.orderId === orderId &&
+              pendingPayment.paypalOrderId
+            ) {
+              // If we have a payment ID, attempt to confirm it
+              handlePendingPayment(pendingPayment.paypalOrderId, orderDetails);
+            }
+          } catch (error) {
+            console.error(
+              "Error parsing pending payment after window closed:",
+              error
+            );
+          }
+        }
+      }, 2000);
+    } else {
+      setPaymentError(
+        "PayPal payment failed. Please try again or use another payment method."
+      );
+      if (onError) onError("PayPal payment failed");
+    }
+  };
+
+  // Reset error to try again
+  const handleRetry = () => {
+    setPaymentError(null);
+    localStorage.removeItem("pendingPayment");
+  };
+
+  // Handle payment cancellation
+  const handleCancel = () => {
+    console.log("Payment cancelled by user");
+    setPaymentInProgress(false);
+    localStorage.removeItem("pendingPayment");
     setPaymentError(
-      "PayPal payment failed. Please try again or use another payment method."
+      "Payment was cancelled. Please try again when you're ready."
     );
-    if (onError) onError("PayPal payment failed");
   };
 
   return (
@@ -181,7 +341,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          {formVisible && (
+          {formVisible && !isProcessing && (
             <>
               <div>
                 <label
@@ -218,16 +378,38 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
           )}
 
           <div className="pt-2">
-            <div className="w-full">
-              {isProcessing ? (
-                <div className="flex items-center justify-center p-4">
-                  <div className="w-8 h-8 border-t-4 border-b-4 border-yellow-400 rounded-full animate-spin"></div>
-                  <span className="ml-2 text-gray-600">
-                    Processing payment...
-                  </span>
-                </div>
-              ) : (
-                amount > 0 && (
+            {isProcessing ? (
+              <div className="flex flex-col items-center justify-center p-6 space-y-3">
+                <div className="w-10 h-10 border-t-4 border-b-4 border-yellow-400 rounded-full animate-spin"></div>
+                <span className="text-lg font-medium text-gray-700">
+                  Processing payment...
+                </span>
+                <p className="text-sm text-center text-gray-500">
+                  Please wait while we confirm your payment. This might take a
+                  few moments.
+                </p>
+              </div>
+            ) : pendingPaymentId ? (
+              <div className="p-4 text-center rounded-md bg-blue-50">
+                <p className="mb-3 text-blue-800">
+                  We detected a pending payment for this order. Verifying
+                  payment status...
+                </p>
+                <div className="w-8 h-8 mx-auto border-t-4 border-b-4 border-blue-600 rounded-full animate-spin"></div>
+              </div>
+            ) : paymentError ? (
+              <div className="p-4 text-sm rounded-md bg-red-50">
+                <p className="mb-2 font-medium text-red-600">{paymentError}</p>
+                <button
+                  onClick={handleRetry}
+                  className="px-4 py-2 mt-2 text-white bg-red-600 rounded hover:bg-red-700"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : (
+              amount > 0 && (
+                <div className="w-full">
                   <PayPalButtons
                     style={{
                       color: "gold",
@@ -237,26 +419,38 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
                     }}
                     createOrder={createOrder}
                     onApprove={onApprove}
-                    onError={onError}
+                    onError={handlePayPalError}
+                    onCancel={handleCancel}
                     disabled={
-                      isProcessing || intentLoading || loading || amount <= 0
+                      isProcessing ||
+                      intentLoading ||
+                      loading ||
+                      amount <= 0 ||
+                      paymentInProgress
                     }
                   />
-                )
-              )}
+                  <p className="mt-3 text-xs text-center text-gray-500">
+                    Please do not close the PayPal window until your payment is
+                    complete.
+                  </p>
+                </div>
+              )
+            )}
 
-              {amount <= 0 && !isProcessing && (
+            {amount <= 0 &&
+              !isProcessing &&
+              !pendingPaymentId &&
+              !paymentError && (
                 <div className="p-3 text-center rounded-md text-amber-700 bg-amber-50">
                   Loading order details... If this persists, please return to
                   the event page and try again.
                 </div>
               )}
-            </div>
           </div>
 
-          {(paymentError || error) && (
-            <div className="p-3 text-sm text-red-600 rounded-md bg-red-50">
-              {paymentError || error}
+          {error && !paymentError && (
+            <div className="p-4 text-sm rounded-md bg-red-50">
+              <p className="font-medium text-red-600">{error}</p>
             </div>
           )}
         </div>

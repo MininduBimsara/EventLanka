@@ -119,6 +119,25 @@ export const downloadReceipt = createAsyncThunk(
   }
 );
 
+// Async thunk for checking a specific payment status
+export const checkPaymentStatus = createAsyncThunk(
+  "payments/checkStatus",
+  async ({ paymentIntentId, orderId }, { rejectWithValue }) => {
+    try {
+      console.log("Checking payment status:", { paymentIntentId, orderId });
+      const response = await axios.get(
+        `${PAYMENT_API_URL}/status/${paymentIntentId}?orderId=${orderId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Payment status check error:", error.response?.data || error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to check payment status"
+      );
+    }
+  }
+);
+
 // Initial state for the payments slice
 const initialState = {
   paymentHistory: [],
@@ -241,6 +260,27 @@ const paymentSlice = createSlice({
       })
       .addCase(fetchPaymentHistory.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Check Payment Status
+      .addCase(checkPaymentStatus.pending, (state) => {
+        state.statusChecking = true;
+        state.error = null;
+      })
+      .addCase(checkPaymentStatus.fulfilled, (state, action) => {
+        state.statusChecking = false;
+        // If payment exists and is successful
+        if (action.payload.success) {
+          state.currentPayment = action.payload.payment;
+          state.success = true;
+          state.message = "Payment verified successfully";
+        } else {
+          state.error = "Payment not found or incomplete";
+        }
+      })
+      .addCase(checkPaymentStatus.rejected, (state, action) => {
+        state.statusChecking = false;
         state.error = action.payload;
       })
 
