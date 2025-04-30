@@ -371,7 +371,8 @@ exports.getPaymentHistory = asyncHandler(async (req, res) => {
 // CHECK PAYMENT STATUS
 // ===========================
 exports.checkPaymentStatus = asyncHandler(async (req, res) => {
-  const { paymentIntentId, orderId } = req.params;
+  const { paymentIntentId } = req.params;
+  const { orderId } = req.query;
 
   // Ensure the user is authenticated
   if (!req.user) {

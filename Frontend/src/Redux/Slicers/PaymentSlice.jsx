@@ -14,7 +14,7 @@ export const createPaymentIntent = createAsyncThunk(
   async (orderId, { rejectWithValue }) => {
     try {
       console.log("Creating PayPal order for orderId:", orderId);
-      
+
       // Get the pending order from localStorage to include the amount
       let amount = 0;
       const storedOrder = localStorage.getItem("pendingOrder");
@@ -27,7 +27,7 @@ export const createPaymentIntent = createAsyncThunk(
           console.error("Error parsing stored order:", error);
         }
       }
-      
+
       const response = await axios.post(
         `${PAYMENT_API_URL}/create-paypal-order`,
         { orderId, amount } // Include amount in request
@@ -45,6 +45,33 @@ export const createPaymentIntent = createAsyncThunk(
     }
   }
 );
+
+// Async thunk for capturing a PayPal order after user approval
+export const capturePayPalOrder = createAsyncThunk(
+  "payments/capturePayPal",
+  async ({ orderId, paypalOrderId }, { rejectWithValue }) => {
+    try {
+      console.log("Capturing PayPal order:", { orderId, paypalOrderId });
+      
+      const response = await axios.post(
+        `${PAYMENT_API_URL}/capture-paypal-order`,
+        { orderId, paypalOrderId }
+      );
+      
+      console.log("PayPal capture response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "PayPal capture error:",
+        error.response?.data || error
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to capture PayPal payment"
+      );
+    }
+  }
+);
+
 
 // Async thunk for processing a payment
 export const processPayment = createAsyncThunk(
@@ -137,6 +164,8 @@ export const checkPaymentStatus = createAsyncThunk(
     }
   }
 );
+
+
 
 // Initial state for the payments slice
 const initialState = {

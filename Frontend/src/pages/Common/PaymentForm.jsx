@@ -8,6 +8,7 @@ import {
   setPaymentIntentId,
   setOrderId,
   checkPaymentStatus,
+  capturePayPalOrder, // Import the new thunk
 } from "../../Redux/Slicers/PaymentSlice";
 
 const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
@@ -97,37 +98,37 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
     };
   }, [showPendingNotice, pendingPaymentId, isProcessing, paymentSuccess]);
 
-const checkPendingPaymentStatus = async (paypalOrderId) => {
-  if (!orderId || !paypalOrderId) return;
+  const checkPendingPaymentStatus = async (paypalOrderId) => {
+    if (!orderId || !paypalOrderId) return;
 
-  console.log(
-    `Checking payment status for order ${orderId}, PayPal ID: ${paypalOrderId}`
-  );
+    console.log(
+      `Checking payment status for order ${orderId}, PayPal ID: ${paypalOrderId}`
+    );
 
-  try {
-    const result = await dispatch(
-      checkPaymentStatus({ paymentIntentId: paypalOrderId, orderId })
-    ).unwrap();
+    try {
+      const result = await dispatch(
+        checkPaymentStatus({ paymentIntentId: paypalOrderId, orderId })
+      ).unwrap();
 
-    if (result.success) {
-      console.log("Payment verification successful:", result);
-      setPaymentSuccess(true);
-      setFormVisible(false);
-      setIsProcessing(false);
-      setShowPendingNotice(false);
-      localStorage.removeItem("pendingPayment");
+      if (result.success) {
+        console.log("Payment verification successful:", result);
+        setPaymentSuccess(true);
+        setFormVisible(false);
+        setIsProcessing(false);
+        setShowPendingNotice(false);
+        localStorage.removeItem("pendingPayment");
 
-      if (onSuccess) onSuccess({ id: paypalOrderId });
-    } else if (result.status === "pending") {
-      console.log("Payment still pending, will check again");
-      // Keep the pending notice visible
-    } else {
-      console.log("Payment verification failed with status:", result.status);
+        if (onSuccess) onSuccess({ id: paypalOrderId });
+      } else if (result.status === "pending") {
+        console.log("Payment still pending, will check again");
+        // Keep the pending notice visible
+      } else {
+        console.log("Payment verification failed with status:", result.status);
+      }
+    } catch (error) {
+      console.error("Payment status check failed:", error);
     }
-  } catch (error) {
-    console.error("Payment status check failed:", error);
-  }
-};
+  };
 
   const handlePendingPayment = async (paypalOrderId, orderData) => {
     setIsProcessing(true);
@@ -181,200 +182,222 @@ const checkPendingPaymentStatus = async (paypalOrderId) => {
 
   const amount = orderDetails?.totalAmount || 0;
 
-const createOrder = async () => {
-  if (!amount || amount <= 0) {
-    setPaymentError("Invalid order amount. Please try again.");
-    return Promise.reject("Invalid amount");
-  }
-
-  try {
-    // Check if we already have a pending payment
-    const pendingPaymentData = localStorage.getItem("pendingPayment");
-    if (pendingPaymentData) {
-      try {
-        const pendingPayment = JSON.parse(pendingPaymentData);
-        // If the pending payment is for the current order and recent (less than 10 minutes old)
-        if (
-          pendingPayment.orderId === orderId &&
-          Date.now() - pendingPayment.timestamp < 10 * 60 * 1000
-        ) {
-          console.log(
-            "Using existing PayPal order ID:",
-            pendingPayment.paypalOrderId
-          );
-          return pendingPayment.paypalOrderId;
-        }
-      } catch (e) {
-        console.error("Error parsing pending payment:", e);
-        // Continue with creating a new order
-      }
+  const createOrder = async () => {
+    if (!amount || amount <= 0) {
+      setPaymentError("Invalid order amount. Please try again.");
+      return Promise.reject("Invalid amount");
     }
 
-    // Create a new payment intent
-    const result = await dispatch(createPaymentIntent(orderId)).unwrap();
-    const paypalOrderId = result.paypalOrderId;
-
-    if (!paypalOrderId) {
-      throw new Error("No PayPal order ID received from server");
-    }
-
-    // Save the pending payment
-    localStorage.setItem(
-      "pendingPayment",
-      JSON.stringify({
-        orderId,
-        paypalOrderId,
-        timestamp: Date.now(),
-      })
-    );
-
-    dispatch(setPaymentIntentId(paypalOrderId));
-    return paypalOrderId;
-  } catch (error) {
-    console.error("Could not initiate PayPal payment:", error);
-    setPaymentError("Could not initiate PayPal payment. Please try again.");
-    return Promise.reject(error.message || "Payment initialization failed");
-  }
-};
-
-const onApprove = async (data, actions) => {
-  setIsProcessing(true);
-
-  try {
-    const paypalOrderId = data.orderID;
-    console.log("Payment approved with PayPal order ID:", paypalOrderId);
-
-    // Update pending payment with latest order ID
-    localStorage.setItem(
-      "pendingPayment",
-      JSON.stringify({
-        orderId,
-        paypalOrderId,
-        timestamp: Date.now(),
-        status: "approved", // Track that it was approved
-      })
-    );
-
-    // Store the payment intent ID
-    dispatch(setPaymentIntentId(paypalOrderId));
-
-    // Create a capture promise with timeout
-    const capturePromise = actions.order.capture();
-
-    // Add a timeout in case capture takes too long
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error("Capture operation timed out"));
-      }, 30000); // 30 second timeout
-    });
-
-    // Race the capture against the timeout
-    const details = await Promise.race([capturePromise, timeoutPromise]);
-
-    // Process the payment with our backend
-    await dispatch(
-      processPayment({
-        orderId,
-        paymentMethod: "paypal",
-        amount: parseFloat(amount),
-        paypalOrderId: details.id,
-        paypalPayerId: details.payer.payer_id,
-      })
-    ).unwrap();
-
-    setPaymentSuccess(true);
-    setFormVisible(false);
-    localStorage.removeItem("pendingPayment");
-    if (onSuccess) onSuccess({ id: details.id });
-    return true;
-  } catch (error) {
-    console.error("Error in onApprove:", error);
-
-    // If the error contains "Window closed" or similar, handle as pending payment
-    if (
-      error.message?.includes("Window") ||
-      error.message?.includes("closed") ||
-      error.message?.toString().includes("timed out")
-    ) {
-      // We'll show the pending notice and start the verification process
-      setShowPendingNotice(true);
-
-      // Start polling for payment status
+    try {
+      // Check if we already have a pending payment
       const pendingPaymentData = localStorage.getItem("pendingPayment");
       if (pendingPaymentData) {
         try {
           const pendingPayment = JSON.parse(pendingPaymentData);
-          setPendingPaymentId(pendingPayment.paypalOrderId);
-          // Trigger one immediate check
-          setTimeout(() => {
-            checkPendingPaymentStatus(pendingPayment.paypalOrderId);
-          }, 2000);
+          // If the pending payment is for the current order and recent (less than 10 minutes old)
+          if (
+            pendingPayment.orderId === orderId &&
+            Date.now() - pendingPayment.timestamp < 10 * 60 * 1000
+          ) {
+            console.log(
+              "Using existing PayPal order ID:",
+              pendingPayment.paypalOrderId
+            );
+            return pendingPayment.paypalOrderId;
+          }
         } catch (e) {
-          console.error("Error parsing pending payment for verification:", e);
+          console.error("Error parsing pending payment:", e);
+          // Continue with creating a new order
+        }
+      }
+
+      // Create a new payment intent
+      const result = await dispatch(createPaymentIntent(orderId)).unwrap();
+      const paypalOrderId = result.paypalOrderId;
+
+      if (!paypalOrderId) {
+        throw new Error("No PayPal order ID received from server");
+      }
+
+      // Save the pending payment
+      localStorage.setItem(
+        "pendingPayment",
+        JSON.stringify({
+          orderId,
+          paypalOrderId,
+          timestamp: Date.now(),
+        })
+      );
+
+      dispatch(setPaymentIntentId(paypalOrderId));
+      return paypalOrderId;
+    } catch (error) {
+      console.error("Could not initiate PayPal payment:", error);
+      setPaymentError("Could not initiate PayPal payment. Please try again.");
+      return Promise.reject(error.message || "Payment initialization failed");
+    }
+  };
+
+  const onApprove = async (data, actions) => {
+    setIsProcessing(true);
+
+    try {
+      const paypalOrderId = data.orderID;
+      console.log("Payment approved with PayPal order ID:", paypalOrderId);
+
+      // Update pending payment with latest order ID
+      localStorage.setItem(
+        "pendingPayment",
+        JSON.stringify({
+          orderId,
+          paypalOrderId,
+          timestamp: Date.now(),
+          status: "approved", // Track that it was approved
+        })
+      );
+
+      // Store the payment intent ID
+      dispatch(setPaymentIntentId(paypalOrderId));
+
+      // Instead of capturing directly with PayPal, use our thunk
+      try {
+        // Call the capturePayPalOrder thunk
+        const captureResult = await dispatch(
+          capturePayPalOrder({
+            orderId,
+            paypalOrderId,
+          })
+        ).unwrap();
+
+        console.log("Capture completed:", captureResult);
+
+        // If capture was successful, complete the payment process
+        setPaymentSuccess(true);
+        setFormVisible(false);
+        localStorage.removeItem("pendingPayment");
+        if (onSuccess) onSuccess({ id: paypalOrderId });
+        return true;
+      } catch (captureError) {
+        console.error("Failed to capture PayPal payment:", captureError);
+
+        // If the capture failed but it might be a temporary issue,
+        // we show the pending payment UI
+        setShowPendingNotice(true);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error in onApprove:", error);
+
+      // If the error contains "Window closed" or similar, handle as pending payment
+      if (
+        error.message?.includes("Window") ||
+        error.message?.includes("closed") ||
+        error.message?.toString().includes("timed out")
+      ) {
+        // We'll show the pending notice and start the verification process
+        setShowPendingNotice(true);
+
+        // Start polling for payment status
+        const pendingPaymentData = localStorage.getItem("pendingPayment");
+        if (pendingPaymentData) {
+          try {
+            const pendingPayment = JSON.parse(pendingPaymentData);
+            setPendingPaymentId(pendingPayment.paypalOrderId);
+            // Trigger one immediate check
+            setTimeout(() => {
+              checkPendingPaymentStatus(pendingPayment.paypalOrderId);
+            }, 2000);
+          } catch (e) {
+            console.error("Error parsing pending payment for verification:", e);
+          }
+        }
+      } else {
+        // For other errors, show the error message
+        if (onError) onError(error.message || "Payment processing failed");
+      }
+
+      setPaymentInProgress(false);
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayPalError = (err) => {
+    console.error("PayPal error:", err);
+    setPaymentInProgress(false);
+    setIsProcessing(false);
+
+    // Standardize error handling for window closure
+    const errorMessage = err.message || String(err);
+    console.log("PayPal error message:", errorMessage);
+
+    if (
+      errorMessage.includes("Window closed") ||
+      errorMessage.includes("closed before") ||
+      errorMessage.includes("Window_closed") ||
+      errorMessage.includes("message channel closed")
+    ) {
+      console.log("Detected window closure - checking payment status");
+      setShowPendingNotice(true);
+      setPaymentError(null);
+
+      // Check if we have a pending payment that needs verification
+      const pendingPaymentData = localStorage.getItem("pendingPayment");
+      if (pendingPaymentData) {
+        try {
+          const pendingPayment = JSON.parse(pendingPaymentData);
+          if (pendingPayment.paypalOrderId) {
+            setPendingPaymentId(pendingPayment.paypalOrderId);
+
+            // Try to capture the payment first
+            dispatch(
+              capturePayPalOrder({
+                orderId,
+                paypalOrderId: pendingPayment.paypalOrderId,
+              })
+            )
+              .then((result) => {
+                if (result?.payload?.payment) {
+                  console.log("Capture successful on retry:", result.payload);
+                  setPaymentSuccess(true);
+                  setFormVisible(false);
+                  localStorage.removeItem("pendingPayment");
+                  if (onSuccess)
+                    onSuccess({ id: pendingPayment.paypalOrderId });
+                } else {
+                  // If capture fails, start checking status
+                  setTimeout(() => {
+                    checkPendingPaymentStatus(pendingPayment.paypalOrderId);
+                  }, 5000);
+
+                  // Set up multiple check attempts
+                  for (let i = 1; i <= 3; i++) {
+                    setTimeout(() => {
+                      checkPendingPaymentStatus(pendingPayment.paypalOrderId);
+                    }, 15000 * i); // Check after 15s, 30s, and 45s
+                  }
+                }
+              })
+              .catch((error) => {
+                console.error("Failed to capture after window closed:", error);
+                // Continue with status checks
+                setTimeout(() => {
+                  checkPendingPaymentStatus(pendingPayment.paypalOrderId);
+                }, 5000);
+              });
+          }
+        } catch (e) {
+          console.error("Error parsing pending payment:", e);
         }
       }
     } else {
-      // For other errors, show the error message
-      if (onError) onError(error.message || "Payment processing failed");
+      setPaymentError(
+        "PayPal payment failed: " + (errorMessage || "Unknown error")
+      );
+      if (onError) onError("PayPal payment failed");
     }
-
-    setPaymentInProgress(false);
-    return false;
-  } finally {
-    setIsProcessing(false);
-  }
-};
-
-const handlePayPalError = (err) => {
-  console.error("PayPal error:", err);
-  setPaymentInProgress(false);
-  setIsProcessing(false);
-
-  // Standardize error handling for window closure
-  const errorMessage = err.message || String(err);
-  console.log("PayPal error message:", errorMessage);
-
-  if (
-    errorMessage.includes("Window closed") ||
-    errorMessage.includes("closed before") ||
-    errorMessage.includes("Window_closed") ||
-    errorMessage.includes("message channel closed")
-  ) {
-    console.log("Detected window closure - checking payment status");
-    setShowPendingNotice(true);
-    setPaymentError(null);
-
-    // Check if we have a pending payment that needs verification
-    const pendingPaymentData = localStorage.getItem("pendingPayment");
-    if (pendingPaymentData) {
-      try {
-        const pendingPayment = JSON.parse(pendingPaymentData);
-        if (pendingPayment.paypalOrderId) {
-          setPendingPaymentId(pendingPayment.paypalOrderId);
-
-          // Wait a moment before checking (allow PayPal time to process)
-          setTimeout(() => {
-            checkPendingPaymentStatus(pendingPayment.paypalOrderId);
-          }, 5000);
-
-          // Set up multiple check attempts
-          for (let i = 1; i <= 3; i++) {
-            setTimeout(() => {
-              checkPendingPaymentStatus(pendingPayment.paypalOrderId);
-            }, 15000 * i); // Check after 15s, 30s, and 45s
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing pending payment:", e);
-      }
-    }
-  } else {
-    setPaymentError(
-      "PayPal payment failed: " + (errorMessage || "Unknown error")
-    );
-    if (onError) onError("PayPal payment failed");
-  }
-};
+  };
 
   const handleCancel = () => {
     setPaymentInProgress(false);
@@ -544,12 +567,6 @@ const handlePayPalError = (err) => {
             ) : paymentError ? (
               <div className="p-4 text-sm rounded-md bg-red-50">
                 <p className="mb-2 font-medium text-red-600">{paymentError}</p>
-                {/* <button
-                  onClick={handleRetry}
-                  className="px-4 py-2 mt-2 text-white bg-red-600 rounded hover:bg-red-700"
-                >
-                  Try Again
-                </button> */}
               </div>
             ) : (
               amount > 0 && (
