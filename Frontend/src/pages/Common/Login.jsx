@@ -512,166 +512,182 @@ const LoginRegistrationUI = () => {
                 <div className="flex-grow border-t border-gray-300"></div>
               </div>
 
-              <form onSubmit={handleRegistrationSubmit} className="space-y-4">
-                <div>
-                  <label
-                    className="block mb-2 text-sm font-bold text-gray-700"
-                    htmlFor="register-username"
-                  >
-                    Username
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <User size={18} className="text-gray-400" />
-                    </div>
-                    <input
-                      id="register-username"
-                      name="username"
-                      type="text"
-                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                      placeholder="Choose a username"
-                      value={formData.username}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    className="block mb-2 text-sm font-bold text-gray-700"
-                    htmlFor="register-email"
-                  >
-                    Email
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <Mail size={18} className="text-gray-400" />
-                    </div>
-                    <input
-                      id="register-email"
-                      name="email"
-                      type="email"
-                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                      placeholder="Your email address"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Role Selection Dropdown - Updated for event management */}
-                <div>
-                  <label
-                    className="block mb-2 text-sm font-bold text-gray-700"
-                    htmlFor="register-role"
-                  >
-                    I want to
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="register-role"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleInputChange}
-                      className="w-full p-3 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                      required
-                    >
-                      <option value="user">Attend Events</option>
-                      <option value="organizer">Organize Events</option>
-                      <option value="admin">Manage the Platform</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Profile Image Upload */}
-                <div>
-                  <label
-                    className="block mb-2 text-sm font-bold text-gray-700"
-                    htmlFor="register-profile-image"
-                  >
-                    Profile Image
-                  </label>
-                  <div className="flex flex-col items-center space-y-2">
-                    {imagePreview && (
-                      <div className="relative w-24 h-24 mb-2 overflow-hidden rounded-full">
-                        <img
-                          src={imagePreview}
-                          alt="Profile preview"
-                          className="object-cover w-full h-full"
+              <form onSubmit={handleRegistrationSubmit}>
+                {/* Two-column layout */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    {/* Username */}
+                    <div>
+                      <label
+                        className="block mb-2 text-sm font-bold text-gray-700"
+                        htmlFor="register-username"
+                      >
+                        Username
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <User size={18} className="text-gray-400" />
+                        </div>
+                        <input
+                          id="register-username"
+                          name="username"
+                          type="text"
+                          className="w-full p-2 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                          placeholder="Choose a username"
+                          value={formData.username}
+                          onChange={handleInputChange}
+                          required
                         />
                       </div>
-                    )}
-                    <label
-                      htmlFor="register-profile-image"
-                      className="flex items-center justify-center w-full px-4 py-3 text-gray-700 transition-all duration-300 bg-white border border-gray-200 rounded-md cursor-pointer focus:border-purple-500 hover:bg-gray-50"
-                    >
-                      <ImageIcon size={18} className="mr-2 text-gray-400" />
-                      {formData.profileImage ? "Change Image" : "Upload Image"}
-                    </label>
-                    <input
-                      id="register-profile-image"
-                      name="profileImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    className="block mb-2 text-sm font-bold text-gray-700"
-                    htmlFor="register-password"
-                  >
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <Lock size={18} className="text-gray-400" />
                     </div>
-                    <input
-                      id="register-password"
-                      name="password"
-                      type="password"
-                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                      placeholder="Create a password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label
-                    className="block mb-2 text-sm font-bold text-gray-700"
-                    htmlFor="register-confirm-password"
-                  >
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <Lock size={18} className="text-gray-400" />
+                    {/* Email */}
+                    <div>
+                      <label
+                        className="block mb-2 text-sm font-bold text-gray-700"
+                        htmlFor="register-email"
+                      >
+                        Email
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <Mail size={18} className="text-gray-400" />
+                        </div>
+                        <input
+                          id="register-email"
+                          name="email"
+                          type="email"
+                          className="w-full p-2 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                          placeholder="Your email address"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
-                    <input
-                      id="register-confirm-password"
-                      name="confirmPassword"
-                      type="password"
-                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      required
-                    />
+
+                    {/* I want to / Role */}
+                    <div>
+                      <label
+                        className="block mb-2 text-sm font-bold text-gray-700"
+                        htmlFor="register-role"
+                      >
+                        I want to
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="register-role"
+                          name="role"
+                          value={formData.role}
+                          onChange={handleInputChange}
+                          className="w-full p-2 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                          required
+                        >
+                          <option value="user">Attend Events</option>
+                          <option value="organizer">Organize Events</option>
+                          <option value="admin">Manage the Platform</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    {/* Password */}
+                    <div>
+                      <label
+                        className="block mb-2 text-sm font-bold text-gray-700"
+                        htmlFor="register-password"
+                      >
+                        Password
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <Lock size={18} className="text-gray-400" />
+                        </div>
+                        <input
+                          id="register-password"
+                          name="password"
+                          type="password"
+                          className="w-full p-2 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                          placeholder="Create a password"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Confirm Password */}
+                    <div>
+                      <label
+                        className="block mb-2 text-sm font-bold text-gray-700"
+                        htmlFor="register-confirm-password"
+                      >
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <Lock size={18} className="text-gray-400" />
+                        </div>
+                        <input
+                          id="register-confirm-password"
+                          name="confirmPassword"
+                          type="password"
+                          className="w-full p-2 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                          placeholder="Confirm your password"
+                          value={formData.confirmPassword}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Profile Image Upload */}
+                    <div>
+                      <label
+                        className="block mb-2 text-sm font-bold text-gray-700"
+                        htmlFor="register-profile-image"
+                      >
+                        Profile Image
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        {imagePreview && (
+                          <div className="relative w-10 h-10 overflow-hidden rounded-full">
+                            <img
+                              src={imagePreview}
+                              alt="Profile preview"
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        )}
+                        <label
+                          htmlFor="register-profile-image"
+                          className="flex items-center justify-center flex-1 px-3 py-2 text-sm text-gray-700 transition-all duration-300 bg-white border border-gray-200 rounded-md cursor-pointer focus:border-purple-500 hover:bg-gray-50"
+                        >
+                          <ImageIcon size={16} className="mr-2 text-gray-400" />
+                          {formData.profileImage
+                            ? "Change Image"
+                            : "Upload Image"}
+                        </label>
+                        <input
+                          id="register-profile-image"
+                          name="profileImage"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
+                {/* Create Account Button - Full width */}
                 <button
                   type="submit"
-                  className="flex items-center justify-center w-full px-4 py-3 font-bold text-white transition-all duration-300 rounded-md shadow-md bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  className="flex items-center justify-center w-full px-4 py-3 mt-6 font-bold text-white transition-all duration-300 rounded-md shadow-md bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 >
                   Create Account <ArrowRight size={18} className="ml-2" />
                 </button>
