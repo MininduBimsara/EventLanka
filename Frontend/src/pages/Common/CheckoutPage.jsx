@@ -6,12 +6,15 @@ import PaymentForm from "./PaymentForm";
 import NavBar from "../../components/Common/Navbar";
 import { createOrder } from "../../Redux/Slicers/orderSlice";
 import { fetchEventById } from "../../Redux/Slicers/EventSlice";
+import { resetPaymentStatus } from "../../Redux/Slicers/PaymentSlice";
 
 // Set PayPal options
 const paypalOptions = {
   "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID,
   currency: "USD",
   intent: "capture",
+  "data-client-token": import.meta.env.VITE_PAYPAL_CLIENT_TOKEN, // Add client token if available
+  "disable-funding": "card", // Optional: disable specific payment methods if needed
 };
 
 const CheckoutPage = () => {
@@ -22,9 +25,45 @@ const CheckoutPage = () => {
   const [orderId, setOrderId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [currentEvent, setCurrentEvent] = useState(null);
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Preparing your order..."
+  );
 
   const { user: currentUser } = useSelector((state) => state.user || {});
   const { event, loading } = useSelector((state) => state.events || {});
+  const { error: paymentError } = useSelector((state) => state.payments || {});
+
+  // Reset payment status when the component mounts
+  useEffect(() => {
+    dispatch(resetPaymentStatus());
+
+    // Check for pendingPayment in localStorage
+    const pendingPaymentData = localStorage.getItem("pendingPayment");
+    if (pendingPaymentData) {
+      try {
+        const pendingPayment = JSON.parse(pendingPaymentData);
+        const timestamp = pendingPayment.timestamp || 0;
+        const currentTime = Date.now();
+
+        // If the pending payment is more than 30 minutes old, remove it
+        if (currentTime - timestamp > 30 * 60 * 1000) {
+          localStorage.removeItem("pendingPayment");
+        } else {
+          setIsRetryingPayment(true);
+          setLoadingMessage("Resuming your previous payment...");
+        }
+      } catch (error) {
+        console.error("Error parsing pendingPayment data:", error);
+        localStorage.removeItem("pendingPayment");
+      }
+    }
+
+    return () => {
+      // Clean up on unmount
+      dispatch(resetPaymentStatus());
+    };
+  }, [dispatch]);
 
   // Retrieve pending order data from localStorage
   useEffect(() => {
@@ -53,6 +92,13 @@ const CheckoutPage = () => {
       createBackendOrder(pendingOrder);
     }
   }, [currentEvent, pendingOrder]);
+
+  // Update error message if payment error occurs
+  useEffect(() => {
+    if (paymentError && !errorMessage) {
+      setErrorMessage(`Payment issue: ${paymentError}`);
+    }
+  }, [paymentError]);
 
   // Function to fetch event details
   const fetchEventDetails = async (eventId) => {
@@ -150,17 +196,25 @@ const CheckoutPage = () => {
       };
 
       console.log("Submitting order payload:", orderPayload);
-      const result = await dispatch(createOrder(orderPayload)).unwrap();
-      console.log("Order creation result:", result);
 
-      // Make sure the order total is saved in localStorage for the payment form
-      const updatedOrderData = {
-        ...orderData,
-        orderId: result.order._id,
-      };
-      localStorage.setItem("pendingOrder", JSON.stringify(updatedOrderData));
+      // Check if we already have an orderId in the pendingOrder
+      if (orderData.orderId) {
+        console.log("Using existing orderId:", orderData.orderId);
+        setOrderId(orderData.orderId);
+      } else {
+        // Create a new order
+        const result = await dispatch(createOrder(orderPayload)).unwrap();
+        console.log("Order creation result:", result);
 
-      setOrderId(result.order._id);
+        // Make sure the order total is saved in localStorage for the payment form
+        const updatedOrderData = {
+          ...orderData,
+          orderId: result.order._id,
+        };
+        localStorage.setItem("pendingOrder", JSON.stringify(updatedOrderData));
+
+        setOrderId(result.order._id);
+      }
     } catch (error) {
       console.error("Order creation failed:", error);
       setErrorMessage(
@@ -172,16 +226,55 @@ const CheckoutPage = () => {
   };
 
   const handlePaymentSuccess = (paymentIntent) => {
-    // Clear the pending order from localStorage
+    console.log("Payment successful:", paymentIntent);
+
+    // Clear the pending order and payment from localStorage
     localStorage.removeItem("pendingOrder");
+    localStorage.removeItem("pendingPayment");
 
     // Navigate to success page
     navigate(`/payment-success/${paymentIntent.id}`);
   };
 
-  const handlePaymentError = (error) => {
-    console.error("Payment failed:", error);
-    setErrorMessage(`Payment failed: ${error}`);
+const handlePaymentError = (error) => {
+  console.error("Payment failed:", error);
+
+  const errorMessage =
+    typeof error === "string" ? error : error?.message || "Unknown error";
+
+  // Handle window closure errors with more specific guidance
+  if (
+    errorMessage.includes("Window closed") ||
+    errorMessage.includes("closed before") ||
+    errorMessage.includes("Window_closed")
+  ) {
+    // Don't immediately show error if it's just a window closure
+    // The PaymentForm will handle showing the pending payment status
+    setErrorMessage(
+      "The payment window was closed. If you completed payment in PayPal, please wait a moment while we verify it. Otherwise, you can try again."
+    );
+
+    // Check if we have a pending payment in localStorage that needs verification
+    const pendingPaymentData = localStorage.getItem("pendingPayment");
+    if (pendingPaymentData) {
+      try {
+        JSON.parse(pendingPaymentData); // Just verify it's valid JSON
+        // Don't set error message as the payment may still be processing
+        setErrorMessage("");
+      } catch (e) {
+        console.error("Invalid pending payment data:", e);
+      }
+    }
+  } else {
+    // Handle other payment errors
+    setErrorMessage(`Payment failed: ${errorMessage}`);
+  }
+};
+
+  const handleRetryPayment = () => {
+    setErrorMessage("");
+    // Don't remove pendingPayment to allow continuation
+    window.location.reload(); // Simple reload to restart the process
   };
 
   if (errorMessage) {
@@ -208,12 +301,22 @@ const CheckoutPage = () => {
             <p className="mt-4 text-xl font-semibold text-red-700">
               {errorMessage}
             </p>
-            <button
-              className="px-4 py-2 mt-4 text-white bg-purple-600 rounded-lg hover:bg-purple-700"
-              onClick={() => navigate("/events")}
-            >
-              Browse Events
-            </button>
+            <div className="flex flex-col items-center mt-6 space-y-3">
+              {errorMessage.includes("window was closed") && (
+                <button
+                  className="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+                  onClick={handleRetryPayment}
+                >
+                  Resume Payment
+                </button>
+              )}
+              <button
+                className="px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700"
+                onClick={() => navigate("/events")}
+              >
+                Browse Events
+              </button>
+            </div>
           </div>
         </div>
       </>
@@ -228,8 +331,13 @@ const CheckoutPage = () => {
           <div className="p-8 text-center bg-white rounded-lg shadow-xl">
             <div className="w-16 h-16 mx-auto border-t-4 border-b-4 border-purple-500 rounded-full animate-spin"></div>
             <p className="mt-4 text-xl font-semibold text-purple-700">
-              Preparing your order...
+              {loadingMessage}
             </p>
+            {isRetryingPayment && (
+              <p className="mt-2 text-sm text-gray-600">
+                We detected a previously started payment. Preparing to resume...
+              </p>
+            )}
           </div>
         </div>
       </>
@@ -278,12 +386,45 @@ const CheckoutPage = () => {
               <button
                 className="text-gray-600 hover:text-purple-700"
                 onClick={() => {
-                  localStorage.removeItem("pendingOrder");
-                  navigate(-1);
+                  // Ask for confirmation before cancelling if there's a pending payment
+                  const pendingPayment = localStorage.getItem("pendingPayment");
+                  if (pendingPayment) {
+                    if (
+                      window.confirm(
+                        "A payment may be in progress. Are you sure you want to cancel?"
+                      )
+                    ) {
+                      localStorage.removeItem("pendingOrder");
+                      localStorage.removeItem("pendingPayment");
+                      navigate(-1);
+                    }
+                  } else {
+                    localStorage.removeItem("pendingOrder");
+                    navigate(-1);
+                  }
                 }}
               >
                 Cancel and return to event
               </button>
+            </div>
+
+            {/* Payment Security Notice */}
+            <div className="flex items-center justify-center mt-6 text-sm text-gray-500">
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                ></path>
+              </svg>
+              <span>Secure payment processed by PayPal</span>
             </div>
           </div>
         </div>

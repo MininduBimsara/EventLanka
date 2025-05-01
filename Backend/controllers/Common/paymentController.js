@@ -320,23 +320,6 @@ exports.processPayment = asyncHandler(async (req, res) => {
 });
 
 // ===========================
-// GET PAYMENT HISTORY (For Logged-in User)
-// ===========================
-exports.getPaymentHistory = asyncHandler(async (req, res) => {
-  if (!req.user) {
-    return res
-      .status(401)
-      .json({ message: "You must be logged in to view payment history." });
-  }
-
-  const payments = await Payment.find({ user_id: req.user._id })
-    .populate("event_id", "title date location")
-    .sort({ createdAt: -1 });
-
-  res.status(200).json(payments);
-});
-
-// ===========================
 // CONFIRM PAYMENT (This is still used by the front-end)
 // ===========================
 
@@ -368,8 +351,77 @@ exports.confirmPayment = asyncHandler(async (req, res) => {
 });
 
 // ===========================
+// GET PAYMENT HISTORY (For Logged-in User)
+// ===========================
+exports.getPaymentHistory = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "You must be logged in to view payment history." });
+  }
+
+  const payments = await Payment.find({ user_id: req.user._id })
+    .populate("event_id", "title date location")
+    .sort({ createdAt: -1 });
+
+  res.status(200).json(payments);
+});
+
+// ===========================
+// CHECK PAYMENT STATUS
+// ===========================
+exports.checkPaymentStatus = asyncHandler(async (req, res) => {
+  const { paymentIntentId } = req.params;
+  const { orderId } = req.query;
+
+  // Ensure the user is authenticated
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "You must be logged in to check payment status." });
+  }
+
+  try {
+    // Find the order
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Check if the order belongs to the user
+    if (order.user_id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Find the payment record
+    const payment = await Payment.findOne({
+      "payment_details.payment_intent_id": paymentIntentId,
+    });
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment record not found" });
+    }
+
+    // Return the payment status
+    res.status(200).json({
+      message: "Payment status retrieved successfully",
+      status: payment.status,
+      payment,
+    });
+  } catch (error) {
+    console.error("Error checking payment status:", error.message);
+    res.status(500).json({
+      message: "Failed to check payment status",
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
 // GENERATE RECEIPT
 // ===========================
+// Updated code for generateReceipt function
 exports.generateReceipt = asyncHandler(async (req, res) => {
   const { transactionId } = req.params;
 
@@ -570,12 +622,13 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     .font("Helvetica-Bold")
     .text("Payment Information", 300, currentY - 40);
 
-  // Adjust payment method display to handle PayPal specifically
-  const displayPaymentMethod =
-    payment.payment_method === "paypal"
-      ? "PayPal"
-      : payment.payment_method.charAt(0).toUpperCase() +
-        payment.payment_method.slice(1);
+  // FIXED: Added null/undefined check for payment method
+  let displayPaymentMethod = "N/A";
+  if (payment.payment_method) {
+    displayPaymentMethod = payment.payment_method === "paypal" 
+      ? "PayPal" 
+      : payment.payment_method.charAt(0).toUpperCase() + payment.payment_method.slice(1);
+  }
 
   doc
     .fillColor(secondaryColor)
@@ -583,18 +636,20 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     .font("Helvetica")
     .text(`Method: ${displayPaymentMethod}`, 300, currentY - 15);
 
+  // FIXED: Added null/undefined check for payment status
+  let displayStatus = "N/A";
+  if (payment.status) {
+    displayStatus = payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+  } else if (payment.payment_status) {
+    // Use payment_status field if status doesn't exist
+    displayStatus = payment.payment_status.charAt(0).toUpperCase() + payment.payment_status.slice(1);
+  }
+
   doc
     .fillColor(secondaryColor)
     .fontSize(11)
     .font("Helvetica")
-    .text(
-      `Status: ${
-        payment.status.charAt(0).toUpperCase() + payment.status.slice(1) ||
-        "N/A"
-      }`,
-      300,
-      currentY
-    );
+    .text(`Status: ${displayStatus}`, 300, currentY);
 
   // Draw a horizontal line
   currentY += 40;

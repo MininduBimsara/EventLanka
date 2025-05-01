@@ -1,5 +1,22 @@
 const mongoose = require("mongoose");
 
+const paymentDetailsSchema = new mongoose.Schema({
+  paypal_order_id: {
+    type: String,
+  },
+  paypal_payer_id: {
+    type: String,
+    default: "unknown",
+  },
+  paypal_status: {
+    type: String,
+  },
+  payment_intent_id: {
+    // Add this field
+    type: String,
+  },
+});
+
 const paymentSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -20,7 +37,7 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  status: {
+  payment_status: {
     type: String,
     enum: ["pending", "completed", "failed", "refunded"],
     default: "pending",
@@ -29,6 +46,10 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+  },
+  payment_details: {
+    type: paymentDetailsSchema, // Nested schema for payment details
+    default: {},
   },
   createdAt: {
     type: Date,
