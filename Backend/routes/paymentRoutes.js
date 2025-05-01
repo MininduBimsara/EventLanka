@@ -23,5 +23,8 @@ router.post("/confirm", paymentController.confirmPayment);
 // Route to check payment status
 router.get("/status/:paymentIntentId", paymentController.checkPaymentStatus);
 
+// Route to generate and download a receipt
+router.get("/receipt/:transactionId", paymentController.generateReceipt);
+
 
 module.exports = router;

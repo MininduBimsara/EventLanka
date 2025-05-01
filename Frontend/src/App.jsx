@@ -51,22 +51,21 @@ import MyTransactions from "./pages/User/MyTransactions";
 import MyReviews from "./pages/User/MyReviews";
 
 function App() {
-  // Add this code to initialize authentication headers
-  const token = sessionStorage.getItem("token");
-  if (token) {
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  }
+   const dispatch = useDispatch();
+   const token = sessionStorage.getItem("token");
 
-  const dispatch = useDispatch();
+   useEffect(() => {
+     // Only attempt to fetch profile and verify auth if a token exists
+     if (token) {
+       // Set auth header for axios requests
+       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-  useEffect(() => {
-    dispatch(fetchUserProfile());
-  }, [dispatch]);
-
-  useEffect(() => {
-    dispatch(verifyAuth());
-  }, [dispatch]);
-
+       // Dispatch auth verification actions
+       dispatch(fetchUserProfile());
+       dispatch(verifyAuth());
+     }
+   }, [dispatch, token]);
+   
   return (
     <>
       <ThemeProvider>

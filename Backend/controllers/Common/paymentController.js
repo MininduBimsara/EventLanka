@@ -421,6 +421,7 @@ exports.checkPaymentStatus = asyncHandler(async (req, res) => {
 // ===========================
 // GENERATE RECEIPT
 // ===========================
+// Updated code for generateReceipt function
 exports.generateReceipt = asyncHandler(async (req, res) => {
   const { transactionId } = req.params;
 
@@ -621,12 +622,13 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     .font("Helvetica-Bold")
     .text("Payment Information", 300, currentY - 40);
 
-  // Adjust payment method display to handle PayPal specifically
-  const displayPaymentMethod =
-    payment.payment_method === "paypal"
-      ? "PayPal"
-      : payment.payment_method.charAt(0).toUpperCase() +
-        payment.payment_method.slice(1);
+  // FIXED: Added null/undefined check for payment method
+  let displayPaymentMethod = "N/A";
+  if (payment.payment_method) {
+    displayPaymentMethod = payment.payment_method === "paypal" 
+      ? "PayPal" 
+      : payment.payment_method.charAt(0).toUpperCase() + payment.payment_method.slice(1);
+  }
 
   doc
     .fillColor(secondaryColor)
@@ -634,18 +636,20 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     .font("Helvetica")
     .text(`Method: ${displayPaymentMethod}`, 300, currentY - 15);
 
+  // FIXED: Added null/undefined check for payment status
+  let displayStatus = "N/A";
+  if (payment.status) {
+    displayStatus = payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+  } else if (payment.payment_status) {
+    // Use payment_status field if status doesn't exist
+    displayStatus = payment.payment_status.charAt(0).toUpperCase() + payment.payment_status.slice(1);
+  }
+
   doc
     .fillColor(secondaryColor)
     .fontSize(11)
     .font("Helvetica")
-    .text(
-      `Status: ${
-        payment.status.charAt(0).toUpperCase() + payment.status.slice(1) ||
-        "N/A"
-      }`,
-      300,
-      currentY
-    );
+    .text(`Status: ${displayStatus}`, 300, currentY);
 
   // Draw a horizontal line
   currentY += 40;
