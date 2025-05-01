@@ -5,6 +5,7 @@ import Navbar from "../../components/Common/Navbar";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, registerUser } from "../../Redux/Slicers/AuthSlice";
 import { useNavigate } from "react-router-dom";
+import { googleAuth } from "../../Redux/Slicers/GoogleAuthSlice";
 
 const LoginRegistrationUI = () => {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ const LoginRegistrationUI = () => {
   useEffect(() => {
     if (isGoogleScriptLoaded && window.google) {
       window.google.accounts.id.initialize({
-        client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your Google Client ID
+        client_id: import.meta.env.REACT_APP_GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
         auto_select: false,
       });
@@ -81,28 +82,24 @@ const LoginRegistrationUI = () => {
 
   const handleGoogleResponse = async (response) => {
     try {
-      // Send the ID token to your backend
-      const backendResponse = await axios.post("/api/auth/google", {
-        token: response.credential,
-      });
+      // Use the googleAuth thunk action from your Redux store
+      dispatch(googleAuth(response.credential))
+        .unwrap()
+        .then((data) => {
+          console.log("Google authentication successful", data);
+          setSuccessMessage("Authentication successful!");
+          setErrorMessage("");
 
-      console.log("Google authentication successful", backendResponse.data);
-
-      // Show success message
-      setSuccessMessage("Authentication successful!");
-      setErrorMessage("");
-
-      // Handle successful login (e.g., redirect to dashboard, store token, etc.)
-      // You would typically store the JWT token in localStorage or cookies here
-      localStorage.setItem("authToken", backendResponse.data.token);
-
-      // Redirect user to dashboard or home page after successful login
-      // window.location.href = "/dashboard";
+          // Redirect to dashboard after successful login
+          navigate("/");
+        })
+        .catch((error) => {
+          console.error("Google authentication failed", error);
+          setErrorMessage("Google authentication failed. Please try again.");
+          setSuccessMessage("");
+        });
     } catch (error) {
-      console.error(
-        "Google authentication failed",
-        error.response ? error.response.data : error.message
-      );
+      console.error("Google authentication failed", error);
       setErrorMessage("Google authentication failed. Please try again.");
       setSuccessMessage("");
     }
@@ -155,9 +152,6 @@ const LoginRegistrationUI = () => {
         });
         setImagePreview(null);
         navigate("/");
-        // Redirect to dashboard or desired page
-        // window.location.href = "/dashboard";
-        // Optionally, redirect the user or perform further actions here
       })
       .catch((error) => {
         console.error(
@@ -235,390 +229,470 @@ const LoginRegistrationUI = () => {
   };
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="relative flex items-center justify-center min-h-screen overflow-hidden">
-        {/* Event-themed background with gradient overlay */}
-        <div
-          className="absolute inset-0 z-0 bg-center bg-cover"
-          style={{
-            backgroundImage: `url('/api/placeholder/1920/1080')`,
-            filter: "blur(8px)",
-          }}
-        ></div>
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 z-10 bg-gradient-to-br from-purple-900/70 to-blue-900/70"></div>
-
-        {/* Content */}
-        <div className="z-20 w-full max-w-md p-8 mx-4 transition-all duration-300 transform rounded-lg shadow-xl bg-white/90 backdrop-blur-sm">
-          {/* Form Header */}
-          <div className="mb-6 text-center">
-            <h2 className="text-3xl font-bold text-gray-800">
-              {activeForm === "login" ? "Welcome Back" : "Create Account"}
-            </h2>
-            <p className="mt-2 text-gray-600">
-              {activeForm === "login"
-                ? "Sign in to access your event dashboard"
-                : "Register to manage and attend events"}
-            </p>
-          </div>
-
-          {/* Success Message */}
-          {successMessage && (
-            <div className="p-3 mb-4 text-center text-green-700 bg-green-100 rounded-md">
-              {successMessage}
-            </div>
-          )}
-
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="p-3 mb-4 text-center text-red-700 bg-red-100 rounded-md">
-              {errorMessage}
-            </div>
-          )}
-
-          {/* Login Form */}
-          <div
-            className={`transition-opacity duration-300 ${
-              activeForm === "login" ? "opacity-100" : "opacity-0 hidden"
-            }`}
-          >
-            {/* Google Sign-In Button */}
-            <button
-              onClick={handleGoogleSignIn}
-              className="flex items-center justify-center w-full px-4 py-3 mb-4 font-medium text-gray-700 transition-all duration-300 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-                <path fill="none" d="M1 1h22v22H1z" />
-              </svg>
-              Sign in with Google
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center my-4">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="px-4 text-sm text-gray-500">OR</span>
-              <div className="flex-grow border-t border-gray-300"></div>
+      <div className="flex flex-1 w-full">
+        {/* Left side - Creative Artwork */}
+        <div className="relative hidden md:flex md:w-1/2 bg-gradient-to-br from-purple-600 to-pink-500">
+          <div className="absolute inset-0 opacity-10 bg-pattern"></div>
+          <div className="flex flex-col items-center justify-center w-full p-12 text-white">
+            {/* Event/Festival Illustration */}
+            <div className="w-3/4 mb-12">
+              <img
+                src="/api/placeholder/600/400"
+                alt="Events illustration"
+                className="w-full drop-shadow-xl"
+              />
             </div>
 
-            <form onSubmit={handleLoginSubmit}>
-              <div className="mb-4">
-                <label
-                  className="block mb-2 text-sm font-bold text-gray-700"
-                  htmlFor="login-email"
-                >
-                  Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Mail size={18} className="text-gray-400" />
+            {/* Branding and tagline */}
+            <div className="text-center">
+              <h2 className="mb-6 text-3xl font-bold">
+                {activeForm === "login"
+                  ? "Welcome Back to EventHorizon"
+                  : "Join the EventHorizon Community"}
+              </h2>
+              <p className="text-xl">
+                "Discover, Connect, and Experience Amazing Events Together"
+              </p>
+            </div>
+
+            {/* Features list */}
+            <div className="mt-10">
+              <ul className="space-y-3">
+                <li className="flex items-center">
+                  <div className="flex items-center justify-center w-8 h-8 mr-3 rounded-full bg-white/20">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-5 h-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
                   </div>
-                  <input
-                    id="login-email"
-                    name="email"
-                    type="email"
-                    className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                    placeholder="Your email address"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
+                  Discover trending events near you
+                </li>
+                <li className="flex items-center">
+                  <div className="flex items-center justify-center w-8 h-8 mr-3 rounded-full bg-white/20">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-5 h-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  Easy ticket booking & management
+                </li>
+                <li className="flex items-center">
+                  <div className="flex items-center justify-center w-8 h-8 mr-3 rounded-full bg-white/20">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-5 h-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  Host your own events & conferences
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Right side - Login/Registration Form */}
+        <div className="flex items-center justify-center w-full p-6 md:w-1/2">
+          <div className="w-full max-w-md">
+            {/* Form Header */}
+            <div className="mb-6 text-center">
+              <h2 className="mt-20 text-3xl font-bold text-gray-800">
+                {activeForm === "login" ? "Welcome Back" : "Create Account"}
+              </h2>
+              <p className="mt-2 text-gray-600">
+                {activeForm === "login"
+                  ? "Sign in to access your event dashboard"
+                  : "Register to discover and manage amazing events"}
+              </p>
+            </div>
+
+            {/* Success Message */}
+            {successMessage && (
+              <div className="p-3 mb-4 text-center text-green-700 bg-green-100 rounded-md">
+                {successMessage}
+              </div>
+            )}
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="p-3 mb-4 text-center text-red-700 bg-red-100 rounded-md">
+                {errorMessage}
+              </div>
+            )}
+
+            {/* Login Form */}
+            <div
+              className={`transition-opacity duration-300 ${
+                activeForm === "login" ? "block" : "hidden"
+              }`}
+            >
+              {/* Google Sign-In Button */}
+              <button
+                onClick={handleGoogleSignIn}
+                className="flex items-center justify-center w-full px-4 py-3 mb-4 font-medium text-gray-700 transition-all duration-300 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   />
-                </div>
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                  <path fill="none" d="M1 1h22v22H1z" />
+                </svg>
+                Sign in with Google
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center my-4">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="px-4 text-sm text-gray-500">OR</span>
+                <div className="flex-grow border-t border-gray-300"></div>
               </div>
 
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
+              <form onSubmit={handleLoginSubmit}>
+                <div className="mb-4">
                   <label
-                    className="block text-sm font-bold text-gray-700"
-                    htmlFor="login-password"
+                    className="block mb-2 text-sm font-bold text-gray-700"
+                    htmlFor="login-email"
+                  >
+                    Email
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <Mail size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      id="login-email"
+                      name="email"
+                      type="email"
+                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                      placeholder="Your email address"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <label
+                      className="block text-sm font-bold text-gray-700"
+                      htmlFor="login-password"
+                    >
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      className="text-sm text-purple-600 hover:text-purple-800"
+                      onClick={() =>
+                        alert("Password reset functionality would go here")
+                      }
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <Lock size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      id="login-password"
+                      name="password"
+                      type="password"
+                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                      placeholder="Your password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="flex items-center justify-center w-full px-4 py-3 font-bold text-white transition-all duration-300 rounded-md shadow-md bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                >
+                  Sign In <ArrowRight size={18} className="ml-2" />
+                </button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-gray-600">
+                  Don't have an account?{" "}
+                  <button
+                    className="font-medium text-purple-600 hover:text-purple-800"
+                    onClick={() => switchForm("register")}
+                  >
+                    Register
+                  </button>
+                </p>
+              </div>
+            </div>
+
+            {/* Registration Form */}
+            <div
+              className={`transition-opacity mt-20 duration-300 ${
+                activeForm === "register" ? "block" : "hidden"
+              }`}
+            >
+              {/* Google Sign-Up Button */}
+              <button
+                onClick={handleGoogleSignIn}
+                className="flex items-center justify-center w-full px-4 py-3 mb-4 font-medium text-gray-700 transition-all duration-300 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                  <path fill="none" d="M1 1h22v22H1z" />
+                </svg>
+                Sign up with Google
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center my-4">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="px-4 text-sm text-gray-500">OR</span>
+                <div className="flex-grow border-t border-gray-300"></div>
+              </div>
+
+              <form onSubmit={handleRegistrationSubmit} className="space-y-4">
+                <div>
+                  <label
+                    className="block mb-2 text-sm font-bold text-gray-700"
+                    htmlFor="register-username"
+                  >
+                    Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <User size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      id="register-username"
+                      name="username"
+                      type="text"
+                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                      placeholder="Choose a username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className="block mb-2 text-sm font-bold text-gray-700"
+                    htmlFor="register-email"
+                  >
+                    Email
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <Mail size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      id="register-email"
+                      name="email"
+                      type="email"
+                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                      placeholder="Your email address"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Role Selection Dropdown - Updated for event management */}
+                <div>
+                  <label
+                    className="block mb-2 text-sm font-bold text-gray-700"
+                    htmlFor="register-role"
+                  >
+                    I want to
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="register-role"
+                      name="role"
+                      value={formData.role}
+                      onChange={handleInputChange}
+                      className="w-full p-3 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                      required
+                    >
+                      <option value="user">Attend Events</option>
+                      <option value="organizer">Organize Events</option>
+                      <option value="admin">Manage the Platform</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Profile Image Upload */}
+                <div>
+                  <label
+                    className="block mb-2 text-sm font-bold text-gray-700"
+                    htmlFor="register-profile-image"
+                  >
+                    Profile Image
+                  </label>
+                  <div className="flex flex-col items-center space-y-2">
+                    {imagePreview && (
+                      <div className="relative w-24 h-24 mb-2 overflow-hidden rounded-full">
+                        <img
+                          src={imagePreview}
+                          alt="Profile preview"
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    )}
+                    <label
+                      htmlFor="register-profile-image"
+                      className="flex items-center justify-center w-full px-4 py-3 text-gray-700 transition-all duration-300 bg-white border border-gray-200 rounded-md cursor-pointer focus:border-purple-500 hover:bg-gray-50"
+                    >
+                      <ImageIcon size={18} className="mr-2 text-gray-400" />
+                      {formData.profileImage ? "Change Image" : "Upload Image"}
+                    </label>
+                    <input
+                      id="register-profile-image"
+                      name="profileImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className="block mb-2 text-sm font-bold text-gray-700"
+                    htmlFor="register-password"
                   >
                     Password
                   </label>
-                  <button
-                    type="button"
-                    className="text-sm text-purple-600 hover:text-purple-800"
-                    onClick={() =>
-                      alert("Password reset functionality would go here")
-                    }
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Lock size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    id="login-password"
-                    name="password"
-                    type="password"
-                    className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                    placeholder="Your password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="flex items-center justify-center w-full px-4 py-3 font-bold text-white transition-all duration-300 rounded-md shadow-md bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                Sign In <ArrowRight size={18} className="ml-2" />
-              </button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                Don't have an account?{" "}
-                <button
-                  className="font-medium text-purple-600 hover:text-purple-800"
-                  onClick={() => switchForm("register")}
-                >
-                  Register
-                </button>
-              </p>
-            </div>
-          </div>
-
-          {/* Registration Form */}
-          <div
-            className={`transition-opacity duration-300 ${
-              activeForm === "register" ? "opacity-100" : "opacity-0 hidden"
-            }`}
-          >
-            {/* Google Sign-Up Button */}
-            <button
-              onClick={handleGoogleSignIn}
-              className="flex items-center justify-center w-full px-4 py-3 mb-4 font-medium text-gray-700 transition-all duration-300 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-                <path fill="none" d="M1 1h22v22H1z" />
-              </svg>
-              Sign up with Google
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center my-4">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="px-4 text-sm text-gray-500">OR</span>
-              <div className="flex-grow border-t border-gray-300"></div>
-            </div>
-
-            <form onSubmit={handleRegistrationSubmit}>
-              <div className="mb-4">
-                <label
-                  className="block mb-2 text-sm font-bold text-gray-700"
-                  htmlFor="register-username"
-                >
-                  Username
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <User size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    id="register-username"
-                    name="username"
-                    type="text"
-                    className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                    placeholder="Choose a username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label
-                  className="block mb-2 text-sm font-bold text-gray-700"
-                  htmlFor="register-email"
-                >
-                  Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Mail size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    id="register-email"
-                    name="email"
-                    type="email"
-                    className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                    placeholder="Your email address"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Role Selection Dropdown */}
-              <div className="mb-4">
-                <label
-                  className="block mb-2 text-sm font-bold text-gray-700"
-                  htmlFor="register-role"
-                >
-                  Role
-                </label>
-                <div className="relative">
-                  <select
-                    id="register-role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                    className="w-full p-3 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                    required
-                  >
-                    <option value="user">User</option>
-                    <option value="organizer">Organizer</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Profile Image Upload */}
-              <div className="mb-4">
-                <label
-                  className="block mb-2 text-sm font-bold text-gray-700"
-                  htmlFor="register-profile-image"
-                >
-                  Profile Image
-                </label>
-                <div className="flex flex-col items-center space-y-2">
-                  {imagePreview && (
-                    <div className="relative w-24 h-24 mb-2 overflow-hidden rounded-full">
-                      <img
-                        src={imagePreview}
-                        alt="Profile preview"
-                        className="object-cover w-full h-full"
-                      />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <Lock size={18} className="text-gray-400" />
                     </div>
-                  )}
+                    <input
+                      id="register-password"
+                      name="password"
+                      type="password"
+                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
                   <label
-                    htmlFor="register-profile-image"
-                    className="flex items-center justify-center w-full px-4 py-3 text-gray-700 transition-all duration-300 bg-white border border-gray-200 rounded-md cursor-pointer focus:border-purple-500 hover:bg-gray-50"
+                    className="block mb-2 text-sm font-bold text-gray-700"
+                    htmlFor="register-confirm-password"
                   >
-                    <ImageIcon size={18} className="mr-2 text-gray-400" />
-                    {formData.profileImage ? "Change Image" : "Upload Image"}
+                    Confirm Password
                   </label>
-                  <input
-                    id="register-profile-image"
-                    name="profileImage"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label
-                  className="block mb-2 text-sm font-bold text-gray-700"
-                  htmlFor="register-password"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Lock size={18} className="text-gray-400" />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <Lock size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      id="register-confirm-password"
+                      name="confirmPassword"
+                      type="password"
+                      className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
-                  <input
-                    id="register-password"
-                    name="password"
-                    type="password"
-                    className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                  />
                 </div>
-              </div>
 
-              <div className="mb-6">
-                <label
-                  className="block mb-2 text-sm font-bold text-gray-700"
-                  htmlFor="register-confirm-password"
-                >
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Lock size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    id="register-confirm-password"
-                    name="confirmPassword"
-                    type="password"
-                    className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="flex items-center justify-center w-full px-4 py-3 font-bold text-white transition-all duration-300 rounded-md shadow-md bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                Create Account <ArrowRight size={18} className="ml-2" />
-              </button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                Already have an account?{" "}
                 <button
-                  className="font-medium text-purple-600 hover:text-purple-800"
-                  onClick={() => switchForm("login")}
+                  type="submit"
+                  className="flex items-center justify-center w-full px-4 py-3 font-bold text-white transition-all duration-300 rounded-md shadow-md bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 >
-                  Sign In
+                  Create Account <ArrowRight size={18} className="ml-2" />
                 </button>
-              </p>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-gray-600">
+                  Already have an account?{" "}
+                  <button
+                    className="font-medium text-purple-600 hover:text-purple-800"
+                    onClick={() => switchForm("login")}
+                  >
+                    Sign In
+                  </button>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

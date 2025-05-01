@@ -29,6 +29,15 @@ const userSchema = new Schema({
     enum: ["active", "banned"],
     default: "active",
   },
+  googleId: {
+    type: String, // Store the Google ID
+    unique: true, // Ensure it's unique
+    sparse: true, // Allow null values for non-Google users
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false, // Default to false unless verified
+  },
   createdAt: {
     type: Date,
     default: Date.now,
