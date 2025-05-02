@@ -1,18 +1,37 @@
 import React from "react";
 
-// Testimonials Component
-const Testimonials = () => {
+const RedesignedTestimonials = () => {
   const testimonials = [
     {
       id: 1,
-      name: "Sarah",
-      comment: "Absolutely loved the event! Great experience.",
+      name: "Sarah Johnson",
+      role: "Corporate Event Organizer",
+      comment:
+        "EVENTLANKA transformed our annual conference into an unforgettable experience. Their attention to detail and professionalism exceeded our expectations.",
       rating: 5,
     },
     {
       id: 2,
-      name: "John",
-      comment: "Easiest way to book event tickets online!",
+      name: "John Williams",
+      role: "Wedding Client",
+      comment:
+        "From planning to execution, working with EVENTLANKA was seamless. They turned our special day into everything we dreamed of and more.",
+      rating: 5,
+    },
+    {
+      id: 3,
+      name: "Maya Patel",
+      role: "Charity Fundraiser",
+      comment:
+        "Our fundraising gala raised 40% more than last year thanks to EVENTLANKA's expertise. Their team was responsive and creative throughout.",
+      rating: 5,
+    },
+    {
+      id: 4,
+      name: "David Chen",
+      role: "Product Launch Manager",
+      comment:
+        "The product launch was flawless. EVENTLANKA handled everything from venue selection to technical production with absolute precision.",
       rating: 5,
     },
   ];
@@ -24,7 +43,7 @@ const Testimonials = () => {
           <svg
             key={i}
             className={`w-4 h-4 ${
-              i < rating ? "text-[#a755c2]" : "text-[#b59194]"
+              i < rating ? "text-pink-400" : "text-gray-300"
             }`}
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -37,94 +56,73 @@ const Testimonials = () => {
   };
 
   return (
-    <section
-      className="py-20 mt-[-2px] relative overflow-hidden"
-      id="gradient-sync-testimonials"
-    >
-      {/* Animated gradient background - using EXACT same gradient as Featured Events */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#a034ff] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
+    <section className="py-16 bg-gray-50">
+      <div className="container px-4 mx-auto">
+        {/* Section heading with decorative element similar to hero */}
+        <div className="flex flex-col items-center mb-12">
+          <div className="relative mb-3">
+            {/* Decorative Pink Rectangle similar to hero */}
+            <div className="relative flex items-center justify-center w-16 h-8 bg-pink-400 rounded-lg">
+              {/* Golden swoosh decoration */}
+              <div className="absolute w-12 h-4 transform border-t border-yellow-300 rounded-full rotate-12"></div>
+            </div>
+          </div>
+          <h2 className="mb-2 text-3xl font-bold text-center text-blue-900">
+            Client Testimonials
+          </h2>
+          <p className="max-w-2xl text-center text-gray-600">
+            Don't just take our word for it. Here's what our clients have to say
+            about their experience working with us.
+          </p>
+        </div>
 
-      {/* Adding particles like in Featured Events */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
-            style={{
-              width: `${Math.random() * 8 + 4}px`,
-              height: `${Math.random() * 8 + 4}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${Math.random() * 10 + 5}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="container relative z-10 px-4 mx-auto">
-        <h2 className="mb-16 text-3xl font-bold text-center text-white">
-          User Testimonials
-        </h2>
-
-        <div className="grid max-w-4xl grid-cols-1 gap-8 mx-auto md:grid-cols-2">
+        {/* Testimonials grid */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {testimonials.map((testimonial) => (
             <div
               key={testimonial.id}
-              className="p-6 transition-transform duration-300 bg-[#a755c2] rounded-lg hover:transform hover:scale-105"
+              className="flex flex-col h-full p-6 transition-all duration-300 bg-white rounded-lg shadow-md hover:shadow-lg"
             >
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 mr-3 bg-[#d2a1b8] rounded-full"></div>
-                <span className="font-medium text-white">
-                  {testimonial.name}
-                </span>
-                <div className="ml-auto">{renderStars(testimonial.rating)}</div>
+              {/* Rating stars */}
+              <div className="mb-4">{renderStars(testimonial.rating)}</div>
+
+              {/* Testimonial content */}
+              <p className="flex-grow mb-4 italic text-gray-600">
+                "{testimonial.comment}"
+              </p>
+
+              {/* Profile info */}
+              <div className="flex items-center mt-auto">
+                <div className="flex items-center justify-center w-10 h-10 mr-3 text-white bg-blue-800 rounded-full">
+                  {testimonial.name.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-blue-900">
+                    {testimonial.name}
+                  </h4>
+                  <p className="text-sm text-gray-500">{testimonial.role}</p>
+                </div>
               </div>
-              <p className="text-[#d2a1b8]">{testimonial.comment}</p>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Animation styles */}
-      <style >{`
-        @keyframes gradient-x {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient-x {
-          background-size: 400% 400%;
-          animation: gradient-x 15s ease infinite;
-        }
-        @keyframes float {
-          0% {
-            transform: translateY(0) translateX(0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100px) translateX(20px) rotate(360deg);
-            opacity: 0;
-          }
-        }
-        .animate-float {
-          animation: float 10s ease-in-out infinite;
-        }
-      `}</style>
+        {/* Call to action */}
+        <div className="flex flex-col items-center max-w-xl p-8 mx-auto mt-12 text-center text-white bg-blue-800 rounded-lg">
+          <h3 className="mb-4 text-2xl font-semibold">
+            Ready to create your memorable event?
+          </h3>
+          <p className="mb-6">
+            Let us help you bring your vision to life with our expert event
+            planning services.
+          </p>
+          <button className="px-6 py-2 font-medium text-blue-900 transition-colors bg-pink-400 rounded-md hover:bg-pink-500">
+            Contact Us Today
+          </button>
+        </div>
+      </div>
     </section>
   );
 };
 
-export default Testimonials;
+export default RedesignedTestimonials;

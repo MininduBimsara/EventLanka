@@ -20,15 +20,15 @@ function NewHome() {
   return (
     <>
       {" "}
-      <div className="min-h-screen text-white ">
+      <div className="min-h-screen ">
         <Navbar />
         <GradientSync />
         <HeroSection />
         <FeaturedEvents />
         <TrendingEventsSlider />
-        <Testimonials />
         <HowItWorks />
         <Newsletter />
+        <Testimonials />
         <Footer />
       </div>
     </>
