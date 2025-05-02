@@ -57,21 +57,22 @@ const Pagination = ({ currentPage = 1, totalPages = 1, onPageChange }) => {
     <div className="flex justify-center mt-8">
       <nav
         id="event-pagination"
-        className="relative overflow-hidden rounded-md"
+        className="relative overflow-hidden border border-blue-100 rounded-lg shadow-lg"
       >
         {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] opacity-90 animate-gradient-event"></div>
 
-        <div className="relative z-10 flex items-center p-1 space-x-2">
+        <div className="relative z-10 flex items-center p-2 space-x-2">
           {/* Previous button */}
           <button
-            className={`px-3 py-2 transition-colors rounded-md text-white/80 ${
+            className={`px-3 py-2 transition-colors rounded-md text-white ${
               currentPage === 1
                 ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-white/10"
+                : "hover:bg-white/20"
             }`}
             onClick={handlePrevious}
             disabled={currentPage === 1}
+            aria-label="Previous page"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -87,17 +88,17 @@ const Pagination = ({ currentPage = 1, totalPages = 1, onPageChange }) => {
             page === "..." ? (
               <span
                 key={`ellipsis-${index}`}
-                className="px-3 py-2 text-white/70"
+                className="px-3 py-2 text-white opacity-80"
               >
                 ...
               </span>
             ) : (
               <button
                 key={`page-${page}`}
-                className={`px-3 py-2 ${
+                className={`px-4 py-2 transition-all duration-300 transform ${
                   page === currentPage
-                    ? "font-medium text-white rounded-md bg-white/20"
-                    : "text-white transition-colors rounded-md hover:bg-white/10"
+                    ? "font-bold text-white rounded-md bg-white/20 scale-105 shadow-md"
+                    : "text-white rounded-md hover:bg-white/10 hover:scale-105"
                 }`}
                 onClick={() => onPageChange(page)}
               >
@@ -108,13 +109,14 @@ const Pagination = ({ currentPage = 1, totalPages = 1, onPageChange }) => {
 
           {/* Next button */}
           <button
-            className={`px-3 py-2 transition-colors rounded-md text-white/80 ${
+            className={`px-3 py-2 transition-colors rounded-md text-white ${
               currentPage === totalPages
                 ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-white/10"
+                : "hover:bg-white/20"
             }`}
             onClick={handleNext}
             disabled={currentPage === totalPages}
+            aria-label="Next page"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path

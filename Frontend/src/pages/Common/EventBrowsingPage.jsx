@@ -9,7 +9,7 @@ import FilterSidebar from "../../components/Common/EventBrowsing/FilterSidebar";
 import ViewToggle from "../../components/Common/EventBrowsing/ViewToggle";
 import NoEventsFound from "../../components/Common/EventBrowsing/NoEventsFound";
 import Pagination from "../../components/Common/EventBrowsing/Pagination";
-import EventBrowsingGradientSync from "../../components/Common/EventBrowsing/EventBrowsingGradientSync";
+
 
 const EventBrowsingPage = () => {
   const dispatch = useDispatch();
@@ -155,8 +155,7 @@ const EventBrowsingPage = () => {
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-gradient-to-br from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] animate-gradient-event"></div>
-      <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
-      <EventBrowsingGradientSync />
+
 
       <div className="relative z-10">
         <NavBar />
@@ -279,29 +278,7 @@ const EventBrowsingPage = () => {
         </main>
       </div>
 
-      <style>{`
-  @keyframes gradient-event {
-    0% {
-      background-position: 0% 50%;
-    }
-    25% {
-      background-position: 50% 100%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    75% {
-      background-position: 50% 0%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-  .animate-gradient-event {
-    background-size: 300% 300%;
-    animation: gradient-event 20s ease infinite;
-  }
-`}</style>
+      
     </div>
   );
 };
