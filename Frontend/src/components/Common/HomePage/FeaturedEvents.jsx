@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-// Featured Events Component with Synchronized Animated Gradient
+// Updated Featured Events Component
 const FeaturedEvents = () => {
   const events = [
     {
@@ -54,35 +54,12 @@ const FeaturedEvents = () => {
   };
 
   return (
-    <section
-      className="relative py-20 overflow-hidden mt-[-2px]"
-      id="gradient-sync-featured"
-    >
-      {/* Animated gradient background - same colors as footer & hero */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#a034ff] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
-
-      {/* Animated particles overlay */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
-            style={{
-              width: `${Math.random() * 8 + 4}px`,
-              height: `${Math.random() * 8 + 4}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${Math.random() * 10 + 5}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="container relative z-10 px-4 mx-auto">
-        <h2 className="mb-16 text-3xl font-bold text-center text-white">
-          Featured Events
-        </h2>
+    <section className="relative py-20 bg-white" id="featured-events">
+      <div className="container px-4 mx-auto">
+        <div className="mb-12 text-center">
+          <h2 className="mb-4 text-3xl font-bold text-blue-900">Featured Events</h2>
+          <div className="w-24 h-1 mx-auto bg-pink-400 rounded-full"></div>
+        </div>
 
         <div className="relative overflow-visible">
           {/* Slides container */}
@@ -103,14 +80,20 @@ const FeaturedEvents = () => {
                         key={event.id}
                         className="flex flex-col items-center transition-all duration-300 transform cursor-pointer group hover:-translate-y-2"
                       >
-                        <div className="flex items-center justify-center w-24 h-24 mb-4 overflow-visible text-4xl rounded-full bg-white/20 backdrop-blur-sm group-hover:animate-pulse">
-                          {event.emoji}
+                        <div className="relative mb-6">
+                          {/* Pink card background */}
+                          <div className="flex items-center justify-center w-24 h-24 bg-pink-400 rounded-lg">
+                            {/* Decorative element similar to logo */}
+                            <div className="absolute w-16 h-6 transform border-t border-yellow-300 rounded-full rotate-12"></div>
+                            {/* Emoji centered */}
+                            <span className="relative z-10 text-4xl">{event.emoji}</span>
+                          </div>
                         </div>
-                        <h3 className="mb-1 text-xl font-semibold text-white">
+                        <h3 className="mb-1 text-xl font-semibold text-blue-900">
                           {event.title}
                         </h3>
-                        <p className="mb-2 text-white/70">{event.date}</p>
-                        <p className="text-xl font-medium text-white/90">
+                        <p className="mb-2 text-gray-600">{event.date}</p>
+                        <p className="text-lg font-medium text-blue-800">
                           {event.location}
                         </p>
                       </div>
@@ -128,52 +111,21 @@ const FeaturedEvents = () => {
                   key={index}
                   onClick={() => goToSlide(index)}
                   className={`w-3 h-3 rounded-full transition-colors duration-300 
-                    ${index === currentSlide ? "bg-white" : "bg-white/50"}`}
+                    ${index === currentSlide ? "bg-blue-800" : "bg-blue-200"}`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}
             </div>
           )}
         </div>
+        
+        {/* View All Events Button */}
+        <div className="mt-12 text-center">
+          <button className="px-8 py-3 text-white transition-colors bg-blue-800 rounded-full hover:bg-blue-700">
+            View All Events
+          </button>
+        </div>
       </div>
-
-      {/* Animation styles - same timing as footer & hero */}
-      <style >{`
-        @keyframes gradient-x {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient-x {
-          background-size: 400% 400%;
-          animation: gradient-x 15s ease infinite;
-        }
-        @keyframes float {
-          0% {
-            transform: translateY(0) translateX(0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100px) translateX(20px) rotate(360deg);
-            opacity: 0;
-          }
-        }
-        .animate-float {
-          animation: float 10s ease-in-out infinite;
-        }
-      `}</style>
     </section>
   );
 };

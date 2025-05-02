@@ -7,7 +7,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 
-//Trending Events Slider Component
+// Updated Trending Events Slider Component
 const TrendingEventsSlider = () => {
   // Sample trending events data
   const events = [
@@ -16,23 +16,31 @@ const TrendingEventsSlider = () => {
       title: "Summer Music Festival",
       description:
         "Annual outdoor concert featuring top artists and local talent",
+      date: "June 15-18",
+      location: "Central Park",
     },
     {
       id: 2,
       title: "Tech Conference 2025",
       description:
         "Discover the hottest innovations and network with industry leaders",
+      date: "July 22-24",
+      location: "Convention Center",
     },
     {
       id: 3,
       title: "Food & Wine Expo",
       description:
         "Sample cuisine from renowned chefs and taste exceptional wines",
+      date: "August 5-7",
+      location: "Grand Pavilion",
     },
     {
       id: 4,
       title: "International Film Festival",
       description: "Screenings of award-winning films from around the world",
+      date: "September 12-19",
+      location: "City Theater Complex",
     },
   ];
 
@@ -53,127 +61,96 @@ const TrendingEventsSlider = () => {
   };
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-lg shadow-lg"
-      id="gradient-sync-trending"
-    >
-      {/* Animated gradient background - using EXACT same gradient as Featured Events */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#a034ff] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
+    <div className="py-20 bg-blue-800" id="trending-events">
+      <div className="container px-4 mx-auto">
+        <div className="mb-12 text-center">
+          <h2 className="mb-4 text-3xl font-bold text-white">
+            Trending Events
+          </h2>
+          <div className="w-24 h-1 mx-auto bg-pink-400 rounded-full"></div>
+          <p className="mt-4 text-blue-100">
+            Discover the hottest concerts and festivals happening near you
+          </p>
+        </div>
 
-      {/* Optional: Adding particle animation like in Featured Events */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
-            style={{
-              width: `${Math.random() * 8 + 4}px`,
-              height: `${Math.random() * 8 + 4}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${Math.random() * 10 + 5}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative z-10 p-6">
-        <h2 className="mb-2 text-3xl font-bold text-center text-white">
-          Trending Events
-        </h2>
-        <p className="mb-10 text-center text-[#d2a1b8]">
-          Discover the hottest concerts and festivals happening near you
-        </p>
-
-        <div className="relative h-64 mb-10">
+        <div className="relative max-w-4xl mx-auto overflow-hidden rounded-lg shadow-lg bg-white/10 backdrop-blur-sm">
           {/* Slides container */}
-          <div className="h-full">
+          <div className="relative h-96 sm:h-80">
             {events.map((event, index) => (
               <div
                 key={event.id}
-                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ease-in-out
+                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ease-in-out p-6
                   ${
                     index === currentSlide
                       ? "opacity-100 z-10"
                       : "opacity-0 z-0"
                   }`}
               >
-                <div className="flex h-full">
-                  <div className="w-1/2 p-4">
+                <div className="flex flex-col h-full md:flex-row">
+                  <div className="w-full mb-4 md:w-1/2 md:mb-0 md:pr-6">
                     <div className="flex flex-col justify-center h-full">
-                      <h3 className="mb-3 text-xl font-bold text-white">
+                      <h3 className="mb-3 text-2xl font-bold text-white">
                         {event.title}
                       </h3>
-                      <p className="text-[#d2a1b8]">{event.description}</p>
-                      <button className="px-4 py-2 mt-6 text-white transition rounded bg-[#a755c2] hover:bg-[#b07c9e] w-fit">
-                        Learn More
+                      <p className="mb-4 text-blue-100">{event.description}</p>
+
+                      <div className="flex items-center mb-2 text-blue-100">
+                        <FaCalendarAlt className="mr-2" />
+                        <span>{event.date}</span>
+                      </div>
+
+                      <div className="flex items-center mb-4 text-blue-100">
+                        <FaMapMarkerAlt className="mr-2" />
+                        <span>{event.location}</span>
+                      </div>
+
+                      <button className="px-6 py-2 mt-2 font-medium text-blue-900 transition-all duration-300 transform bg-white rounded-full hover:bg-pink-100 hover:scale-105 w-fit">
+                        Book Tickets
                       </button>
                     </div>
                   </div>
-                  <div className="w-1/2 bg-[#b07c9e] rounded-lg">
+
+                  <div className="w-full h-48 md:w-1/2 md:h-full">
                     {/* Placeholder for event image */}
-                    <div className="flex items-center justify-center h-full bg-[#b59194] rounded-lg">
-                      <span className="text-white">Event Image</span>
+                    <div className="flex items-center justify-center h-full border rounded-lg bg-pink-400/40 border-white/20">
+                      <div className="relative">
+                        {/* Decorative element similar to logo */}
+                        <div className="absolute w-32 h-12 transform -translate-y-4 border-t-2 rounded-full border-yellow-300/70 -rotate-12"></div>
+                        <span className="relative text-xl font-semibold text-white">
+                          Event Image
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Slide indicators */}
+          <div className="flex justify-center p-4 space-x-2 bg-blue-900/50">
+            {events.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`w-3 h-3 rounded-full transition-colors duration-300 
+                  ${index === currentSlide ? "bg-white" : "bg-white/30"}`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Slide indicators - moved outside the relative container */}
-        <div className="flex justify-center mt-2 space-x-2">
-          {events.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-3 h-3 rounded-full transition-colors duration-300 
-                ${index === currentSlide ? "bg-white" : "bg-white/50"}`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+        {/* View All Trending Events Link */}
+        <div className="mt-8 text-center">
+          <a
+            href="#"
+            className="inline-flex items-center text-white transition-colors hover:text-pink-200"
+          >
+            View All Trending Events <FaArrowRight className="ml-2" />
+          </a>
         </div>
       </div>
-
-      {/* Animation styles */}
-      <style >{`
-        @keyframes gradient-x {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient-x {
-          background-size: 400% 400%;
-          animation: gradient-x 15s ease infinite;
-        }
-        @keyframes float {
-          0% {
-            transform: translateY(0) translateX(0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100px) translateX(20px) rotate(360deg);
-            opacity: 0;
-          }
-        }
-        .animate-float {
-          animation: float 10s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };

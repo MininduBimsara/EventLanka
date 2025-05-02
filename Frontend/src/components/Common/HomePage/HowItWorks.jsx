@@ -1,112 +1,77 @@
 import React from "react";
+import { FaCompass, FaTicketAlt, FaGlassCheers } from "react-icons/fa";
 
-// How It Works Component
+// Redesigned How It Works Component
 const HowItWorks = () => {
   const steps = [
     {
       id: 1,
       title: "Browse Events",
       description: "Discover a variety of events in your city.",
-      icon: <div className="w-20 h-20 mb-4 bg-[#d2a1b8] rounded"></div>,
+      icon: <FaCompass className="w-10 h-10 mb-4 text-pink-400" />,
     },
     {
       id: 2,
       title: "Select Tickets",
       description: "Choose your desired event and ticket type.",
-      icon: <div className="w-20 h-20 mb-4 bg-[#b07c9e] rounded"></div>,
+      icon: <FaTicketAlt className="w-10 h-10 mb-4 text-pink-400" />,
     },
     {
       id: 3,
       title: "Enjoy the Event",
       description: "Have a fantastic time at the event you chose.",
-      icon: <div className="w-20 h-20 mb-4 bg-[#a755c2] rounded"></div>,
+      icon: <FaGlassCheers className="w-10 h-10 mb-4 text-pink-400" />,
     },
   ];
 
   return (
-    <section
-      className="py-20 relative overflow-hidden mt-[-2px]"
-      id="gradient-sync-howitworks"
-    >
-      {/* Animated gradient background - using EXACT same gradient as Featured Events */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#a034ff] via-[#8ECAE6] to-[#023E8A] animate-gradient-x"></div>
+    <section className="py-16 bg-white" id="how-it-works">
+      <div className="container px-4 mx-auto">
+        {/* Section Header */}
+        <div className="mb-12 text-center">
+          <h2 className="mb-4 text-3xl font-bold text-blue-900">
+            How It Works
+          </h2>
+          <div className="w-24 h-1 mx-auto bg-pink-400 rounded-full"></div>
+          <p className="mt-4 text-blue-800">
+            Three simple steps to start your event journey
+          </p>
+        </div>
 
-      {/* Adding particles like in Featured Events */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-white rounded-full bg-opacity-20 animate-float"
-            style={{
-              width: `${Math.random() * 8 + 4}px`,
-              height: `${Math.random() * 8 + 4}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${Math.random() * 10 + 5}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="container relative z-10 px-4 mx-auto">
-        <h2 className="mb-16 text-3xl font-bold text-center text-white">
-          How It Works
-        </h2>
-
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
+        {/* Steps Container */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {steps.map((step) => (
             <div
               key={step.id}
-              className="flex flex-col items-center text-center"
+              className="p-8 transition-all duration-300 transform bg-white border border-blue-100 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2"
             >
-              {step.icon}
-              <h3 className="mb-2 text-xl font-bold text-white">
-                {step.title}
-              </h3>
-              <p className="text-white">{step.description}</p>
+              <div className="flex flex-col items-center text-center">
+                {/* Decorative container for icon */}
+                <div className="flex items-center justify-center w-20 h-20 mb-6 overflow-hidden bg-blue-100 rounded-full">
+                  {step.icon}
+                </div>
+
+                {/* Step number */}
+                <div className="flex items-center justify-center w-8 h-8 mb-4 text-white bg-blue-800 rounded-full">
+                  <span className="font-bold">{step.id}</span>
+                </div>
+
+                <h3 className="mb-3 text-xl font-bold text-blue-900">
+                  {step.title}
+                </h3>
+                <p className="text-blue-800">{step.description}</p>
+              </div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Animation styles */}
-      <style>{`
-        @keyframes gradient-x {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient-x {
-          background-size: 400% 400%;
-          animation: gradient-x 15s ease infinite;
-        }
-        @keyframes float {
-          0% {
-            transform: translateY(0) translateX(0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100px) translateX(20px) rotate(360deg);
-            opacity: 0;
-          }
-        }
-        .animate-float {
-          animation: float 10s ease-in-out infinite;
-        }
-      `}</style>
+        {/* CTA Button */}
+        <div className="mt-12 text-center">
+          <button className="px-8 py-3 font-bold text-white transition-all duration-300 transform bg-blue-800 rounded-full shadow-lg hover:bg-pink-400 hover:scale-105">
+            Find Events Now
+          </button>
+        </div>
+      </div>
     </section>
   );
 };
