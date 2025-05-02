@@ -10,7 +10,6 @@ import ViewToggle from "../../components/Common/EventBrowsing/ViewToggle";
 import NoEventsFound from "../../components/Common/EventBrowsing/NoEventsFound";
 import Pagination from "../../components/Common/EventBrowsing/Pagination";
 
-
 const EventBrowsingPage = () => {
   const dispatch = useDispatch();
   const { events, loading, error } = useSelector((state) => state.events);
@@ -154,8 +153,29 @@ const EventBrowsingPage = () => {
 
   return (
     <div className="relative min-h-screen">
-      <div className="fixed inset-0 bg-gradient-to-br from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] animate-gradient-event"></div>
+      {/* Simplified blue textured background */}
+      <div className="fixed inset-0 bg-blue-100">
+        {/* Simple dotted pattern - less density, larger spacing */}
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232563eb' fill-opacity='0.45' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='2'/%3E%3Ccircle cx='17' cy='17' r='2'/%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: "40px 40px",
+          }}
+        ></div>
 
+        {/* Gradient overlay with more blue */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-200/50 via-blue-100/40 to-white/60"></div>
+
+        {/* Simple blue radial highlights */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 30% 30%, rgba(37, 99, 235, 0.25) 0%, rgba(255, 255, 255, 0) 50%)",
+          }}
+        ></div>
+      </div>
 
       <div className="relative z-10">
         <NavBar />
@@ -277,8 +297,6 @@ const EventBrowsingPage = () => {
           )}
         </main>
       </div>
-
-      
     </div>
   );
 };
