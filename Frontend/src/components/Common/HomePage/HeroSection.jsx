@@ -83,22 +83,7 @@ const HeroSection = () => {
 
       {/* Right Section - Blue Background with Content */}
       <div className="flex flex-col justify-between w-full p-8 text-white bg-blue-800 md:w-1/2">
-        {/* Navigation Menu (Desktop) */}
-        <div className="justify-end hidden space-x-8 text-sm md:flex">
-          <a href="#" className="transition-colors hover:text-blue-200">
-            HOME
-          </a>
-          <a href="#" className="transition-colors hover:text-blue-200">
-            ABOUT US
-          </a>
-          <a href="#" className="transition-colors hover:text-blue-200">
-            OUR SERVICES
-          </a>
-          <a href="#" className="transition-colors hover:text-blue-200">
-            CONTACT
-          </a>
-        </div>
-
+        
         {/* Content */}
         <div className="max-w-md my-auto">
           <h2 className="mb-6 text-3xl font-bold md:text-4xl">Welcome</h2>
