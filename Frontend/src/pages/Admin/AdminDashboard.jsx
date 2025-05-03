@@ -25,9 +25,12 @@ import { fetchDashboardStats } from "../../Redux/Slicers/adminSlice";
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
-  const { dashboardStats, loading, error } = useSelector(
-    (state) => state.admin
+
+  // Fix the selector to properly access the data from the Redux state
+  const { stats: dashboardStats, loading } = useSelector(
+    (state) => state.admin.dashboard
   );
+  const error = useSelector((state) => state.admin.error);
 
   // Fetch dashboard data on component mount
   useEffect(() => {

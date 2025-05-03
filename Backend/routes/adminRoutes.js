@@ -8,6 +8,7 @@ const adminController = require("../controllers/Admin/adminController");
 const eventsController = require("../controllers/Common/eventController");
 const usersController = require("../controllers/Common/userController");
 const financeController = require("../controllers/Admin/financeController");
+const analyticsController = require("../controllers/Admin/analyticsController");
 
 /* 📊 Admin Dashboard & Settings */
 router.get("/dashboard", protect, adminOnly, adminController.getDashboardStats);
@@ -18,6 +19,14 @@ router.put(
   protect,
   adminOnly,
   adminController.changeAdminPassword
+);
+
+/* 📊 Analytics & Reports */
+router.get(
+  "/analytics",
+  protect,
+  adminOnly,
+  analyticsController.getAnalyticsData
 );
 
 /* 👤 Admin Profile */

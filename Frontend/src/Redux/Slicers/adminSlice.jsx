@@ -12,8 +12,13 @@ export const fetchDashboardStats = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/dashboard`);
+      console.log("Dashboard API response:", response.data);
       return response.data;
     } catch (error) {
+       console.error(
+         "Dashboard API error:",
+         error.response?.data || error.message
+       );
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch dashboard statistics"
       );
