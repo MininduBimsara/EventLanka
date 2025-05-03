@@ -20,7 +20,22 @@ const ContactFormSection = () => {
       <h2 className="mb-6 text-3xl font-bold text-[#2a2e60]">
         Send Us a Message
       </h2>
-      <form>
+      <form action="https://formsubmit.co/minindubim@gmail.com" method="POST">
+        <div>
+          {/* Hidden Inputs */}
+          <input type="hidden" name="_captcha" value="false" />
+          <input
+            type="hidden"
+            name="_next"
+            value="http://localhost:5173/contact"
+          />
+          <input
+            type="hidden"
+            name="_subject"
+            value="New Message from Portfolio Contact Form"
+          />
+          <input type="hidden" name="_template" value="table" />
+        </div>
         <div className="relative mb-4 group">
           <label className="block mb-1 text-sm text-[#2a2e60] transition-all duration-300 group-focus-within:text-yellow-300">
             Name
