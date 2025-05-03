@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   LineChart,
   BarChart,
@@ -20,62 +21,18 @@ import {
   RefreshCw,
   Clock,
 } from "lucide-react";
+import { fetchDashboardStats } from "../../Redux/Slicers/adminSlice";
 
 const AdminDashboard = () => {
-  // Sample data - in a real app, you would fetch this from your API
-  const [dashboardData, setDashboardData] = useState({
-    totalUsers: 15423,
-    totalOrganizers: 782,
-    totalEvents: 1205,
-    totalTickets: 34892,
-    totalRevenue: 548750,
-    pendingApprovals: 23,
-    refundRequests: 15,
-  });
+  const dispatch = useDispatch();
+  const { dashboardStats, loading, error } = useSelector(
+    (state) => state.admin
+  );
 
-  const [revenueData, setRevenueData] = useState([
-    { month: "Jan", revenue: 42000 },
-    { month: "Feb", revenue: 48000 },
-    { month: "Mar", revenue: 51000 },
-    { month: "Apr", revenue: 58000 },
-    { month: "May", revenue: 63000 },
-    { month: "Jun", revenue: 72000 },
-    { month: "Jul", revenue: 79000 },
-    { month: "Aug", revenue: 85000 },
-    { month: "Sep", revenue: 54750 },
-    { month: "Oct", revenue: 0 },
-    { month: "Nov", revenue: 0 },
-    { month: "Dec", revenue: 0 },
-  ]);
-
-  const [ticketData, setTicketData] = useState([
-    { category: "Music", tickets: 14200 },
-    { category: "Business", tickets: 8670 },
-    { category: "Sports", tickets: 6523 },
-    { category: "Food", tickets: 3200 },
-    { category: "Arts", tickets: 2299 },
-  ]);
-
-  const [signupData, setSignupData] = useState([
-    { month: "Jan", users: 1203 },
-    { month: "Feb", users: 1350 },
-    { month: "Mar", users: 1458 },
-    { month: "Apr", users: 1589 },
-    { month: "May", users: 1645 },
-    { month: "Jun", users: 1720 },
-    { month: "Jul", users: 1890 },
-    { month: "Aug", users: 2103 },
-    { month: "Sep", users: 2465 },
-    { month: "Oct", users: 0 },
-    { month: "Nov", users: 0 },
-    { month: "Dec", users: 0 },
-  ]);
-
-  // Mock data loading
+  // Fetch dashboard data on component mount
   useEffect(() => {
-    // In a real app, you would fetch data here
-    console.log("Dashboard data would be fetched on component mount");
-  }, []);
+    dispatch(fetchDashboardStats());
+  }, [dispatch]);
 
   // Format currency
   const formatCurrency = (value) => {
@@ -91,6 +48,58 @@ const AdminDashboard = () => {
     return new Intl.NumberFormat("en-US").format(value);
   };
 
+  // Prepare chart data from API response
+  const prepareRevenueData = () => {
+    if (!dashboardStats?.charts?.monthlySales) return [];
+
+    return dashboardStats.charts.monthlySales.map((item) => ({
+      month: new Date(item._id + "-01").toLocaleString("default", {
+        month: "short",
+      }),
+      revenue: item.revenue,
+      sales: item.sales,
+    }));
+  };
+
+  const prepareSignupData = () => {
+    if (!dashboardStats?.charts?.newUserGrowth) return [];
+
+    return dashboardStats.charts.newUserGrowth.map((item) => ({
+      month: new Date(item._id + "-01").toLocaleString("default", {
+        month: "short",
+      }),
+      users: item.count,
+    }));
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg font-medium text-gray-700">
+          Loading dashboard data...
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="mb-4 text-lg font-medium text-red-600">
+          Error loading dashboard data
+        </div>
+        <button
+          className="px-4 py-2 text-white bg-blue-500 rounded-md"
+          onClick={() => dispatch(fetchDashboardStats())}
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-6 bg-gray-50">
       <div className="mb-6">
@@ -104,51 +113,48 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardCard
           title="Total Users"
-          value={formatNumber(dashboardData.totalUsers)}
+          value={formatNumber(dashboardStats?.totalUsers || 0)}
           icon={<Users className="text-blue-500" />}
           color="bg-blue-100"
         />
         <DashboardCard
           title="Total Organizers"
-          value={formatNumber(dashboardData.totalOrganizers)}
+          value={formatNumber(dashboardStats?.totalOrganizers || 0)}
           icon={<Users className="text-green-500" />}
           color="bg-green-100"
         />
         <DashboardCard
           title="Total Events"
-          value={formatNumber(dashboardData.totalEvents)}
+          value={formatNumber(dashboardStats?.totalEvents || 0)}
           icon={<Calendar className="text-purple-500" />}
           color="bg-purple-100"
         />
         <DashboardCard
-          title="Total Tickets Sold"
-          value={formatNumber(dashboardData.totalTickets)}
-          icon={<ShoppingBag className="text-yellow-500" />}
-          color="bg-yellow-100"
-        />
-        <DashboardCard
           title="Total Revenue"
-          value={formatCurrency(dashboardData.totalRevenue)}
+          value={formatCurrency(dashboardStats?.totalRevenue || 0)}
           icon={<DollarSign className="text-emerald-500" />}
           color="bg-emerald-100"
         />
         <DashboardCard
           title="Pending Approvals"
-          value={dashboardData.pendingApprovals}
+          value={dashboardStats?.pendingEvents || 0}
           icon={<Clock className="text-orange-500" />}
           color="bg-orange-100"
         />
         <DashboardCard
           title="Active Refund Requests"
-          value={dashboardData.refundRequests}
+          value={dashboardStats?.activeRefundRequests || 0}
           icon={<RefreshCw className="text-red-500" />}
           color="bg-red-100"
         />
-        <div className="flex items-center justify-center p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div className="flex items-center justify-center col-span-2 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="flex flex-col items-center">
             <span className="text-sm text-gray-500">Quick Actions</span>
             <div className="flex gap-2 mt-2">
-              <button className="p-2 text-xs text-white bg-blue-500 rounded-md">
+              <button
+                className="p-2 text-xs text-white bg-blue-500 rounded-md"
+                onClick={() => dispatch(fetchDashboardStats())}
+              >
                 Refresh Data
               </button>
             </div>
@@ -162,7 +168,7 @@ const AdminDashboard = () => {
           <h2 className="mb-4 text-lg font-semibold">Monthly Revenue</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueData}>
+              <LineChart data={prepareRevenueData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis tickFormatter={(value) => `$${value / 1000}k`} />
@@ -185,15 +191,13 @@ const AdminDashboard = () => {
         </div>
 
         <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">
-            Ticket Sales by Category
-          </h2>
+          <h2 className="mb-4 text-lg font-semibold">Monthly Ticket Sales</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ticketData}>
+              <BarChart data={prepareRevenueData()}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" />
-                <YAxis tickFormatter={(value) => `${value / 1000}k`} />
+                <XAxis dataKey="month" />
+                <YAxis />
                 <Tooltip
                   formatter={(value) => [
                     `${value.toLocaleString()} tickets`,
@@ -201,7 +205,7 @@ const AdminDashboard = () => {
                   ]}
                 />
                 <Legend />
-                <Bar dataKey="tickets" fill="#8b5cf6" />
+                <Bar dataKey="sales" fill="#8b5cf6" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -211,7 +215,7 @@ const AdminDashboard = () => {
           <h2 className="mb-4 text-lg font-semibold">New User Signups</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={signupData}>
+              <LineChart data={prepareSignupData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
