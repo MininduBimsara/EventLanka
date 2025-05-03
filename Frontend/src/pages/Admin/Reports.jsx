@@ -14,100 +14,115 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { useDispatch, useSelector } from "react-redux";
 import { Calendar, Download, FileText, Filter } from "lucide-react";
+import {
+  fetchAnalyticsData,
+  setDateRange,
+} from "../../Redux/Slicers/AdminAnalyticsSlice";
 
 const Reports = () => {
-  // State for filters
-  const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().setMonth(new Date().getMonth() - 6))
-      .toISOString()
-      .split("T")[0],
-    end: new Date().toISOString().split("T")[0],
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useDispatch();
+
+  // Add a fallback for state to ensure it's never undefined
+  const analyticsState = useSelector((state) => state.analytics) || {
+    loading: false,
+    data: {
+      revenueData: [],
+      categoryData: [],
+      bestSellingEvents: [],
+      topOrganizers: [],
+      userGrowthData: [],
+      statistics: {},
+    },
+    filters: {
+      dateRange: {
+        start: new Date(new Date().setMonth(new Date().getMonth() - 6))
+          .toISOString()
+          .split("T")[0],
+        end: new Date().toISOString().split("T")[0],
+      },
+    },
+    error: null,
+  };
+
+  const { loading, data, filters, error } = analyticsState;
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Sample data - in a real app, this would be fetched from an API
-  const revenueData = [
-    { month: "Jan", revenue: 45000 },
-    { month: "Feb", revenue: 52000 },
-    { month: "Mar", revenue: 48000 },
-    { month: "Apr", revenue: 61000 },
-    { month: "May", revenue: 55000 },
-    { month: "Jun", revenue: 67000 },
-    { month: "Jul", revenue: 72000 },
-    { month: "Aug", revenue: 78000 },
-    { month: "Sep", revenue: 69000 },
-    { month: "Oct", revenue: 85000 },
-    { month: "Nov", revenue: 94000 },
-    { month: "Dec", revenue: 115000 },
-  ];
+  // Extract data from redux state
+  const {
+    revenueData = [],
+    categoryData = [],
+    bestSellingEvents = [],
+    topOrganizers = [],
+    userGrowthData = [],
+    statistics = {},
+  } = data || {};
 
-  const categoryData = [
-    { name: "Music", value: 35 },
-    { name: "Business", value: 25 },
-    { name: "Food", value: 20 },
-    { name: "Tech", value: 15 },
-    { name: "Sports", value: 5 },
-  ];
+  console.log("Fetching with filters:", filters);
 
-  const bestSellingEvents = [
-    { id: 1, name: "Summer Music Festival", sales: 3245, revenue: 259600 },
-    { id: 2, name: "Tech Conference 2025", sales: 2876, revenue: 431400 },
-    { id: 3, name: "Food & Wine Expo", sales: 2543, revenue: 127150 },
-    { id: 4, name: "Business Leadership Summit", sales: 2187, revenue: 328050 },
-    { id: 5, name: "Marathon Charity Run", sales: 1953, revenue: 58590 },
-  ];
-
-  const topOrganizers = [
-    { id: 1, name: "EventMasters Inc.", eventCount: 32, totalRevenue: 845000 },
-    { id: 2, name: "Conference Pros", eventCount: 28, totalRevenue: 712500 },
-    { id: 3, name: "Festival Group", eventCount: 24, totalRevenue: 632000 },
-    { id: 4, name: "Summit Organizers", eventCount: 18, totalRevenue: 427000 },
-    {
-      id: 5,
-      name: "Community Events Co.",
-      eventCount: 15,
-      totalRevenue: 385000,
-    },
-  ];
-
-  const userGrowthData = [
-    { month: "Jan", users: 850 },
-    { month: "Feb", users: 940 },
-    { month: "Mar", users: 1050 },
-    { month: "Apr", users: 1250 },
-    { month: "May", users: 1480 },
-    { month: "Jun", users: 1650 },
-    { month: "Jul", users: 1850 },
-    { month: "Aug", users: 2100 },
-    { month: "Sep", users: 2450 },
-    { month: "Oct", users: 2720 },
-    { month: "Nov", users: 3050 },
-    { month: "Dec", users: 3400 },
-  ];
-
-  // colors for pie chart
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
-
-  // Simulate loading data
+  // Load data on component mount and when filters change
   useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    dispatch(fetchAnalyticsData(filters));
+  }, [dispatch, filters]);
+
+  useEffect(() => {
+    console.log("Analytics Data Received:", data);
+    console.log("Revenue Data:", revenueData);
+    console.log("Category Data:", categoryData);
+    console.log("Best Selling Events:", bestSellingEvents);
+    console.log("Top Organizers:", topOrganizers);
+    console.log("User Growth Data:", userGrowthData);
+    console.log("Statistics:", statistics);
+  }, [
+    data,
+    revenueData,
+    categoryData,
+    bestSellingEvents,
+    topOrganizers,
+    userGrowthData,
+    statistics,
+  ]);
 
   // Handle date range change
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    setDateRange((prev) => ({ ...prev, [name]: value }));
+    dispatch(
+      setDateRange({
+        ...filters.dateRange,
+        [name]: value,
+      })
+    );
   };
+
+  // colors for pie chart
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
   // Handle export
   const handleExport = (format) => {
     alert(`Exporting data in ${format} format...`);
     // Actual implementation would generate and download the file
   };
+
+  // Error handling
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="p-6 bg-white rounded-lg shadow">
+          <h2 className="mb-4 text-xl font-semibold text-red-600">
+            Error Loading Analytics
+          </h2>
+          <p className="text-gray-700">{error}</p>
+          <button
+            onClick={() => dispatch(fetchAnalyticsData(filters))}
+            className="px-4 py-2 mt-4 text-white bg-blue-600 rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -134,7 +149,7 @@ const Reports = () => {
             <input
               type="date"
               name="start"
-              value={dateRange.start}
+              value={filters?.dateRange?.start || ""}
               onChange={handleDateChange}
               className="px-2 py-1 text-sm border rounded"
             />
@@ -142,7 +157,7 @@ const Reports = () => {
             <input
               type="date"
               name="end"
-              value={dateRange.end}
+              value={filters?.dateRange?.end || ""}
               onChange={handleDateChange}
               className="px-2 py-1 text-sm border rounded"
             />
@@ -228,7 +243,7 @@ const Reports = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6">
-        {isLoading ? (
+        {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-12 h-12 border-b-2 border-blue-600 rounded-full animate-spin"></div>
           </div>
@@ -241,7 +256,7 @@ const Reports = () => {
                   <h2 className="mb-4 text-lg font-semibold">Revenue Trend</h2>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={revenueData}>
+                      <BarChart data={revenueData || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
@@ -263,7 +278,7 @@ const Reports = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={categoryData}
+                          data={categoryData || []}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
@@ -274,7 +289,7 @@ const Reports = () => {
                             `${name} ${(percent * 100).toFixed(0)}%`
                           }
                         >
-                          {categoryData.map((entry, index) => (
+                          {(categoryData || []).map((entry, index) => (
                             <Cell
                               key={`cell-${index}`}
                               fill={COLORS[index % COLORS.length]}
@@ -292,7 +307,7 @@ const Reports = () => {
                   <h2 className="mb-4 text-lg font-semibold">User Growth</h2>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={userGrowthData}>
+                      <LineChart data={userGrowthData || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
@@ -329,7 +344,7 @@ const Reports = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {bestSellingEvents.map((event) => (
+                        {(bestSellingEvents || []).map((event) => (
                           <tr key={event.id}>
                             <td className="px-3 py-2 text-sm text-gray-900">
                               {event.name}
@@ -354,7 +369,7 @@ const Reports = () => {
                 <h2 className="mb-6 text-xl font-semibold">Revenue Analysis</h2>
                 <div className="h-96">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={revenueData}>
+                    <BarChart data={revenueData || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -412,7 +427,7 @@ const Reports = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={categoryData}
+                          data={categoryData || []}
                           cx="50%"
                           cy="50%"
                           labelLine={true}
@@ -423,7 +438,7 @@ const Reports = () => {
                             `${name}: ${(percent * 100).toFixed(0)}%`
                           }
                         >
-                          {categoryData.map((entry, index) => (
+                          {(categoryData || []).map((entry, index) => (
                             <Cell
                               key={`cell-${index}`}
                               fill={COLORS[index % COLORS.length]}
@@ -460,7 +475,7 @@ const Reports = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {bestSellingEvents.map((event) => (
+                        {(bestSellingEvents || []).map((event) => (
                           <tr key={event.id}>
                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
                               {event.name}
@@ -505,7 +520,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {topOrganizers.map((organizer) => (
+                      {(topOrganizers || []).map((organizer) => (
                         <tr key={organizer.id}>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
                             {organizer.name}
@@ -536,7 +551,7 @@ const Reports = () => {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={topOrganizers}
+                        data={topOrganizers || []}
                         layout="vertical"
                         margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
                       >
@@ -567,7 +582,7 @@ const Reports = () => {
                   </h2>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={userGrowthData}>
+                      <LineChart data={userGrowthData || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
@@ -589,21 +604,27 @@ const Reports = () => {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div className="p-6 bg-white rounded-lg shadow">
                     <h3 className="mb-2 text-lg font-medium">Total Users</h3>
-                    <p className="text-3xl font-bold text-blue-600">18,740</p>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {statistics?.totalUsers?.toLocaleString() || "18,740"}
+                    </p>
                     <p className="mt-1 text-sm text-gray-500">
                       +23% growth YoY
                     </p>
                   </div>
                   <div className="p-6 bg-white rounded-lg shadow">
                     <h3 className="mb-2 text-lg font-medium">Active Users</h3>
-                    <p className="text-3xl font-bold text-green-600">12,355</p>
+                    <p className="text-3xl font-bold text-green-600">
+                      {statistics?.activeUsers?.toLocaleString() || "12,355"}
+                    </p>
                     <p className="mt-1 text-sm text-gray-500">
                       66% of total user base
                     </p>
                   </div>
                   <div className="p-6 bg-white rounded-lg shadow">
                     <h3 className="mb-2 text-lg font-medium">Avg. Retention</h3>
-                    <p className="text-3xl font-bold text-purple-600">72%</p>
+                    <p className="text-3xl font-bold text-purple-600">
+                      {statistics?.retentionRate || "72"}%
+                    </p>
                     <p className="mt-1 text-sm text-gray-500">
                       +5% from previous period
                     </p>

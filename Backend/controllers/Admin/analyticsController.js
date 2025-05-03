@@ -15,7 +15,7 @@ exports.getAnalyticsData = async (req, res) => {
     const revenueData = await Payment.aggregate([
       {
         $match: {
-          status: "completed",
+          payment_status: "completed", // FIXED: changed status to payment_status
           createdAt: { $gte: start, $lte: end },
         },
       },
@@ -27,6 +27,9 @@ exports.getAnalyticsData = async (req, res) => {
       },
       { $sort: { _id: 1 } },
     ]);
+
+    console.log("Raw Revenue Data:", revenueData);
+    console.log("Formatted Revenue Data:", formattedRevenueData);
 
     // Transform to format needed by frontend
     const formattedRevenueData = revenueData.map((item) => {
@@ -50,12 +53,15 @@ exports.getAnalyticsData = async (req, res) => {
       value: item.count,
     }));
 
+    console.log("Category Data:", categoryData);
+    console.log("Formatted Category Data:", formattedCategoryData);
+
     // Best selling events
     const bestSellingEvents = await Payment.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { payment_status: "completed" } }, // FIXED: changed status to payment_status
       {
         $group: {
-          _id: "$event",
+          _id: "$event_id", // FIXED: changed $event to $event_id
           sales: { $sum: 1 },
           revenue: { $sum: "$amount" },
         },
@@ -77,12 +83,15 @@ exports.getAnalyticsData = async (req, res) => {
       })
     );
 
+    console.log("Best Selling Events Raw:", bestSellingEvents);
+    console.log("Best Selling Events Populated:", populatedEvents);
+
     // Top organizers
     const topOrganizers = await Event.aggregate([
       { $match: { event_status: "approved" } },
       {
         $group: {
-          _id: "$organizer",
+          _id: "$organizer_id", // FIXED: changed $organizer to $organizer_id
           eventCount: { $sum: 1 },
         },
       },
@@ -96,15 +105,15 @@ exports.getAnalyticsData = async (req, res) => {
         const user = await User.findById(org._id);
 
         // Get events by this organizer
-        const events = await Event.find({ organizer: org._id });
+        const events = await Event.find({ organizer_id: org._id }); // FIXED: changed organizer to organizer_id
         const eventIds = events.map((e) => e._id);
 
         // Calculate total revenue for these events
         const revenueData = await Payment.aggregate([
           {
             $match: {
-              event: { $in: eventIds },
-              status: "completed",
+              event_id: { $in: eventIds }, // FIXED: changed event to event_id
+              payment_status: "completed", // FIXED: changed status to payment_status
             },
           },
           {
@@ -127,6 +136,9 @@ exports.getAnalyticsData = async (req, res) => {
         };
       })
     );
+
+    console.log("Top Organizers Raw:", topOrganizers);
+    console.log("Top Organizers Processed:", organizers);
 
     // User growth data
     const userGrowthData = await User.aggregate([
@@ -152,6 +164,9 @@ exports.getAnalyticsData = async (req, res) => {
       };
     });
 
+    console.log("User Growth Raw:", userGrowthData);
+    console.log("User Growth Formatted:", formattedUserGrowthData);
+
     // General platform statistics
     const totalUsers = await User.countDocuments();
     const activeUsers = await User.countDocuments({
@@ -159,6 +174,8 @@ exports.getAnalyticsData = async (req, res) => {
         $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
       },
     });
+
+    console.log("Sample User:", await User.findOne());
 
     res.json({
       revenueData: formattedRevenueData,
@@ -169,7 +186,7 @@ exports.getAnalyticsData = async (req, res) => {
       statistics: {
         totalUsers,
         activeUsers,
-        retentionRate: Math.round((activeUsers / totalUsers) * 100),
+        retentionRate: Math.round((activeUsers / totalUsers) * 100) || 0,
       },
     });
   } catch (err) {

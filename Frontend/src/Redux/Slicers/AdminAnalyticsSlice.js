@@ -1,32 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Define initial state
-const initialState = {
-  loading: false,
-  error: null,
-  data: {
-    revenueData: [],
-    categoryData: [],
-    bestSellingEvents: [],
-    topOrganizers: [],
-    userGrowthData: [],
-    statistics: {
-      totalUsers: 0,
-      activeUsers: 0,
-      retentionRate: 0,
-    },
-  },
-  filters: {
-    dateRange: {
-      start: new Date(new Date().setMonth(new Date().getMonth() - 6))
-        .toISOString()
-        .split("T")[0],
-      end: new Date().toISOString().split("T")[0],
-    },
-  },
-};
-
 // Create async thunk for fetching analytics data
 export const fetchAnalyticsData = createAsyncThunk(
   "analytics/fetchData",
@@ -56,6 +30,32 @@ export const fetchAnalyticsData = createAsyncThunk(
     }
   }
 );
+
+// Define initial state
+const initialState = {
+  loading: false,
+  error: null,
+  data: {
+    revenueData: [],
+    categoryData: [],
+    bestSellingEvents: [],
+    topOrganizers: [],
+    userGrowthData: [],
+    statistics: {
+      totalUsers: 0,
+      activeUsers: 0,
+      retentionRate: 0,
+    },
+  },
+  filters: {
+    dateRange: {
+      start: new Date(new Date().setMonth(new Date().getMonth() - 6))
+        .toISOString()
+        .split("T")[0],
+      end: new Date().toISOString().split("T")[0],
+    },
+  },
+};
 
 // Create the slice
 const analyticsSlice = createSlice({
