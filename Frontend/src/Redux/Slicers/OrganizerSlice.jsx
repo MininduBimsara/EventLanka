@@ -308,7 +308,10 @@ export const deleteDiscount = createAsyncThunk(
         headers: {},
         withCredentials: true, // Include cookies with the request
       };
-      await axios.delete(`${ORGANIZER_API_URL}/discounts/${discountId}`, config);
+      await axios.delete(
+        `${ORGANIZER_API_URL}/discounts/${discountId}`,
+        config
+      );
       return discountId;
     } catch (error) {
       return rejectWithValue(
@@ -327,7 +330,8 @@ export const getEventDiscounts = createAsyncThunk(
         withCredentials: true, // Include cookies with the request
       };
       const response = await axios.get(
-        `${ORGANIZER_API_URL}/events/${eventId}/discounts`,config
+        `${ORGANIZER_API_URL}/events/${eventId}/discounts`,
+        config
       );
       console.log("API Response:", response.data);
       return { eventId, discounts: response.data };

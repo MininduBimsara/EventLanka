@@ -15,7 +15,7 @@ import Stats from "../../components/Common/AboutUs/Stats";
 import HowItWorks from "../../components/Common/AboutUs/HowItWorks";
 import { Story } from "../../components/Common/AboutUs/Story";
 import { Features } from "../../components/Common/AboutUs/Features";
-import { Testimonials } from "../../components/Common/AboutUs/Testimonials";
+import  Testimonials  from "../../components/Common/AboutUs/Testimonials";
 import { Team } from "../../components/Common/AboutUs/Team";
 import { CalltoAction } from "../../components/Common/AboutUs/CalltoAction";
 import Navbar from "../../components/Common/Navbar";
