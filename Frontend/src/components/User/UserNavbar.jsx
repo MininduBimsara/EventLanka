@@ -28,11 +28,11 @@ const UserNavbar = () => {
       path: "/user/editprofile",
       icon: <User size={20} />,
     },
-    {
-      name: "Help Center",
-      path: "/user/helpcenter",
-      icon: <MessageSquare size={20} />,
-    },
+    // {
+    //   name: "Help Center",
+    //   path: "/user/helpcenter",
+    //   icon: <MessageSquare size={20} />,
+    // },
     { name: "My Bookings", path: "/user/mybookings", icon: <Book size={20} /> },
     {
       name: "My Reviews",
@@ -58,70 +58,62 @@ const UserNavbar = () => {
     activeBg: darkMode ? "bg-gray-900" : "bg-blue-900",
   };
 
-  return (
-    <nav className={`text-white shadow-md ${navClasses.background}`}>
-      <div className="px-4 mx-auto max-w-7xl">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="items-center hidden space-x-4 md:flex">
-            {navItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => navigate(item.path)}
-                className={`flex items-center px-3 py-2 text-sm font-medium transition rounded-md ${
-                  navClasses.hoverBg
-                } ${
-                  location.pathname === item.path ? navClasses.activeBg : ""
-                }`}
-              >
-                <span className="mr-2">{item.icon}</span>
-                {item.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="flex items-center md:hidden">
+return (
+  <nav className={`text-white shadow-md ${navClasses.background}`}>
+    <div className="px-4 mx-auto max-w-7xl">
+      <div className="flex items-center justify-between h-16">
+        {/* Desktop Navigation */}
+        <div className="items-center hidden space-x-4 md:flex">
+          {navItems.map((item) => (
             <button
-              onClick={toggleMenu}
-              className={`p-2 rounded-md ${navClasses.hoverBg} focus:outline-none`}
+              key={item.name}
+              onClick={() => navigate(item.path)}
+              className={`flex items-center px-3 py-2 text-sm font-medium transition rounded-md ${
+                navClasses.hoverBg
+              } ${location.pathname === item.path ? navClasses.activeBg : ""}`}
             >
-              <Menu size={24} />
+              <span className="mr-2">{item.icon}</span>
+              {item.name}
             </button>
-          </div>
+          ))}
+        </div>
+
+        {/* Mobile menu button */}
+        <div className="flex items-center md:hidden">
+          <button
+            onClick={toggleMenu}
+            className={`p-2 rounded-md ${navClasses.hoverBg} focus:outline-none`}
+          >
+            <Menu size={24} />
+          </button>
         </div>
       </div>
+    </div>
 
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className={`md:hidden ${navClasses.background}`}>
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            {navItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => {
-                  navigate(item.path);
-                  setIsOpen(false);
-                }}
-                className={`flex items-center w-full px-3 py-2 text-sm font-medium transition rounded-md text-left ${
-                  navClasses.hoverBg
-                } ${
-                  location.pathname === item.path ? navClasses.activeBg : ""
-                }`}
-              >
-                <span className="mr-2">{item.icon}</span>
-                {item.name}
-              </button>
-            ))}
-          </div>
+    {/* Mobile Navigation */}
+    {isOpen && (
+      <div className={`md:hidden ${navClasses.background}`}>
+        <div className="px-2 pt-2 pb-3 space-y-1">
+          {navItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => {
+                navigate(item.path);
+                setIsOpen(false);
+              }}
+              className={`flex items-center w-full px-3 py-2 text-sm font-medium transition rounded-md text-left ${
+                navClasses.hoverBg
+              } ${location.pathname === item.path ? navClasses.activeBg : ""}`}
+            >
+              <span className="mr-2">{item.icon}</span>
+              {item.name}
+            </button>
+          ))}
         </div>
-      )}
-    </nav>
-  );
+      </div>
+    )}
+  </nav>
+);
 };
 
 export default UserNavbar;
