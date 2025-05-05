@@ -56,48 +56,55 @@ const LoginRegistrationUI = () => {
   }, []);
 
   // Initialize Google Sign-In
-  const initializeGoogleSignIn = () => {
-    if (window.google) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id:
-            "220678971388-jevcp58ug9v8tsuro8jd00qd45sbvad5.apps.googleusercontent.com",
-          callback: handleGoogleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
+const initializeGoogleSignIn = () => {
+  if (window.google) {
+    try {
+      window.google.accounts.id.initialize({
+        client_id:
+          "220678971388-jevcp58ug9v8tsuro8jd00qd45sbvad5.apps.googleusercontent.com",
+        callback: handleGoogleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        // Add these new options to fix CORS issues
+        ux_mode: "popup",
+        context: "signin",
+        // Add an advanced option to allow the credential cookie
+        // use_fedcm_for_prompt: false,
+      });
 
-        // Render the Google Sign-In buttons
-        if (document.getElementById("google-signin-button-login")) {
-          window.google.accounts.id.renderButton(
-            document.getElementById("google-signin-button-login"),
-            {
-              theme: "outline",
-              size: "large",
-              text: "signin_with",
-              width: 270,
-            }
-          );
-        }
-
-        if (document.getElementById("google-signin-button-register")) {
-          window.google.accounts.id.renderButton(
-            document.getElementById("google-signin-button-register"),
-            {
-              theme: "outline",
-              size: "large",
-              text: "signup_with",
-              width: 270,
-            }
-          );
-        }
-
-        setIsGoogleInitialized(true);
-      } catch (error) {
-        console.error("Error initializing Google Sign-In:", error);
+      // Render the Google Sign-In buttons
+      if (document.getElementById("google-signin-button-login")) {
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-button-login"),
+          {
+            theme: "outline",
+            size: "large",
+            text: "signin_with",
+            width: 270,
+            type: "standard",
+          }
+        );
       }
+
+      if (document.getElementById("google-signin-button-register")) {
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-button-register"),
+          {
+            theme: "outline",
+            size: "large",
+            text: "signup_with",
+            width: 270,
+            type: "standard",
+          }
+        );
+      }
+
+      setIsGoogleInitialized(true);
+    } catch (error) {
+      console.error("Error initializing Google Sign-In:", error);
     }
-  };
+  }
+};
 
   // Handle the credential response from Google
   const handleGoogleCredentialResponse = (response) => {

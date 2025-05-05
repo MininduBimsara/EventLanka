@@ -12,9 +12,17 @@ export const googleAuth = createAsyncThunk(
   "googleAuth/authenticate",
   async (tokenCredential, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${AUTH_API_URL}/google`, {
-        token: tokenCredential,
-      });
+      const response = await axios.post(
+        `${AUTH_API_URL}/google`,
+        { token: tokenCredential },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+            // "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
 
       // Store the auth token in localStorage
       if (response.data.token) {

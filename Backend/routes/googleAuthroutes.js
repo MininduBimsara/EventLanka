@@ -1,6 +1,6 @@
 // Backend: googleAuthRoutes.js
 const express = require("express");
-const { verifyGoogleToken } = require("../services/googleAuthService");
+const { verifyGoogleToken } = require("../Services/googleAuthService");
 
 const router = express.Router();
 
@@ -21,6 +21,14 @@ router.post("/google", async (req, res) => {
       req.session.user = userData.user;
       req.session.isAuthenticated = true;
     }
+
+    // Set a cookie for authentication as well
+    res.cookie("authToken", userData.token, {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
 
     return res.json(userData);
   } catch (error) {
