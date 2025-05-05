@@ -14,11 +14,21 @@ const app = express();
 
 // Setup CORS properly
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Add any other origins as needed
+  origin: [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://accounts.google.com",
+  ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['set-cookie']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Origin",
+    "X-Requested-With",
+    "Accept",
+  ],
+  exposedHeaders: ["set-cookie"],
 };
 
 app.use(cors(corsOptions));
