@@ -1,7 +1,7 @@
 const express = require("express");
 const passport = require("passport");
-
-// const { verifyGoogleToken } = require("../Config/passportConfig");
+const passportConfig = require("../Config/passportConfig");
+const { verifyGoogleToken } = passportConfig;
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
-    res.redirect("http://localhost:3000/dashboard"); // Redirect to your frontend
+    res.redirect("http://localhost:5173/"); // Redirect to your frontend
   }
 );
 
@@ -40,21 +40,20 @@ router.post("/google", async (req, res) => {
     if (!token) {
       return res.status(400).json({ message: "Token is required" });
     }
-    
+
     // Use the verifyGoogleToken function exported from your passport config
     const userData = await verifyGoogleToken(token);
-    
+
     // Set user in session if needed
     if (req.session) {
       req.session.user = userData.user;
     }
-    
+
     return res.json(userData);
   } catch (error) {
     console.error("Google token verification error:", error);
     return res.status(401).json({ message: "Google authentication failed" });
   }
 });
-
 
 module.exports = router;

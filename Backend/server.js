@@ -5,6 +5,7 @@ const connectDB = require("./Config/db");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const passport = require("passport");
+
 const path = require("path");
 
 dotenv.config();
@@ -15,14 +16,28 @@ const app = express();
 // Updated CORS configuration to allow credentials and specific origin
 app.use(
   cors({
-    origin: "http://localhost:5173", // Your frontend URL
-    credentials: true, // Allow credentials (cookies, authorization headers)
+    origin: function (origin, callback) {
+      const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    // Ensure cookies can be sent cross-domain
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Origin",
+      "X-Requested-With",
+      "Accept",
+    ],
     exposedHeaders: ["set-cookie"],
   })
 );
+
+app.options("*", cors()); // Handle preflight requests
 
 app.use(express.json());
 app.use(cookieParser());
@@ -41,6 +56,7 @@ app.use(
   })
 );
 app.use(passport.initialize());
+require("./Config/passportConfig")(passport);
 app.use(passport.session());
 
 app.use(
