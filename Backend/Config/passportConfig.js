@@ -3,6 +3,9 @@ const Auth = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 
+// Initialize the OAuth client
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 module.exports = (passport) => {
   passport.use(
     new GoogleStrategy(
@@ -40,55 +43,6 @@ module.exports = (passport) => {
     )
   );
 
-  // Function to verify Google ID tokens (for frontend direct integration)
-  const verifyGoogleToken = async (token) => {
-    try {
-      // Verify the token with Google
-      const ticket = await client.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-
-      const payload = ticket.getPayload();
-      const googleId = payload.sub;
-
-      // Find or create user
-      let user = await Auth.findOne({ googleId });
-
-      if (!user) {
-        user = new Auth({
-          name: payload.name,
-          email: payload.email,
-          username: payload.email.split("@")[0],
-          phone: "N/A",
-          googleId,
-          emailVerified: true,
-        });
-        await user.save();
-      }
-
-      // Generate JWT token
-      const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: "7d",
-      });
-
-      // Return user and token
-      return {
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          username: user.username,
-          role: user.role,
-        },
-        token: jwtToken,
-      };
-    } catch (error) {
-      console.error("Google auth error:", error);
-      throw new Error("Google authentication failed");
-    }
-  };
-
   // Serialize user to store in session
   passport.serializeUser((user, done) => {
     done(null, user.userId); // Use userId, not the full user object
@@ -104,3 +58,55 @@ module.exports = (passport) => {
     }
   });
 };
+
+// Function to verify Google ID tokens (for frontend direct integration)
+const verifyGoogleToken = async (token) => {
+  try {
+    // Verify the token with Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const googleId = payload.sub;
+
+    // Find or create user
+    let user = await Auth.findOne({ googleId });
+
+    if (!user) {
+      user = new Auth({
+        name: payload.name,
+        email: payload.email,
+        username: payload.email.split("@")[0],
+        phone: "N/A",
+        googleId,
+        emailVerified: true,
+      });
+      await user.save();
+    }
+
+    // Generate JWT token
+    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Return user and token
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
+      token: jwtToken,
+    };
+  } catch (error) {
+    console.error("Google auth error:", error);
+    throw new Error("Google authentication failed");
+  }
+};
+
+// Export the verifyGoogleToken function
+module.exports.verifyGoogleToken = verifyGoogleToken;

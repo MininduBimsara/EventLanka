@@ -62,7 +62,8 @@ const LoginRegistrationUI = () => {
   useEffect(() => {
     if (isGoogleScriptLoaded && window.google) {
       window.google.accounts.id.initialize({
-        client_id: import.meta.env.REACT_APP_GOOGLE_CLIENT_ID,
+        client_id:
+          "220678971388-jevcp58ug9v8tsuro8jd00qd45sbvad5.apps.googleusercontent.com", // Direct value instead of env var
         callback: handleGoogleResponse,
         auto_select: false,
       });
