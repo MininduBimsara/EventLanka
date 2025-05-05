@@ -4,6 +4,9 @@ import axios from "axios";
 // Base URL for Google auth API endpoints
 const AUTH_API_URL = `http://localhost:5000/api/googleauth`;
 
+// Configure axios to include credentials
+axios.defaults.withCredentials = true;
+
 // Async thunk for Google authentication
 export const googleAuth = createAsyncThunk(
   "googleAuth/authenticate",
@@ -16,10 +19,16 @@ export const googleAuth = createAsyncThunk(
       // Store the auth token in localStorage
       if (response.data.token) {
         localStorage.setItem("authToken", response.data.token);
+
+        // Set the token as default header for future requests
+        axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${response.data.token}`;
       }
 
       return response.data;
     } catch (error) {
+      console.error("Google auth error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Google authentication failed"
       );
@@ -32,9 +41,25 @@ export const checkGoogleAuthStatus = createAsyncThunk(
   "googleAuth/checkStatus",
   async (_, { rejectWithValue }) => {
     try {
+      // First try to get the token from localStorage
+      const token = localStorage.getItem("authToken");
+
+      if (!token) {
+        return null; // No token found
+      }
+
+      // Set token in headers
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // Check user status from the backend
       const response = await axios.get(`${AUTH_API_URL}/user`);
+
       return response.data;
     } catch (error) {
+      // Clear invalid token
+      localStorage.removeItem("authToken");
+      delete axios.defaults.headers.common["Authorization"];
+
       return rejectWithValue(
         error.response?.data?.message || "Failed to check authentication status"
       );
@@ -50,8 +75,9 @@ export const googleLogout = createAsyncThunk(
       // Make a request to the logout endpoint
       await axios.get(`${AUTH_API_URL}/logout`);
 
-      // Remove the token from localStorage
+      // Remove the token from localStorage and headers
       localStorage.removeItem("authToken");
+      delete axios.defaults.headers.common["Authorization"];
 
       return null;
     } catch (error) {
@@ -88,6 +114,7 @@ const googleAuthSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
       localStorage.removeItem("authToken");
+      delete axios.defaults.headers.common["Authorization"];
     },
   },
   extraReducers: (builder) => {
