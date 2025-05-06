@@ -77,17 +77,17 @@ function App() {
   }, [dispatch, token]);
 
   // Protected route wrapper component
-  const ProtectedRoute = ({ children }) => {
-    if (loading) {
-      return <div>Loading...</div>; // Or your loading component
-    }
+  // const ProtectedRoute = ({ children }) => {
+  //   if (loading) {
+  //     return <div>Loading...</div>; // Or your loading component
+  //   }
 
-    if (!isAuthenticated) {
-      return <Navigate to="/login" />;
-    }
+  //   if (!isAuthenticated) {
+  //     return <Navigate to="/login" />;
+  //   }
 
-    return children;
-  };
+  //   return children;
+  // };
 
   return (
     <>
@@ -103,69 +103,62 @@ function App() {
             <Route
               path="/"
               element={
-                <ProtectedRoute>
+                
                   <NewHome />
-                </ProtectedRoute>
+                
               }
             />
             <Route
               path="/newhome"
               element={
-                <ProtectedRoute>
+                
                   <NewHome />
-                </ProtectedRoute>
+                
               }
             />
             <Route
               path="/eventbrowsing"
               element={
-                <ProtectedRoute>
+                
                   <EventBrowsingPage />
-                </ProtectedRoute>
+                
               }
             />
             <Route
               path="/event/:id"
               element={
-                <ProtectedRoute>
+              
                   <EventBookingPage />
-                </ProtectedRoute>
+            
               }
             />
             <Route
               path="/payment-success/:paymentIntentId"
               element={
-                <ProtectedRoute>
+              
                   <PaymentSuccessPage />
-                </ProtectedRoute>
+            
               }
             />
             <Route
               path="/checkout"
               element={
-                <ProtectedRoute>
+     
                   <CheckoutPage />
-                </ProtectedRoute>
+
               }
             />
             <Route
               path="/payment-form/:orderId"
               element={
-                <ProtectedRoute>
+      
                   <PaymentForm />
-                </ProtectedRoute>
+               
               }
             />
 
             {/* Protected Organizer Routes */}
-            <Route
-              path="/organizer"
-              element={
-                <ProtectedRoute>
-                  <OrganizerLayout />
-                </ProtectedRoute>
-              }
-            >
+            <Route path="/organizer" element={<OrganizerLayout />}>
               <Route path="dashboard" element={<OrganizerDashboard />} />
               <Route path="profile" element={<OrganizerProfile />} />
               <Route path="settings" element={<OrganizerSettings />} />
@@ -179,14 +172,7 @@ function App() {
             </Route>
 
             {/* Protected Admin Routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
+            <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="event-approvals" element={<EventApprovals />} />
@@ -198,14 +184,7 @@ function App() {
             </Route>
 
             {/* Protected User Routes */}
-            <Route
-              path="/user"
-              element={
-                <ProtectedRoute>
-                  <div />
-                </ProtectedRoute>
-              }
-            >
+            <Route path="/user" >
               <Route path="editprofile" element={<EditProfile />} />
               <Route path="helpcenter" element={<Support />} />
               <Route path="mybookings" element={<MyBookings />} />
