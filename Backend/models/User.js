@@ -14,7 +14,7 @@ const userSchema = new Schema({
   },
   password: {
     type: String,
-    required: true,
+    // required: true,
   },
   role: {
     type: String,
@@ -28,6 +28,15 @@ const userSchema = new Schema({
     type: String,
     enum: ["active", "banned"],
     default: "active",
+  },
+  phone: {
+    type: String,
+  },
+  address: {
+    type: String,
+  },
+  city: {
+    type: String,
   },
   googleId: {
     type: String, // Store the Google ID

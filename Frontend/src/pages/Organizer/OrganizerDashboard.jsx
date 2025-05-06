@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getOrganizerDashboard } from "../../Redux/Slicers/OrganizerSlice"; // Adjust the import path as needed
 import {
   LineChart,
   Line,
@@ -21,72 +23,100 @@ import {
 } from "lucide-react";
 
 const OrganizerDashboard = () => {
-  // Sample data - replace with actual data from your API
-  const statsData = {
-    totalEvents: 47,
-    ticketsSold: 2384,
-    revenue: 95670,
-    upcomingEvents: 12,
+  const dispatch = useDispatch();
+  const { dashboardData, loading, error } = useSelector(
+    (state) => state.organizer
+  );
+
+  // Fetch dashboard data when component mounts
+  useEffect(() => {
+    dispatch(getOrganizerDashboard());
+  }, [dispatch]);
+
+  // If loading, show a loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-6 bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If there's an error, show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-6 bg-gray-50">
+        <div className="p-4 text-center text-red-500 rounded-lg bg-red-50">
+          <h2 className="mb-2 text-xl font-bold">Error Loading Dashboard</h2>
+          <p>{error}</p>
+          <button
+            onClick={() => dispatch(getOrganizerDashboard())}
+            className="px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If no data yet, show a placeholder
+  if (!dashboardData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-6 bg-gray-50">
+        <div className="text-center text-gray-500">
+          <h2 className="mb-2 text-xl font-bold">No Dashboard Data</h2>
+          <button
+            onClick={() => dispatch(getOrganizerDashboard())}
+            className="px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600"
+          >
+            Load Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Format data for the chart - with null checks
+  const formatSalesData = () => {
+    // If salesByEvent data exists and has elements
+    if (dashboardData.salesByEvent && dashboardData.salesByEvent.length > 0) {
+      // Map the last 6 events, or all if less than 6
+      const events = dashboardData.salesByEvent.slice(0, 6);
+      return events.map((event) => ({
+        name: event.date
+          ? new Date(event.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+          : "Unknown",
+        sales: event.count || 0,
+      }));
+    }
+
+    // Fallback to empty array if no data
+    return [];
   };
 
-  const recentEvents = [
-    {
-      id: 1,
-      title: "Web Development Conference",
-      date: "2025-04-15",
-      soldTickets: 89,
-      totalTickets: 100,
-    },
-    {
-      id: 2,
-      title: "Tech Startup Mixer",
-      date: "2025-04-12",
-      soldTickets: 120,
-      totalTickets: 150,
-    },
-    {
-      id: 3,
-      title: "Product Launch Party",
-      date: "2025-04-02",
-      soldTickets: 145,
-      totalTickets: 200,
-    },
-    {
-      id: 4,
-      title: "Design Workshop",
-      date: "2025-03-29",
-      soldTickets: 35,
-      totalTickets: 50,
-    },
-    {
-      id: 5,
-      title: "Annual Hackathon",
-      date: "2025-03-25",
-      soldTickets: 210,
-      totalTickets: 250,
-    },
-  ];
+  const salesData = formatSalesData();
 
-  const pendingActions = [
-    { id: 1, type: "approval", title: "AI Ethics Seminar", date: "2025-04-30" },
-    {
-      id: 2,
-      type: "approval",
-      title: "Virtual Reality Exhibition",
-      date: "2025-05-10",
-    },
-    { id: 3, type: "promo", code: "SPRING25", expires: "2025-04-15" },
-    { id: 4, type: "promo", code: "EARLYBIRD", expires: "2025-04-20" },
-  ];
-
-  const salesData = [
-    { name: "Mar 1", sales: 45 },
-    { name: "Mar 8", sales: 62 },
-    { name: "Mar 15", sales: 78 },
-    { name: "Mar 22", sales: 91 },
-    { name: "Mar 29", sales: 120 },
-    { name: "Apr 5", sales: 142 },
-  ];
+  // Calculate days until next event with null checks
+  const getNextEventText = () => {
+    if (
+      dashboardData.upcomingEvents?.length > 0 &&
+      dashboardData.upcomingEvents[0]?.date
+    ) {
+      const daysUntil = Math.ceil(
+        (new Date(dashboardData.upcomingEvents[0].date) - new Date()) /
+          (1000 * 60 * 60 * 24)
+      );
+      return `Next event in ${daysUntil} days`;
+    }
+    return "No upcoming events";
+  };
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">
@@ -109,9 +139,9 @@ const OrganizerDashboard = () => {
             </div>
           </div>
           <p className="text-3xl font-bold text-gray-800">
-            {statsData.totalEvents}
+            {dashboardData.totalEvents || 0}
           </p>
-          <p className="mt-2 text-sm text-green-600">+12% from last month</p>
+          <p className="mt-2 text-sm text-green-600">Active events</p>
         </div>
 
         <div className="p-6 bg-white border border-gray-100 rounded-lg shadow-sm">
@@ -122,9 +152,9 @@ const OrganizerDashboard = () => {
             </div>
           </div>
           <p className="text-3xl font-bold text-gray-800">
-            {statsData.ticketsSold}
+            {dashboardData.ticketsSold || 0}
           </p>
-          <p className="mt-2 text-sm text-green-600">+8% from last month</p>
+          <p className="mt-2 text-sm text-green-600">Total attendees</p>
         </div>
 
         <div className="p-6 bg-white border border-gray-100 rounded-lg shadow-sm">
@@ -135,9 +165,9 @@ const OrganizerDashboard = () => {
             </div>
           </div>
           <p className="text-3xl font-bold text-gray-800">
-            ${statsData.revenue.toLocaleString()}
+            ${(dashboardData.totalRevenue || 0).toLocaleString()}
           </p>
-          <p className="mt-2 text-sm text-green-600">+15% from last month</p>
+          <p className="mt-2 text-sm text-green-600">Total earnings</p>
         </div>
 
         <div className="p-6 bg-white border border-gray-100 rounded-lg shadow-sm">
@@ -150,9 +180,9 @@ const OrganizerDashboard = () => {
             </div>
           </div>
           <p className="text-3xl font-bold text-gray-800">
-            {statsData.upcomingEvents}
+            {dashboardData.upcomingEvents?.length || 0}
           </p>
-          <p className="mt-2 text-sm text-blue-600">Next event in 8 days</p>
+          <p className="mt-2 text-sm text-blue-600">{getNextEventText()}</p>
         </div>
       </div>
 
@@ -177,110 +207,116 @@ const OrganizerDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {recentEvents.map((event) => (
-                  <tr
-                    key={event.id}
-                    className="border-b border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="py-3 font-medium">{event.title}</td>
-                    <td className="py-3 text-gray-600">
-                      {new Date(event.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="py-3">
-                      <div className="flex items-center">
-                        <div className="w-full h-2 mr-2 bg-gray-200 rounded-full">
-                          <div
-                            className="h-2 bg-blue-500 rounded-full"
-                            style={{
-                              width: `${
-                                (event.soldTickets / event.totalTickets) * 100
-                              }%`,
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {event.soldTickets}/{event.totalTickets}
-                        </span>
-                      </div>
+                {dashboardData.upcomingEvents &&
+                dashboardData.upcomingEvents.length > 0 ? (
+                  dashboardData.upcomingEvents.map((event) => {
+                    // Find sales data for this event if available
+                    const eventSales = dashboardData.salesByEvent?.find(
+                      (sale) => sale.title === event.title
+                    ) || { count: 0 };
+
+                    // Calculate total tickets from ticket types with null checks
+                    const totalTickets =
+                      event.ticketTypes?.reduce(
+                        (sum, type) => sum + (type?.capacity || 0),
+                        0
+                      ) || 100; // Default to 100 if no data
+
+                    return (
+                      <tr
+                        key={event.id || `event-${event.title}`}
+                        className="border-b border-gray-100 hover:bg-gray-50"
+                      >
+                        <td className="py-3 font-medium">
+                          {event.title || "Unnamed Event"}
+                        </td>
+                        <td className="py-3 text-gray-600">
+                          {event.date
+                            ? new Date(event.date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })
+                            : "Date not set"}
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center">
+                            <div className="w-full h-2 mr-2 bg-gray-200 rounded-full">
+                              <div
+                                className="h-2 bg-blue-500 rounded-full"
+                                style={{
+                                  width: `${Math.min(
+                                    ((eventSales?.count || 0) / totalTickets) *
+                                      100,
+                                    100
+                                  )}%`,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm text-gray-600">
+                              {eventSales?.count || 0}/{totalTickets}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="3" className="py-4 text-center text-gray-500">
+                      No upcoming events found
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Pending Actions */}
+        {/* Recent Sales */}
         <div className="p-6 bg-white border border-gray-100 rounded-lg shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
-              Pending Actions
+              Recent Sales
             </h2>
             <button className="text-sm text-blue-500 hover:underline">
               View All
             </button>
           </div>
           <div className="space-y-4">
-            {pendingActions.map((action) => (
-              <div
-                key={action.id}
-                className="flex items-start p-3 border border-gray-100 rounded-lg hover:bg-gray-50"
-              >
+            {dashboardData.recentSales &&
+            dashboardData.recentSales.length > 0 ? (
+              dashboardData.recentSales.slice(0, 4).map((sale, index) => (
                 <div
-                  className={`p-2 rounded-full mr-3 ${
-                    action.type === "approval"
-                      ? "bg-yellow-100"
-                      : "bg-purple-100"
-                  }`}
+                  key={sale.id || `sale-${index}`}
+                  className="flex items-start p-3 border border-gray-100 rounded-lg hover:bg-gray-50"
                 >
-                  {action.type === "approval" ? (
-                    <AlertCircle
-                      className={`h-4 w-4 ${
-                        action.type === "approval"
-                          ? "text-yellow-500"
-                          : "text-purple-500"
-                      }`}
-                    />
-                  ) : (
-                    <Tag
-                      className={`h-4 w-4 ${
-                        action.type === "approval"
-                          ? "text-yellow-500"
-                          : "text-purple-500"
-                      }`}
-                    />
-                  )}
+                  <div className="p-2 mr-3 bg-green-100 rounded-full">
+                    <DollarSign className="w-4 h-4 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {sale.eventTitle || "Unnamed Event"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {sale.customerName || "Anonymous"} -{" "}
+                      {sale.purchaseDate
+                        ? new Date(sale.purchaseDate).toLocaleDateString()
+                        : "Unknown date"}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-green-600">
+                      $
+                      {typeof sale.price === "number"
+                        ? sale.price.toFixed(2)
+                        : "0.00"}{" "}
+                      • {sale.quantity || 0} ticket(s)
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  {action.type === "approval" ? (
-                    <>
-                      <p className="text-sm font-medium">{action.title}</p>
-                      <p className="text-xs text-gray-500">
-                        Needs approval for{" "}
-                        {new Date(action.date).toLocaleDateString()}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium">
-                        Promo code: {action.code}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Expires on{" "}
-                        {new Date(action.expires).toLocaleDateString()}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-            {pendingActions.length === 0 && (
+              ))
+            ) : (
               <p className="py-4 text-sm text-center text-gray-500">
-                No pending actions
+                No recent sales
               </p>
             )}
           </div>
@@ -303,22 +339,28 @@ const OrganizerDashboard = () => {
           </div>
         </div>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tickLine={false} axisLine={false} />
-              <YAxis tickLine={false} axisLine={false} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="sales"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {salesData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={salesData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              No sales data available
+            </div>
+          )}
         </div>
       </div>
 

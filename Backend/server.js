@@ -4,7 +4,7 @@ const cors = require("cors");
 const connectDB = require("./Config/db");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
-const passport = require("passport");
+
 const path = require("path");
 
 dotenv.config();
@@ -12,36 +12,45 @@ connectDB();
 
 const app = express();
 
-// Updated CORS configuration to allow credentials and specific origin
-app.use(
-  cors({
-    origin: "http://localhost:5173", // Your frontend URL
-    credentials: true, // Allow credentials (cookies, authorization headers)
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    // Ensure cookies can be sent cross-domain
-    exposedHeaders: ["set-cookie"],
-  })
-);
+// Setup CORS properly
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://accounts.google.com",
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Origin",
+    "X-Requested-With",
+    "Accept",
+  ],
+  exposedHeaders: ["set-cookie"],
+};
 
-app.use(express.json());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight requests properly
+
+// Setup session
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
+  }
+}));
+
+
 app.use(cookieParser());
+app.use(express.json());
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false, // Changed to false for better security
-    cookie: {
-      secure: process.env.NODE_ENV === "production", // Only true in production
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Updated for cross-site cookies
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    },
-  })
-);
-app.use(passport.initialize());
-app.use(passport.session());
 
 app.use(
   "/profile-images",

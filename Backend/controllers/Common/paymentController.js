@@ -182,7 +182,7 @@ exports.capturePayPalOrder = asyncHandler(async (req, res) => {
       event_id: order.tickets[0].event_id,
       amount: order.total_amount,
       payment_method: "paypal",
-      status: "completed",
+      payment_status: "completed",
       transaction_id: transactionId,
       payment_details: {
         paypal_order_id: paypalOrderId,

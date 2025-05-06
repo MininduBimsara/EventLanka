@@ -48,11 +48,11 @@ const Sidebar = () => {
       icon: <Tag className="w-5 h-5" />,
       path: "/organizer/discounts",
     },
-    {
-      title: "Media Manager",
-      icon: <Image className="w-5 h-5" />,
-      path: "/organizer/media",
-    },
+    // {
+    //   title: "Media Manager",
+    //   icon: <Image className="w-5 h-5" />,
+    //   path: "/organizer/media",
+    // },
     {
       title: "Sales Analytics",
       icon: <BarChart2 className="w-5 h-5" />,
@@ -63,11 +63,11 @@ const Sidebar = () => {
       icon: <User className="w-5 h-5" />,
       path: "/organizer/profile",
     },
-    {
-      title: "Settings",
-      icon: <Settings className="w-5 h-5" />,
-      path: "/organizer/settings",
-    },
+    // {
+    //   title: "Settings",
+    //   icon: <Settings className="w-5 h-5" />,
+    //   path: "/organizer/settings",
+    // },
   ];
 
   return (

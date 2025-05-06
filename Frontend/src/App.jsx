@@ -1,11 +1,17 @@
 import "./App.css";
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import axios from "axios";
 import { ThemeProvider } from "./Context/ThemeContext";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { fetchUserProfile } from "./Redux/Slicers/userSlice";
 import { verifyAuth } from "./Redux/Slicers/AuthSlice";
+import { checkGoogleAuthStatus } from "./Redux/Slicers/GoogleAuthSlice";
 
 // Common Pages
 import NewHome from "./pages/Common/NewHome";
@@ -51,41 +57,107 @@ import MyTransactions from "./pages/User/MyTransactions";
 import MyReviews from "./pages/User/MyReviews";
 
 function App() {
-   const dispatch = useDispatch();
-   const token = sessionStorage.getItem("token");
+  const dispatch = useDispatch();
+  const token = sessionStorage.getItem("token");
+  const { isAuthenticated, loading } = useSelector((state) => state.googleAuth);
 
-   useEffect(() => {
-     // Only attempt to fetch profile and verify auth if a token exists
-     if (token) {
-       // Set auth header for axios requests
-       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  useEffect(() => {
+    // Check Google authentication status
+    dispatch(checkGoogleAuthStatus());
 
-       // Dispatch auth verification actions
-       dispatch(fetchUserProfile());
-       dispatch(verifyAuth());
-     }
-   }, [dispatch, token]);
-   
+    // Only attempt to fetch profile and verify auth if a token exists
+    if (token) {
+      // Set auth header for axios requests
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // Dispatch auth verification actions
+      dispatch(fetchUserProfile());
+      dispatch(verifyAuth());
+    }
+  }, [dispatch, token]);
+
+  // Protected route wrapper component
+  // const ProtectedRoute = ({ children }) => {
+  //   if (loading) {
+  //     return <div>Loading...</div>; // Or your loading component
+  //   }
+
+  //   if (!isAuthenticated) {
+  //     return <Navigate to="/login" />;
+  //   }
+
+  //   return children;
+  // };
+
   return (
     <>
       <ThemeProvider>
         <Router>
           <Routes>
-            {/* Common Routes */}
-            <Route path="/" element={<NewHome />} />
-            <Route path="/newhome" element={<NewHome />} />
-            <Route path="/eventbrowsing" element={<EventBrowsingPage />} />
+            {/* Public Routes */}
             <Route path="/login" element={<LoginRegistrationUI />} />
-            <Route path="/event/:id" element={<EventBookingPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactUsPage />} />
-            <Route path="/payment-success/:paymentIntentId" element={<PaymentSuccessPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/payment-form/:orderId" element={<PaymentForm />} />
 
-            {/* <Route path="/home" element={<Home />} /> */}
+            {/* Protected Common Routes */}
+            <Route
+              path="/"
+              element={
+                
+                  <NewHome />
+                
+              }
+            />
+            <Route
+              path="/newhome"
+              element={
+                
+                  <NewHome />
+                
+              }
+            />
+            <Route
+              path="/eventbrowsing"
+              element={
+                
+                  <EventBrowsingPage />
+                
+              }
+            />
+            <Route
+              path="/event/:id"
+              element={
+              
+                  <EventBookingPage />
+            
+              }
+            />
+            <Route
+              path="/payment-success/:paymentIntentId"
+              element={
+              
+                  <PaymentSuccessPage />
+            
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+     
+                  <CheckoutPage />
 
-            {/* Organizer Routes */}
+              }
+            />
+            <Route
+              path="/payment-form/:orderId"
+              element={
+      
+                  <PaymentForm />
+               
+              }
+            />
+
+            {/* Protected Organizer Routes */}
             <Route path="/organizer" element={<OrganizerLayout />}>
               <Route path="dashboard" element={<OrganizerDashboard />} />
               <Route path="profile" element={<OrganizerProfile />} />
@@ -99,7 +171,7 @@ function App() {
               <Route path="update-event/:id" element={<UpdateEvent />} />
             </Route>
 
-            {/* Admin Routes*/}
+            {/* Protected Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="settings" element={<AdminSettings />} />
@@ -111,9 +183,8 @@ function App() {
               <Route path="users" element={<AdminUsers />} />
             </Route>
 
-            {/* User Routes */}
-
-            <Route path="/user">
+            {/* Protected User Routes */}
+            <Route path="/user" >
               <Route path="editprofile" element={<EditProfile />} />
               <Route path="helpcenter" element={<Support />} />
               <Route path="mybookings" element={<MyBookings />} />
@@ -121,6 +192,9 @@ function App() {
               <Route path="transactions" element={<MyTransactions />} />
               <Route path="myreviews" element={<MyReviews />} />
             </Route>
+
+            {/* Redirect any unknown routes to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </ThemeProvider>
