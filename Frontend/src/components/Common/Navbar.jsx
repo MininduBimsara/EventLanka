@@ -169,12 +169,12 @@ const Navbar = () => {
                 >
                   <FaUserEdit className="mr-2" /> Update Info
                 </button>
-                <button
+                {/* <button
                   onClick={() => navigateTo("/user/myreviews")}
                   className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
                 >
                   <FaUser className="mr-2" /> My Reviews
-                </button>
+                </button> */}
                 <button
                   onClick={() => navigateTo("/user/notifications")}
                   className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"

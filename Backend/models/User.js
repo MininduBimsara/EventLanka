@@ -29,6 +29,15 @@ const userSchema = new Schema({
     enum: ["active", "banned"],
     default: "active",
   },
+  phone: {
+    type: String,
+  },
+  address: {
+    type: String,
+  },
+  city: {
+    type: String,
+  },
   googleId: {
     type: String, // Store the Google ID
     unique: true, // Ensure it's unique
