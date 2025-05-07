@@ -5,6 +5,7 @@ const Ticket = require("../../models/Ticket");
 const asyncHandler = require("express-async-handler");
 const PDFDocument = require("pdfkit");
 const axios = require("axios"); // Using axios for PayPal API calls
+const Event = require("../../models/Event");
 
 // PayPal Configuration
 const PAYPAL_CLIENT_ID = process.env.VITE_PAYPAL_CLIENT_ID;
@@ -36,6 +37,49 @@ const getPayPalAccessToken = async () => {
     throw new Error("Failed to authenticate with PayPal");
   }
 };
+
+
+// Function to update ticket availability in Event
+const updateTicketAvailability = async (tickets) => {
+  try {
+    // Group tickets by event and ticket type
+    const ticketGroups = {};
+    
+    for (const ticket of tickets) {
+      const key = `${ticket.event_id}-${ticket.ticket_type}`;
+      
+      if (!ticketGroups[key]) {
+        ticketGroups[key] = {
+          eventId: ticket.event_id,
+          ticketType: ticket.ticket_type,
+          quantity: 0
+        };
+      }
+      
+      ticketGroups[key].quantity += ticket.quantity;
+    }
+    
+    // Update each event's ticket type availability
+    for (const key in ticketGroups) {
+      const { eventId, ticketType, quantity } = ticketGroups[key];
+      
+      await Event.findOneAndUpdate(
+        { 
+          _id: eventId,
+          "ticket_types.type": ticketType 
+        },
+        { 
+          $inc: { "ticket_types.$.availability": -quantity } 
+        }
+      );
+    }
+  } catch (error) {
+    console.error("Error updating ticket availability:", error);
+    throw new Error("Failed to update ticket availability");
+  }
+};
+
+
 
 // ===========================
 // CREATE PAYPAL ORDER
@@ -88,7 +132,7 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
             reference_id: orderId,
             description: `Event tickets for ${order.tickets[0]?.event_id}`,
             amount: {
-              currency_code: "USD", // Change to your currency
+              currency_code: "USD", 
               value: paymentAmount.toString(),
             },
           },
@@ -208,6 +252,9 @@ exports.capturePayPalOrder = asyncHandler(async (req, res) => {
       { payment_status: "paid" }
     );
 
+    // Update ticket availability in the Event model
+    await updateTicketAvailability(order.tickets);
+
     // If there was a discount used, increment its usage count
     if (order.discount_id) {
       await Discount.findByIdAndUpdate(order.discount_id, {
@@ -300,6 +347,9 @@ exports.processPayment = asyncHandler(async (req, res) => {
     { _id: { $in: order.tickets } },
     { payment_status: "paid" }
   );
+
+  // Update ticket availability in the Event model
+  await updateTicketAvailability(order.tickets);
 
   // If there was a discount used, increment its usage count
   if (order.discount_id) {
