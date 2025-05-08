@@ -160,9 +160,10 @@ exports.getOrganizers = async (req, res) => {
     // Transform the data to match what frontend expects
     const formattedOrganizers = await Promise.all(
       organizers.map(async (organizer) => {
-        // You would count events here if you have an Event model
-        // For example: const eventCount = await Event.countDocuments({ organizer: organizer._id });
-        const eventCount = 0; // Replace with actual count if you have an Event model
+        // Count events for this organizer
+        const eventCount = await Event.countDocuments({
+          organizer_id: organizer.user._id,
+        });
 
         return {
           _id: organizer._id,
@@ -176,7 +177,7 @@ exports.getOrganizers = async (req, res) => {
           website: organizer.website,
           status: organizer.user.status || "active",
           createdAt: organizer.user.createdAt,
-          totalEvents: eventCount,
+          totalEvents: eventCount, // Now includes the actual count of events
         };
       })
     );
@@ -187,6 +188,7 @@ exports.getOrganizers = async (req, res) => {
     res.status(500).json({ error: "Error fetching organizers" });
   }
 };
+
 
 exports.getOrganizerProfile = async (req, res) => {
   try {
@@ -199,6 +201,11 @@ exports.getOrganizerProfile = async (req, res) => {
     if (!organizer) {
       return res.status(404).json({ error: "Organizer not found" });
     }
+
+    // Count events for this organizer
+    const eventCount = await Event.countDocuments({
+      organizer_id: organizer.user._id,
+    });
 
     // Merge the user and organizer data for the frontend
     const organizerProfile = {
@@ -214,7 +221,7 @@ exports.getOrganizerProfile = async (req, res) => {
       instagram: organizer.instagram,
       facebook: organizer.facebook,
       linkedin: organizer.linkedin,
-      totalEvents: 0, // Replace with actual count if you have an Event model
+      totalEvents: eventCount, // Now includes the actual count of events
     };
 
     res.json(organizerProfile);
