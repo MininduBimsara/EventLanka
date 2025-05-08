@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getOrganizerDashboard } from "../../Redux/Slicers/OrganizerSlice"; // Adjust the import path as needed
+import { getOrganizerDashboard } from "../../Redux/Slicers/OrganizerSlice";
+import { Navigate, useNavigate } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -27,6 +28,7 @@ const OrganizerDashboard = () => {
   const { dashboardData, loading, error } = useSelector(
     (state) => state.organizer
   );
+  const navigate = useNavigate();
 
   // Fetch dashboard data when component mounts
   useEffect(() => {
@@ -370,7 +372,10 @@ const OrganizerDashboard = () => {
           Quick Actions
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <button className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-blue-50 hover:bg-blue-100">
+          <button
+            className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-blue-50 hover:bg-blue-100"
+            onClick={() => navigate("/organizer/create-event")}
+          >
             <div className="p-2 mb-2 bg-blue-100 rounded-full">
               <PlusCircle className="w-5 h-5 text-blue-500" />
             </div>
@@ -379,7 +384,10 @@ const OrganizerDashboard = () => {
             </span>
           </button>
 
-          <button className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-purple-50 hover:bg-purple-100">
+          <button
+            className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-purple-50 hover:bg-purple-100"
+            onClick={() => navigate("/organizer/manage-events")}
+          >
             <div className="p-2 mb-2 bg-purple-100 rounded-full">
               <Trello className="w-5 h-5 text-purple-500" />
             </div>
@@ -388,7 +396,10 @@ const OrganizerDashboard = () => {
             </span>
           </button>
 
-          <button className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-green-50 hover:bg-green-100">
+          <button
+            className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-green-50 hover:bg-green-100"
+            onClick={() => navigate("/organizer/attendees")}
+          >
             <div className="p-2 mb-2 bg-green-100 rounded-full">
               <Users className="w-5 h-5 text-green-500" />
             </div>
@@ -397,7 +408,10 @@ const OrganizerDashboard = () => {
             </span>
           </button>
 
-          <button className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-yellow-50 hover:bg-yellow-100">
+          <button
+            className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-yellow-50 hover:bg-yellow-100"
+            onClick={() => navigate("/organizer/discounts")}
+          >
             <div className="p-2 mb-2 bg-yellow-100 rounded-full">
               <Tag className="w-5 h-5 text-yellow-500" />
             </div>
@@ -406,7 +420,10 @@ const OrganizerDashboard = () => {
             </span>
           </button>
 
-          <button className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-red-50 hover:bg-red-100">
+          <button
+            className="flex flex-col items-center justify-center p-4 transition-colors rounded-lg bg-red-50 hover:bg-red-100"
+            onClick={() => navigate("/organizer/sales-analytics")}
+          >
             <div className="p-2 mb-2 bg-red-100 rounded-full">
               <List className="w-5 h-5 text-red-500" />
             </div>
