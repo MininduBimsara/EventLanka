@@ -100,62 +100,16 @@ function App() {
             <Route path="/contact" element={<ContactUsPage />} />
 
             {/* Protected Common Routes */}
-            <Route
-              path="/"
-              element={
-                
-                  <NewHome />
-                
-              }
-            />
-            <Route
-              path="/newhome"
-              element={
-                
-                  <NewHome />
-                
-              }
-            />
-            <Route
-              path="/eventbrowsing"
-              element={
-                
-                  <EventBrowsingPage />
-                
-              }
-            />
-            <Route
-              path="/event/:id"
-              element={
-              
-                  <EventBookingPage />
-            
-              }
-            />
+            <Route path="/" element={<NewHome />} />
+            <Route path="/newhome" element={<NewHome />} />
+            <Route path="/eventbrowsing" element={<EventBrowsingPage />} />
+            <Route path="/event/:id" element={<EventBookingPage />} />
             <Route
               path="/payment-success/:paymentIntentId"
-              element={
-              
-                  <PaymentSuccessPage />
-            
-              }
+              element={<PaymentSuccessPage />}
             />
-            <Route
-              path="/checkout"
-              element={
-     
-                  <CheckoutPage />
-
-              }
-            />
-            <Route
-              path="/payment-form/:orderId"
-              element={
-      
-                  <PaymentForm />
-               
-              }
-            />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/payment-form/:orderId" element={<PaymentForm />} />
 
             {/* Protected Organizer Routes */}
             <Route path="/organizer" element={<OrganizerLayout />}>
@@ -184,7 +138,7 @@ function App() {
             </Route>
 
             {/* Protected User Routes */}
-            <Route path="/user" >
+            <Route path="/user">
               <Route path="editprofile" element={<EditProfile />} />
               <Route path="helpcenter" element={<Support />} />
               <Route path="mybookings" element={<MyBookings />} />

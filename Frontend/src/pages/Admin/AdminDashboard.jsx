@@ -22,9 +22,11 @@ import {
   Clock,
 } from "lucide-react";
 import { fetchDashboardStats } from "../../Redux/Slicers/adminSlice";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Fix the selector to properly access the data from the Redux state
   const { stats: dashboardStats, loading } = useSelector(
@@ -248,19 +250,19 @@ const AdminDashboard = () => {
           <ActionButton
             text="View Pending Events"
             color="bg-blue-500"
-            onClick={() => console.log("Navigating to pending events")}
+            onClick={() => navigate("/admin/event-approvals")}
             icon={<Clock size={20} />}
           />
           <ActionButton
             text="Manage Users"
             color="bg-green-500"
-            onClick={() => console.log("Navigating to user management")}
+            onClick={() => navigate("/admin/users")}
             icon={<Users size={20} />}
           />
           <ActionButton
             text="Monitor Transactions"
             color="bg-purple-500"
-            onClick={() => console.log("Navigating to transactions")}
+            onClick={() => navigate("/admin/transactions")}
             icon={<DollarSign size={20} />}
           />
         </div>
