@@ -338,12 +338,12 @@ export default function OrganizersAdmin() {
                 <tr key={organizer._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {organizer.username}
+                      {organizer.user.username}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">
-                      {organizer.email}
+                      {organizer.user.email}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

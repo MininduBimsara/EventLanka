@@ -320,7 +320,7 @@ exports.processPayment = asyncHandler(async (req, res) => {
     event_id: order.tickets[0].event_id,
     amount: amount,
     payment_method: paymentMethod,
-    status: "completed",
+    payment_status: "completed",
     transaction_id: transactionId,
     payment_details:
       paymentMethod === "paypal"

@@ -229,7 +229,11 @@ export const updateOrganizerStatus = createAsyncThunk(
         `${API_URL}/organizers/${organizerId}/status`,
         statusData
       );
-      return response.data;
+      return {
+        organizerId,
+        status: statusData.status,
+        message: response.data.message,
+      };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update organizer status"
@@ -616,6 +620,7 @@ const adminSlice = createSlice({
       .addCase(fetchOrganizers.fulfilled, (state, action) => {
         state.users.loading = false;
         state.users.organizersList = action.payload;
+        state.error = null;
       })
       .addCase(fetchOrganizers.rejected, (state, action) => {
         state.users.loading = false;
