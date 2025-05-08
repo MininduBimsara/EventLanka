@@ -100,12 +100,10 @@ export const fetchEventById = createAsyncThunk(
   "events/fetchEventById",
   async (eventId, { rejectWithValue }) => {
     try {
-      console.log("Fetching event with ID:", eventId);
+      
       const response = await axios.get(`${API_URL}/${eventId}`, {
         withCredentials: true,
       });
-      
-      console.log("Event API response:", response.data);
 
       // Check if booking is available
       if (!response.data.bookingAvailable) {

@@ -13,7 +13,7 @@ export const createPaymentIntent = createAsyncThunk(
   "payments/createIntent",
   async (orderId, { rejectWithValue }) => {
     try {
-      console.log("Creating PayPal order for orderId:", orderId);
+      // console.log("Creating PayPal order for orderId:", orderId);
 
       // Get the pending order from localStorage to include the amount
       let amount = 0;
@@ -22,7 +22,7 @@ export const createPaymentIntent = createAsyncThunk(
         try {
           const parsedOrder = JSON.parse(storedOrder);
           amount = parsedOrder.totalAmount;
-          console.log("Using amount from stored order:", amount);
+          // console.log("Using amount from stored order:", amount);
         } catch (error) {
           console.error("Error parsing stored order:", error);
         }
@@ -32,7 +32,7 @@ export const createPaymentIntent = createAsyncThunk(
         `${PAYMENT_API_URL}/create-paypal-order`,
         { orderId, amount } // Include amount in request
       );
-      console.log("PayPal order creation response:", response.data);
+      // console.log("PayPal order creation response:", response.data);
       return response.data;
     } catch (error) {
       console.error(
@@ -51,14 +51,14 @@ export const capturePayPalOrder = createAsyncThunk(
   "payments/capturePayPal",
   async ({ orderId, paypalOrderId }, { rejectWithValue }) => {
     try {
-      console.log("Capturing PayPal order:", { orderId, paypalOrderId });
+      // console.log("Capturing PayPal order:", { orderId, paypalOrderId });
       
       const response = await axios.post(
         `${PAYMENT_API_URL}/capture-paypal-order`,
         { orderId, paypalOrderId }
       );
       
-      console.log("PayPal capture response:", response.data);
+      // console.log("PayPal capture response:", response.data);
       return response.data;
     } catch (error) {
       console.error(
@@ -96,7 +96,7 @@ export const confirmPayment = createAsyncThunk(
   "payments/confirm",
   async ({ paymentIntentId, orderId }, { rejectWithValue }) => {
     try {
-      console.log("Confirming payment:", { paymentIntentId, orderId });
+      // console.log("Confirming payment:", { paymentIntentId, orderId });
       const response = await axios.post(`${PAYMENT_API_URL}/confirm`, {
         paypalOrderId: paymentIntentId,
         orderId,
@@ -151,7 +151,7 @@ export const checkPaymentStatus = createAsyncThunk(
   "payments/checkStatus",
   async ({ paymentIntentId, orderId }, { rejectWithValue }) => {
     try {
-      console.log("Checking payment status:", { paymentIntentId, orderId });
+      // console.log("Checking payment status:", { paymentIntentId, orderId });
       const response = await axios.get(
         `${PAYMENT_API_URL}/status/${paymentIntentId}?orderId=${orderId}`
       );
