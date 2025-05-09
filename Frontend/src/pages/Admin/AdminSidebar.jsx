@@ -46,11 +46,11 @@ const Sidebar = () => {
       icon: <Users className="w-5 h-5" />,
       path: "/admin/organizers",
     },
-    {
-      title: "Refund Requests",
-      icon: <ArrowLeftRight className="w-5 h-5" />,
-      path: "/admin/refund-requests",
-    },
+    // {
+    //   title: "Refund Requests",
+    //   icon: <ArrowLeftRight className="w-5 h-5" />,
+    //   path: "/admin/refund-requests",
+    // },
     {
       title: "Reports",
       icon: <BarChart2 className="w-5 h-5" />,

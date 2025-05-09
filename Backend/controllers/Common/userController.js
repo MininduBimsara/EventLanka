@@ -189,7 +189,6 @@ exports.getOrganizers = async (req, res) => {
   }
 };
 
-
 exports.getOrganizerProfile = async (req, res) => {
   try {
     const { id } = req.params;
