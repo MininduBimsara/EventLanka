@@ -1,6 +1,7 @@
 const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
 const Event = require("../../models/Event");
+const Organizer = require("../../models/Organizer");
 
 // Get user profile (Only logged-in users can view their profile)
 exports.getUserProfile = async (req, res) => {
@@ -151,47 +152,121 @@ exports.getAllNonAdminUsers = async (req, res) => {
 // Organizer logic from User model
 exports.getOrganizers = async (req, res) => {
   try {
-    const organizers = await User.find({ role: "organizer" });
-    res.json(organizers);
+    // Populate the user field to get user details
+    const organizers = await Organizer.find()
+      .populate("user", "username email status createdAt")
+      .lean();
+
+    // Transform the data to match what frontend expects
+    const formattedOrganizers = await Promise.all(
+      organizers.map(async (organizer) => {
+        // Count events for this organizer
+        const eventCount = await Event.countDocuments({
+          organizer_id: organizer.user._id,
+        });
+
+        return {
+          _id: organizer._id,
+          user: {
+            _id: organizer.user._id,
+            username: organizer.user.username,
+            email: organizer.user.email,
+          },
+          phone: organizer.phone,
+          bio: organizer.bio,
+          website: organizer.website,
+          status: organizer.user.status || "active",
+          createdAt: organizer.user.createdAt,
+          totalEvents: eventCount, // Now includes the actual count of events
+        };
+      })
+    );
+
+    res.json(formattedOrganizers);
   } catch (err) {
+    console.error("Error fetching organizers:", err);
     res.status(500).json({ error: "Error fetching organizers" });
   }
 };
 
 exports.getOrganizerProfile = async (req, res) => {
   try {
-    const organizer = await User.findOne({
-      _id: req.params.id,
-      role: "organizer",
-    });
-    if (!organizer)
+    const { id } = req.params;
+
+    const organizer = await Organizer.findById(id)
+      .populate("user", "username email status createdAt phone address city")
+      .lean();
+
+    if (!organizer) {
       return res.status(404).json({ error: "Organizer not found" });
-    res.json(organizer);
+    }
+
+    // Count events for this organizer
+    const eventCount = await Event.countDocuments({
+      organizer_id: organizer.user._id,
+    });
+
+    // Merge the user and organizer data for the frontend
+    const organizerProfile = {
+      _id: organizer._id,
+      username: organizer.user.username,
+      email: organizer.user.email,
+      status: organizer.user.status || "active",
+      createdAt: organizer.user.createdAt,
+      phone: organizer.user.phone || organizer.phone,
+      address: organizer.user.address,
+      bio: organizer.bio,
+      website: organizer.website,
+      instagram: organizer.instagram,
+      facebook: organizer.facebook,
+      linkedin: organizer.linkedin,
+      totalEvents: eventCount, // Now includes the actual count of events
+    };
+
+    res.json(organizerProfile);
   } catch (err) {
+    console.error("Error fetching organizer profile:", err);
     res.status(500).json({ error: "Error fetching organizer profile" });
   }
 };
 
+
 exports.updateOrganizerStatus = async (req, res) => {
   try {
-    const organizer = await User.findOneAndUpdate(
-      { _id: req.params.id, role: "organizer" },
-      { status: req.body.status },
-      { new: true }
-    );
-    if (!organizer)
+    const { organizerId } = req.params;
+    const { status } = req.body;
+
+    const organizer = await Organizer.findById(organizerId);
+
+    if (!organizer) {
       return res.status(404).json({ error: "Organizer not found" });
-    res.json({ message: "Organizer status updated", organizer });
+    }
+
+    // Update the status in the User model
+    await User.findByIdAndUpdate(organizer.user, { status });
+
+    res.json({ message: "Organizer status updated successfully" });
   } catch (err) {
+    console.error("Error updating organizer status:", err);
     res.status(500).json({ error: "Error updating organizer status" });
   }
 };
 
 exports.getOrganizerEvents = async (req, res) => {
   try {
-    const events = await Event.find({ organizer_id: req.params.id });
+    // Find the organizer by the provided ID
+    const organizer = await Organizer.findById(req.params.id);
+
+    if (!organizer) {
+      return res.status(404).json({ error: "Organizer not found" });
+    }
+
+    // Fetch events associated with the organizer
+    const events = await Event.find({ organizer_id: organizer.user._id});
+
     res.json(events);
   } catch (err) {
+    console.error("Error fetching organizer events:", err);
     res.status(500).json({ error: "Error fetching organizer events" });
   }
 };

@@ -25,14 +25,14 @@ export const fetchAnalyticsData = createAsyncThunk(
 
       // Check if this is the same as the last request - if so, skip it
       if (requestSignature === lastRequest) {
-        console.log("Skipping duplicate request:", requestSignature);
+        // console.log("Skipping duplicate request:", requestSignature);
         return null; // Return null to skip processing in the reducer
       }
 
       // Update last request signature
       lastRequest = requestSignature;
 
-      console.log("Fetching analytics with params:", params);
+      // console.log("Fetching analytics with params:", params);
 
       const config = {
         headers: {
@@ -43,7 +43,7 @@ export const fetchAnalyticsData = createAsyncThunk(
       };
 
       const response = await axios.get(`${API_URL}/analytics`, config);
-      console.log("Received response:", response.status);
+      // console.log("Received response:", response.status);
 
       return response.data;
     } catch (error) {
@@ -68,7 +68,7 @@ export const fetchAnalyticsData = createAsyncThunk(
 
       // Check if we're currently loading data
       if (state.analytics.loading) {
-        console.log("Skipping request - already loading");
+        // console.log("Skipping request - already loading");
         return false;
       }
 
@@ -175,9 +175,9 @@ const analyticsSlice = createSlice({
             ) {
               state.data[key] = action.payload[key];
             } else {
-              console.log(
-                `Empty data received for ${key}, keeping sample data`
-              );
+              // console.log(
+              //   `Empty data received for ${key}, keeping sample data`
+              // );
               // Keep the sample data for this key
             }
           });

@@ -333,7 +333,7 @@ export const getEventDiscounts = createAsyncThunk(
         `${ORGANIZER_API_URL}/events/${eventId}/discounts`,
         config
       );
-      console.log("API Response:", response.data);
+      
       return { eventId, discounts: response.data };
     } catch (error) {
       return rejectWithValue(

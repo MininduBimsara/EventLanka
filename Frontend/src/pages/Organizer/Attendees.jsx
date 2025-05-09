@@ -108,7 +108,7 @@ const Attendees = () => {
         .unwrap()
         .then(() => {
           // Success feedback
-          console.log(`${exportType.toUpperCase()} exported successfully`);
+          // console.log(`${exportType.toUpperCase()} exported successfully`);
         })
         .catch((error) => {
           // Error feedback

@@ -12,7 +12,7 @@ export const fetchDashboardStats = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/dashboard`);
-      console.log("Dashboard API response:", response.data);
+      // console.log("Dashboard API response:", response.data);
       return response.data;
     } catch (error) {
        console.error(
@@ -229,7 +229,11 @@ export const updateOrganizerStatus = createAsyncThunk(
         `${API_URL}/organizers/${organizerId}/status`,
         statusData
       );
-      return response.data;
+      return {
+        organizerId,
+        status: statusData.status,
+        message: response.data.message,
+      };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update organizer status"
@@ -253,6 +257,7 @@ export const fetchOrganizerEvents = createAsyncThunk(
     }
   }
 );
+
 
 // Refund Requests Thunks
 export const fetchRefundRequests = createAsyncThunk(
@@ -616,6 +621,7 @@ const adminSlice = createSlice({
       .addCase(fetchOrganizers.fulfilled, (state, action) => {
         state.users.loading = false;
         state.users.organizersList = action.payload;
+        state.error = null;
       })
       .addCase(fetchOrganizers.rejected, (state, action) => {
         state.users.loading = false;

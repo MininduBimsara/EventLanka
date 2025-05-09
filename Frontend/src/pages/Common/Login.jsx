@@ -113,7 +113,7 @@ const initializeGoogleSignIn = () => {
       dispatch(googleAuth(response.credential))
         .unwrap()
         .then((userData) => {
-          console.log("Google authentication successful:", userData);
+          // console.log("Google authentication successful:", userData);
           setSuccessMessage("Google authentication successful!");
           navigate("/"); // Redirect to home page
         })
@@ -189,7 +189,7 @@ const initializeGoogleSignIn = () => {
     dispatch(loginUser({ email: formData.email, password: formData.password }))
       .unwrap()
       .then((data) => {
-        console.log("Login successful", data);
+        // console.log("Login successful", data);
         setSuccessMessage("Login successful!");
 
         // Reset form data
@@ -241,7 +241,7 @@ const initializeGoogleSignIn = () => {
       dispatch(registerUser(registrationData))
         .unwrap()
         .then((data) => {
-          console.log("Registration successful", data);
+          // console.log("Registration successful", data);
           setSuccessMessage("Registration successful!");
           // Reset form data and switch to login form after a delay
           setFormData({

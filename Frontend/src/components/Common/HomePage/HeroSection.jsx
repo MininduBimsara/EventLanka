@@ -1,7 +1,10 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 // Hero Section Component with Split Design
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col h-screen md:flex-row">
       {/* Left Section - Light Background with Logo and Tagline */}
@@ -95,7 +98,8 @@ const HeroSection = () => {
           </p>
 
           {/* CTA Button */}
-          <button className="px-6 py-2 mt-4 transition-all duration-300 bg-white rounded-full bg-opacity-20 hover:bg-opacity-30">
+          <button className="px-6 py-2 mt-4 transition-all duration-300 bg-white rounded-full bg-opacity-20 hover:bg-opacity-30"
+          onClick={() => navigate("/eventbrowsing")}>
             Browse Events
           </button>
         </div>

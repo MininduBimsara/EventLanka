@@ -109,7 +109,7 @@ const CheckoutPage = () => {
       // Check if action was successful
       if (fetchEventById.fulfilled.match(resultAction)) {
         const eventData = resultAction.payload;
-        console.log("Event data loaded:", eventData);
+        // console.log("Event data loaded:", eventData);
 
         // Set current event with the loaded data
         setCurrentEvent(eventData);
@@ -143,8 +143,8 @@ const CheckoutPage = () => {
       return;
     }
 
-    console.log("Creating order with event:", currentEvent);
-    console.log("Order data from localStorage:", orderData);
+    // console.log("Creating order with event:", currentEvent);
+    // console.log("Order data from localStorage:", orderData);
 
     setIsCreatingOrder(true);
 
@@ -195,16 +195,16 @@ const CheckoutPage = () => {
         payment_method: "paypal",
       };
 
-      console.log("Submitting order payload:", orderPayload);
+      // console.log("Submitting order payload:", orderPayload);
 
       // Check if we already have an orderId in the pendingOrder
       if (orderData.orderId) {
-        console.log("Using existing orderId:", orderData.orderId);
+        // console.log("Using existing orderId:", orderData.orderId);
         setOrderId(orderData.orderId);
       } else {
         // Create a new order
         const result = await dispatch(createOrder(orderPayload)).unwrap();
-        console.log("Order creation result:", result);
+        // console.log("Order creation result:", result);
 
         // Make sure the order total is saved in localStorage for the payment form
         const updatedOrderData = {
@@ -226,7 +226,7 @@ const CheckoutPage = () => {
   };
 
   const handlePaymentSuccess = (paymentIntent) => {
-    console.log("Payment successful:", paymentIntent);
+    // console.log("Payment successful:", paymentIntent);
 
     // Clear the pending order and payment from localStorage
     localStorage.removeItem("pendingOrder");

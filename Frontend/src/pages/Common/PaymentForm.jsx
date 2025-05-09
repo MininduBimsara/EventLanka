@@ -38,7 +38,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
         const thirtyMinutesInMs = 30 * 60 * 1000;
 
         if (currentTime - paymentTimestamp > thirtyMinutesInMs) {
-          console.log("Removing stale pending payment");
+          // console.log("Removing stale pending payment");
           localStorage.removeItem("pendingPayment");
         } else if (pendingPayment.orderId === orderId) {
           setPendingPaymentId(pendingPayment.paypalOrderId);
@@ -87,7 +87,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
           clearInterval(pollingTimer);
           return;
         }
-        console.log(`Status check attempt ${attempts + 1}`);
+        // console.log(`Status check attempt ${attempts + 1}`);
         checkPendingPaymentStatus(pendingPaymentId);
         attempts++;
       }, 5000);
@@ -101,9 +101,9 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
   const checkPendingPaymentStatus = async (paypalOrderId) => {
     if (!orderId || !paypalOrderId) return;
 
-    console.log(
-      `Checking payment status for order ${orderId}, PayPal ID: ${paypalOrderId}`
-    );
+    // console.log(
+    //   `Checking payment status for order ${orderId}, PayPal ID: ${paypalOrderId}`
+    // );
 
     try {
       const result = await dispatch(
@@ -111,7 +111,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
       ).unwrap();
 
       if (result.success) {
-        console.log("Payment verification successful:", result);
+        // console.log("Payment verification successful:", result);
         setPaymentSuccess(true);
         setFormVisible(false);
         setIsProcessing(false);
@@ -120,10 +120,10 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
 
         if (onSuccess) onSuccess({ id: paypalOrderId });
       } else if (result.status === "pending") {
-        console.log("Payment still pending, will check again");
+        // console.log("Payment still pending, will check again");
         // Keep the pending notice visible
       } else {
-        console.log("Payment verification failed with status:", result.status);
+        // console.log("Payment verification failed with status:", result.status);
       }
     } catch (error) {
       console.error("Payment status check failed:", error);
@@ -199,10 +199,10 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
             pendingPayment.orderId === orderId &&
             Date.now() - pendingPayment.timestamp < 10 * 60 * 1000
           ) {
-            console.log(
-              "Using existing PayPal order ID:",
-              pendingPayment.paypalOrderId
-            );
+            // console.log(
+            //   "Using existing PayPal order ID:",
+            //   pendingPayment.paypalOrderId
+            // );
             return pendingPayment.paypalOrderId;
           }
         } catch (e) {
@@ -243,7 +243,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
 
     try {
       const paypalOrderId = data.orderID;
-      console.log("Payment approved with PayPal order ID:", paypalOrderId);
+      // console.log("Payment approved with PayPal order ID:", paypalOrderId);
 
       // Update pending payment with latest order ID
       localStorage.setItem(
@@ -269,7 +269,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
           })
         ).unwrap();
 
-        console.log("Capture completed:", captureResult);
+        // console.log("Capture completed:", captureResult);
 
         // If capture was successful, complete the payment process
         setPaymentSuccess(true);
@@ -330,7 +330,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
 
     // Standardize error handling for window closure
     const errorMessage = err.message || String(err);
-    console.log("PayPal error message:", errorMessage);
+    // console.log("PayPal error message:", errorMessage);
 
     if (
       errorMessage.includes("Window closed") ||
@@ -338,7 +338,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
       errorMessage.includes("Window_closed") ||
       errorMessage.includes("message channel closed")
     ) {
-      console.log("Detected window closure - checking payment status");
+      // console.log("Detected window closure - checking payment status");
       setShowPendingNotice(true);
       setPaymentError(null);
 
@@ -359,7 +359,7 @@ const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
             )
               .then((result) => {
                 if (result?.payload?.payment) {
-                  console.log("Capture successful on retry:", result.payload);
+                  // console.log("Capture successful on retry:", result.payload);
                   setPaymentSuccess(true);
                   setFormVisible(false);
                   localStorage.removeItem("pendingPayment");

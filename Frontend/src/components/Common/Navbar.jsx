@@ -13,6 +13,8 @@ import {
   FaUserEdit,
   FaChevronDown,
   FaTachometerAlt,
+  FaBars,
+  FaTimes,
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
@@ -25,6 +27,7 @@ const Navbar = () => {
   const { isAuthenticated, user, loading } = useSelector((state) => state.user);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Check auth status on component mount - always verify
   useEffect(() => {
@@ -53,8 +56,36 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownOpen]);
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        mobileMenuOpen &&
+        !event.target.closest(".mobile-menu-container") &&
+        !event.target.closest(".mobile-menu-button")
+      ) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setMobileMenuOpen(false);
+    };
+
+    return () => {
+      handleRouteChange();
+    };
+  }, [navigate]);
+
   const handleLoginClick = () => {
     navigate("/login");
+    setMobileMenuOpen(false);
   };
 
   const handleDashboardClick = () => {
@@ -64,12 +95,14 @@ const Navbar = () => {
     } else if (user?.role === "organizer") {
       navigate("/organizer/dashboard");
     }
+    setMobileMenuOpen(false);
   };
 
   const handleLogoutClick = async () => {
     try {
       await dispatch(logoutUser()).unwrap();
       setDropdownOpen(false);
+      setMobileMenuOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -81,9 +114,14 @@ const Navbar = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   const navigateTo = (path) => {
     navigate(path);
     setDropdownOpen(false);
+    setMobileMenuOpen(false);
   };
 
   // Determine which button to show based on authentication and role
@@ -108,14 +146,19 @@ const Navbar = () => {
             className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-blue-600 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
             <FaTachometerAlt className="mr-2" />
-            {user.role === "admin" ? "Admin Dashboard" : "Organizer Dashboard"}
+            <span className="hidden sm:inline">
+              {user.role === "admin"
+                ? "Admin Dashboard"
+                : "Organizer Dashboard"}
+            </span>
+            <span className="sm:hidden">Dashboard</span>
           </button>
           <button
             onClick={handleLogoutClick}
             className="flex items-center px-3 py-1.5 text-sm font-medium text-white transition-colors bg-gray-700 rounded-full hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
-            <FaSignOutAlt className="mr-1" />
-            Logout
+            <FaSignOutAlt className="mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       );
@@ -139,7 +182,9 @@ const Navbar = () => {
                 className="object-cover w-full h-full"
               />
             </div>
-            <span className="mr-1">{user?.username || "My Account"}</span>
+            <span className="hidden mr-1 sm:inline">
+              {user?.username || "My Account"}
+            </span>
             <FaChevronDown
               className={`transition-transform ${
                 dropdownOpen ? "rotate-180" : ""
@@ -169,12 +214,6 @@ const Navbar = () => {
                 >
                   <FaUserEdit className="mr-2" /> Update Info
                 </button>
-                {/* <button
-                  onClick={() => navigateTo("/user/myreviews")}
-                  className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
-                >
-                  <FaUser className="mr-2" /> My Reviews
-                </button> */}
                 <button
                   onClick={() => navigateTo("/user/notifications")}
                   className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-gray-700"
@@ -199,42 +238,52 @@ const Navbar = () => {
   return (
     <nav
       className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled ? "bg-transparent py-2" : "bg-transparent py-4"
+        isScrolled
+          ? "bg-gray-900 text-white shadow-lg py-2"
+          : "bg-transparent py-4"
       }`}
     >
       <div className="container flex items-center justify-between px-4 mx-auto">
+        {/* Logo */}
         <div className="flex items-center">
-          <div className="w-10 h-10 mr-2 bg-gray-100 rounded-full"></div>
-          <h1 className="text-2xl font-bold">EventLanka</h1>
+          <div
+            onClick={() => navigateTo("/")}
+            className="flex items-center cursor-pointer"
+          >
+            <div className="w-10 h-10 mr-2 bg-gray-100 rounded-full"></div>
+            <h1 className="text-2xl font-bold">EventLanka</h1>
+          </div>
         </div>
 
+        {/* Desktop Navigation */}
         <div className="hidden space-x-8 md:flex">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigateTo("/")}
             className="transition-colors hover:text-amber-400"
           >
             Home
           </button>
           <button
-            onClick={() => navigate("/eventbrowsing")}
+            onClick={() => navigateTo("/eventbrowsing")}
             className="transition-colors hover:text-amber-400"
           >
             Events
           </button>
           <button
-            onClick={() => navigate("/about")}
+            onClick={() => navigateTo("/about")}
             className="transition-colors hover:text-amber-400"
           >
             About
           </button>
           <button
-            onClick={() => navigate("/contact")}
+            onClick={() => navigateTo("/contact")}
             className="transition-colors hover:text-amber-400"
           >
             Contact
           </button>
         </div>
 
+        {/* Search and Auth Buttons */}
         <div className="flex items-center space-x-4">
           <div className="relative hidden md:block">
             <input
@@ -245,28 +294,111 @@ const Navbar = () => {
             <FaSearch className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2" />
           </div>
 
-          {/* Render appropriate auth buttons based on user status and role */}
-          {renderAuthButtons()}
+          {/* Desktop Auth Buttons */}
+          <div className="hidden md:block">{renderAuthButtons()}</div>
 
-          {/* Mobile menu button */}
-          <button className="text-2xl md:hidden">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={toggleMobileMenu}
+            className="text-2xl md:hidden mobile-menu-button"
+            aria-label="Toggle mobile menu"
+          >
+            {mobileMenuOpen ? (
+              <FaTimes className="w-6 h-6" />
+            ) : (
+              <FaBars className="w-6 h-6" />
+            )}
           </button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="mobile-menu-container md:hidden">
+          <div className="px-2 pt-2 pb-4 space-y-1 bg-gray-900 shadow-lg bg-opacity-95">
+            <div className="flex items-center justify-between px-4 py-2">
+              <div></div>
+              <div className="md:hidden">{renderAuthButtons()}</div>
+            </div>
+
+            <div className="relative px-4 py-2">
+              <input
+                type="text"
+                placeholder="Search in site"
+                className="w-full py-2 pl-3 pr-10 text-white bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+              <FaSearch className="absolute text-gray-400 transform -translate-y-1/2 right-6 top-1/2" />
+            </div>
+
+            <hr className="border-gray-700" />
+
+            <button
+              onClick={() => navigateTo("/")}
+              className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800 hover:text-amber-400"
+            >
+              Home
+            </button>
+            <button
+              onClick={() => navigateTo("/eventbrowsing")}
+              className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800 hover:text-amber-400"
+            >
+              Events
+            </button>
+            <button
+              onClick={() => navigateTo("/about")}
+              className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800 hover:text-amber-400"
+            >
+              About
+            </button>
+            <button
+              onClick={() => navigateTo("/contact")}
+              className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800 hover:text-amber-400"
+            >
+              Contact
+            </button>
+
+            {/* Show user account options in mobile menu if authenticated */}
+            {isAuthenticated &&
+              user?.role !== "admin" &&
+              user?.role !== "organizer" && (
+                <>
+                  <hr className="border-gray-700" />
+                  <button
+                    onClick={() => navigateTo("/user/mybookings")}
+                    className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800"
+                  >
+                    <FaTicketAlt className="inline mr-2" /> My Bookings
+                  </button>
+                  <button
+                    onClick={() => navigateTo("/user/transactions")}
+                    className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800"
+                  >
+                    <FaCalendarAlt className="inline mr-2" /> Transaction
+                    History
+                  </button>
+                  <button
+                    onClick={() => navigateTo("/user/editprofile")}
+                    className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800"
+                  >
+                    <FaUserEdit className="inline mr-2" /> Update Info
+                  </button>
+                  <button
+                    onClick={() => navigateTo("/user/notifications")}
+                    className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800"
+                  >
+                    <FaBell className="inline mr-2" /> Notifications
+                  </button>
+                  <button
+                    onClick={handleLogoutClick}
+                    className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-800"
+                  >
+                    <FaSignOutAlt className="inline mr-2" /> Log Out
+                  </button>
+                </>
+              )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

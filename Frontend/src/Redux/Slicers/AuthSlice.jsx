@@ -82,10 +82,10 @@ export const verifyAuth = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Log to verify credentials are being sent
-      console.log(
-        "Verifying auth with credentials:",
-        axios.defaults.withCredentials
-      );
+      // console.log(
+      //   "Verifying auth with credentials:",
+      //   axios.defaults.withCredentials
+      // );
 
       const response = await axios.get(`${API_URL}/verify`, {
         withCredentials: true, // Explicitly include credentials for this request
