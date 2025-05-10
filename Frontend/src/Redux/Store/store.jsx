@@ -20,12 +20,15 @@ import organizerReducer from "../Slicers/OrganizerSlice";
 import paymentReducer from "../Slicers/PaymentSlice";
 import ticketReducer from "../Slicers/ticketSlice";
 import adminReducer from "../Slicers/adminSlice";
+import passwordResetReducer from "../Slicers/PasswordResetSlice";
 
 // Persist config
 const persistConfig = {
   key: "root",
   storage,
   whitelist: ["user", "events", "googleAuth"],
+  // We don't want to persist passwordReset state
+  blacklist: ["passwordReset"],
 };
 
 // Root reducer
@@ -39,6 +42,7 @@ const rootReducer = combineReducers({
   payments: paymentReducer,
   tickets: ticketReducer,
   admin: adminReducer,
+  passwordReset: passwordResetReducer,
 });
 
 // Persisted reducer
