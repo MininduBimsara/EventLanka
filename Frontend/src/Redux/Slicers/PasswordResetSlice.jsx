@@ -2,12 +2,14 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+const API_URL = "http://localhost:5000/api/password-reset"; // Events API URL
+
 // Async thunk for requesting password reset
 export const forgotPassword = createAsyncThunk(
   "passwordReset/forgotPassword",
   async (email, { rejectWithValue }) => {
     try {
-      const response = await axios.post("/api/auth/forgot-password", { email });
+      const response = await axios.post(`${API_URL}/forgot-password`, { email });
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -23,7 +25,9 @@ export const verifyResetToken = createAsyncThunk(
   "passwordReset/verifyResetToken",
   async (token, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/auth/reset-password/${token}`);
+      const response = await axios.get(
+        `${API_URL}/reset-password/${token}`
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(
