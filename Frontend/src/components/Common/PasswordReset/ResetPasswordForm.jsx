@@ -5,7 +5,7 @@ import {
   verifyResetToken,
   resetPassword,
   clearPasswordResetState,
-} from "../Slicers/PasswordResetSlice";
+} from "../../../Redux/Slicers/PasswordResetSlice";
 
 const ResetPasswordForm = () => {
   const [password, setPassword] = useState("");
