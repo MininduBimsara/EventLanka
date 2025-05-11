@@ -300,8 +300,8 @@ const initializeGoogleSignIn = () => {
             <div className="text-center">
               <h2 className="mb-6 text-3xl font-bold">
                 {activeForm === "login"
-                  ? "Welcome Back to EventHorizon"
-                  : "Join the EventHorizon Community"}
+                  ? "Welcome Back to EventLanka"
+                  : "Join the EventLanka Community"}
               </h2>
               <p className="text-xl">
                 "Discover, Connect, and Experience Amazing Events Together"
@@ -457,9 +457,7 @@ const initializeGoogleSignIn = () => {
                     <button
                       type="button"
                       className="text-sm text-purple-600 hover:text-purple-800"
-                      onClick={() =>
-                        alert("Password reset functionality would go here")
-                      }
+                      onClick={() => navigate("/forgot-password")}
                     >
                       Forgot Password?
                     </button>
