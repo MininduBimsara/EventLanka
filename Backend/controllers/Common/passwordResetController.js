@@ -1,8 +1,8 @@
 const User = require("../../models/User");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
+const { sendPasswordResetEmail } = require("../../Services/emailService");
 
 // Request password reset email
 const forgotPassword = async (req, res) => {
@@ -41,33 +41,9 @@ const forgotPassword = async (req, res) => {
     // Create reset URL
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-    // Email content
-    const message = `
-      <h1>Password Reset Request</h1>
-      <p>You requested a password reset. Please click on the link below to reset your password:</p>
-      <a href="${resetUrl}" clicktracking="off">Reset Password</a>
-      <p>This link will expire in 10 minutes.</p>
-      <p>If you didn't request this, please ignore this email.</p>
-    `;
-
-    // Send email
+    // Send email using our email service
     try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
-        secure: process.env.EMAIL_SECURE === "true",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD,
-        },
-      });
-
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
-        to: user.email,
-        subject: "Password Reset Request",
-        html: message,
-      });
+      await sendPasswordResetEmail(user.email, resetUrl);
 
       res.status(200).json({
         message:
