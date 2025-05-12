@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchEvents } from "../../../Redux/Slicers/EventSlice";
+import { fetchAllEvents } from "../../../Redux/Slicers/EventSlice";
 import { useNavigate } from "react-router-dom";
 
 // Enhanced Featured Events with modern styling and improved carousel functionality
 const FeaturedEvents = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { events, loading, error } = useSelector((state) => state.events);
+  const { events = [], loading, error } = useSelector((state) => state.events);
   const carouselRef = useRef(null);
 
   useEffect(() => {
-    dispatch(fetchEvents());
+    dispatch(fetchAllEvents());
   }, [dispatch]);
 
   // Format date for better display
@@ -75,6 +75,26 @@ const FeaturedEvents = () => {
     setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
     setTimeout(() => setIsTransitioning(false), 500);
   };
+
+  // Handle loading and error states
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="relative px-4 py-3 text-red-700 bg-red-100 border border-red-400 rounded"
+        role="alert"
+      >
+        <span className="block sm:inline">{error}</span>
+      </div>
+    );
+  }
 
   return (
     <section
@@ -261,11 +281,12 @@ const FeaturedEvents = () => {
 
                           {/* Enhanced Card Footer with Button */}
                           <div className="px-5 py-4 mt-2 text-center transition-colors md:px-6 bg-gray-50 group-hover:bg-blue-50">
-                            <button className="w-full py-2 text-sm font-medium text-blue-800 transition-all duration-300 bg-transparent border-2 border-blue-800 rounded-full md:text-base group-hover:bg-blue-800 group-hover:text-white group-hover:shadow-lg"
-                            onClick={() => {
-                              navigate(`/event/${event._id}`, );
-                            }
-                            }>
+                            <button
+                              className="w-full py-2 text-sm font-medium text-blue-800 transition-all duration-300 bg-transparent border-2 border-blue-800 rounded-full md:text-base group-hover:bg-blue-800 group-hover:text-white group-hover:shadow-lg"
+                              onClick={() => {
+                                navigate(`/event/${event._id}`);
+                              }}
+                            >
                               View Details
                             </button>
                           </div>
@@ -295,31 +316,32 @@ const FeaturedEvents = () => {
               ))}
             </div>
           )}
-        </div>
 
-        {/* Enhanced View All Events Button */}
-        <div className="text-center mt-14 md:mt-20">
-          <button className="inline-flex items-center px-8 py-3 text-base font-medium text-white transition-all duration-300 transform bg-blue-800 rounded-full shadow-xl md:px-12 md:py-4 md:text-lg hover:bg-blue-700 hover:scale-105 group"
-          onClick={() => {
-
-            navigate("/eventbrowsing");
-          }}>
-            <span>Explore All Events</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {/* Enhanced View All Events Button */}
+          <div className="text-center mt-14 md:mt-20">
+            <button
+              className="inline-flex items-center px-8 py-3 text-base font-medium text-white transition-all duration-300 transform bg-blue-800 rounded-full shadow-xl md:px-12 md:py-4 md:text-lg hover:bg-blue-700 hover:scale-105 group"
+              onClick={() => {
+                navigate("/eventbrowsing");
+              }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
-            </svg>
-          </button>
+              <span>Explore All Events</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </section>

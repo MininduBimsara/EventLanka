@@ -19,6 +19,26 @@ export const fetchEvents = createAsyncThunk(
   }
 );
 
+
+// Async thunk for fetching all events without permission
+export const fetchAllEvents = createAsyncThunk(
+  "events/fetchAllEvents",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/events/public/all", {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Ensure the response is an array
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      console.error("Fetch all events error:", error);
+      return rejectWithValue("Failed to fetch events");
+    }
+  }
+);
 // Async thunk for creating a new event
 export const createEvent = createAsyncThunk(
   "events/createEvent",
@@ -171,6 +191,20 @@ const eventsSlice = createSlice({
         state.events = action.payload;
       })
       .addCase(fetchEvents.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Fetch all events (without permission)
+      .addCase(fetchAllEvents.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllEvents.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events = action.payload;
+      })
+      .addCase(fetchAllEvents.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

@@ -47,6 +47,8 @@ const userSchema = new Schema({
     type: Boolean,
     default: false, // Default to false unless verified
   },
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
   createdAt: {
     type: Date,
     default: Date.now,

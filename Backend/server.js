@@ -79,6 +79,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const organizerRoutes = require("./routes/organizerRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const passwordResetRoutes = require("./routes/passwordResetRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
@@ -89,6 +90,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/organizer", organizerRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/password-reset", passwordResetRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

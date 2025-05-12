@@ -23,6 +23,8 @@ import ContactUsPage from "./pages/Common/ContactUs";
 import PaymentSuccessPage from "./pages/Common/PaymentSuccessPage";
 import CheckoutPage from "./pages/Common/CheckoutPage";
 import PaymentForm from "./pages/Common/PaymentForm";
+import ForgotPasswordForm from "./components/Common/PasswordReset/ForgotPasswordForm";
+import ResetPasswordForm from "./components/Common/PasswordReset/ResetPasswordForm";
 
 //Organizer Pages
 import OrganizerDashboard from "./pages/Organizer/OrganizerDashboard";
@@ -98,6 +100,8 @@ function App() {
             <Route path="/login" element={<LoginRegistrationUI />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactUsPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordForm />} />
 
             {/* Protected Common Routes */}
             <Route path="/" element={<NewHome />} />
