@@ -17,7 +17,16 @@ const TrendingEventsSlider = () => {
 
   // Fetch events when component mounts
   useEffect(() => {
-    dispatch(fetchAllEvents());
+    const fetchEvents = async () => {
+      try {
+        dispatch(fetchAllEvents());
+      } catch (error) {
+        console.error("Failed to fetch events:", error);
+        // Optionally set an error state to show a user-friendly message
+      }
+    };
+
+    fetchEvents();
   }, [dispatch]);
 
   // Get the 4 most recent approved events

@@ -19,18 +19,35 @@ export const fetchEvents = createAsyncThunk(
   }
 );
 
+
 // Async thunk for fetching all events without permission
 export const fetchAllEvents = createAsyncThunk(
   "events/fetchAllEvents",
   async (_, { rejectWithValue }) => {
     try {
-      
-      const response = await axios.get(`${API_URL}/all`);
+      // Use full URL and remove credentials
+      const response = await axios.get("http://localhost:5000/api/events/all", {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch events"
-      );
+      console.error("Fetch all events error:", error);
+      // More detailed error handling
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        return rejectWithValue(
+          error.response.data?.message || "Failed to fetch events"
+        );
+      } else if (error.request) {
+        // The request was made but no response was received
+        return rejectWithValue("No response received from server");
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        return rejectWithValue("Error setting up the request");
+      }
     }
   }
 );

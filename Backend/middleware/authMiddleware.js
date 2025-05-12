@@ -3,6 +3,17 @@ const User = require("../models/User");
 const asyncHandler = require("express-async-handler");
 
 exports.protect = asyncHandler(async (req, res, next) => {
+
+  // List of public routes that don't require authentication
+  const publicRoutes = [
+    "/api/events/all", // Use the path, not the full URL
+  ];
+
+  // Check if the current route is public
+  if (publicRoutes.includes(req.path)) {
+    return next(); // Skip authentication for public routes
+  }
+
   // Check for token in cookies
   const token = req.cookies.token;
 
@@ -42,7 +53,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
         .json({ message: "Session expired. Please log in again." });
     }
     res.status(400).json({ message: "Invalid token" });
-  } 
+  }
 });
 
 // 🔐 Role-based middleware

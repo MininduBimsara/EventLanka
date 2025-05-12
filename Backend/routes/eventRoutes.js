@@ -3,24 +3,23 @@ const {
   createEvent,
   getEvents,
   updateEvent,
-  getEventById ,
+  getEventById,
   deleteEvent,
-  getAllEvents,
+  getPublicEvents,
 } = require("../controllers/Common/eventController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-
 // RESTful routes for events
-router.post("/",
-  protect, createEvent); // Create an event
-router.get("/", protect, getEvents); // Get events (based on role)
-router.put("/:id", protect, updateEvent); // Update an event
-router.delete("/:id", protect, deleteEvent); // Delete an event
-router.get("/:id", protect, getEventById); // Get an event by ID
+router.post("/", protect, createEvent);
+router.get("/", protect, getEvents);
+router.put("/:id", protect, updateEvent);
+router.delete("/:id", protect, deleteEvent);
 
+// 🔥 Move this BEFORE router.get("/:id")
+router.get("/all", getPublicEvents);
 
-router.get("/all", getAllEvents); // Get all events (for admin)
+router.get("/:id", protect, getEventById);
 
 module.exports = router;

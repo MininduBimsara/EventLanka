@@ -60,14 +60,13 @@ exports.createEvent = async (req, res) => {
   }
 };
 
-exports.getAllEvents = async (req, res) => {
+exports.getPublicEvents = async (req, res) => {
   try {
-    // Always return only approved events
-    const events = await Event.find({ event_status: "approved" });
+    const events = await Event.find({ event_status: "approved" }).lean();
 
     // Transform banner URLs to be fully qualified
     const transformedEvents = events.map((event) => ({
-      ...event._doc,
+      ...event,
       banner: event.banner ? `/event-images/${event.banner}` : null,
     }));
 
@@ -77,7 +76,6 @@ exports.getAllEvents = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
-
 
 
 // Get all events (Admin sees all, Organizers see their own, Users see only approved events)
