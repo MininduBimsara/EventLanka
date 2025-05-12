@@ -18,7 +18,7 @@ router.put("/:id", protect, updateEvent);
 router.delete("/:id", protect, deleteEvent);
 
 // 🔥 Move this BEFORE router.get("/:id")
-router.get("/all", getPublicEvents);
+router.get("/public/all", getPublicEvents);
 
 router.get("/:id", protect, getEventById);
 

@@ -30,10 +30,12 @@ const TrendingEventsSlider = () => {
   }, [dispatch]);
 
   // Get the 4 most recent approved events
-  const trendingEvents = events
+  const trendingEvents = Array.isArray(events) 
+  ? events
     .filter((event) => event.event_status === "approved")
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 4);
+    .slice(0, 4)
+  : [];
 
   // Auto-slide functionality
   useEffect(() => {
