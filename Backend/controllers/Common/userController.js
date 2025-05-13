@@ -184,7 +184,7 @@ exports.getOrganizers = async (req, res) => {
 
     res.json(formattedOrganizers);
   } catch (err) {
-    console.error("Error fetching organizers:", err);
+    // console.error("Error fetching organizers:", err);
     res.status(500).json({ error: "Error fetching organizers" });
   }
 };
@@ -225,7 +225,7 @@ exports.getOrganizerProfile = async (req, res) => {
 
     res.json(organizerProfile);
   } catch (err) {
-    console.error("Error fetching organizer profile:", err);
+    // console.error("Error fetching organizer profile:", err);
     res.status(500).json({ error: "Error fetching organizer profile" });
   }
 };
@@ -247,7 +247,7 @@ exports.updateOrganizerStatus = async (req, res) => {
 
     res.json({ message: "Organizer status updated successfully" });
   } catch (err) {
-    console.error("Error updating organizer status:", err);
+    // console.error("Error updating organizer status:", err);
     res.status(500).json({ error: "Error updating organizer status" });
   }
 };
@@ -266,7 +266,7 @@ exports.getOrganizerEvents = async (req, res) => {
 
     res.json(events);
   } catch (err) {
-    console.error("Error fetching organizer events:", err);
+    // console.error("Error fetching organizer events:", err);
     res.status(500).json({ error: "Error fetching organizer events" });
   }
 };

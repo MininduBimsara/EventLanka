@@ -33,7 +33,7 @@ const getPayPalAccessToken = async () => {
 
     return response.data.access_token;
   } catch (error) {
-    console.error("Error getting PayPal access token:", error);
+    // console.error("Error getting PayPal access token:", error);
     throw new Error("Failed to authenticate with PayPal");
   }
 };
@@ -74,7 +74,7 @@ const updateTicketAvailability = async (tickets) => {
       );
     }
   } catch (error) {
-    console.error("Error updating ticket availability:", error);
+    // console.error("Error updating ticket availability:", error);
     throw new Error("Failed to update ticket availability");
   }
 };
@@ -155,10 +155,10 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
       links: response.data.links,
     });
   } catch (error) {
-    console.error(
-      "Error creating PayPal order:",
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   "Error creating PayPal order:",
+    //   error.response?.data || error.message
+    // );
     res.status(500).json({
       message: "Error creating PayPal order",
       error: error.response?.data || error.message,
@@ -269,10 +269,10 @@ exports.capturePayPalOrder = asyncHandler(async (req, res) => {
       paypalOrderId,
     });
   } catch (error) {
-    console.error(
-      "Error capturing PayPal payment:",
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   "Error capturing PayPal payment:",
+    //   error.response?.data || error.message
+    // );
     res.status(500).json({
       message: "Error capturing PayPal payment",
       error: error.response?.data || error.message,
@@ -358,7 +358,7 @@ exports.processPayment = asyncHandler(async (req, res) => {
         $inc: { usage_count: 1 },
       });
     } catch (error) {
-      console.log("No discount model or error updating discount", error);
+      // console.log("No discount model or error updating discount", error);
     }
   }
 
@@ -460,7 +460,7 @@ exports.checkPaymentStatus = asyncHandler(async (req, res) => {
       payment,
     });
   } catch (error) {
-    console.error("Error checking payment status:", error.message);
+    // console.error("Error checking payment status:", error.message);
     res.status(500).json({
       message: "Failed to check payment status",
       error: error.message,

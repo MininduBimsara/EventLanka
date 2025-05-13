@@ -55,7 +55,7 @@ exports.createEvent = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -72,7 +72,7 @@ exports.getPublicEvents = async (req, res) => {
 
     res.status(200).json(transformedEvents);
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -100,7 +100,7 @@ exports.getEvents = async (req, res) => {
 
     res.status(200).json(transformedEvents);
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -160,7 +160,7 @@ exports.updateEvent = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -196,7 +196,7 @@ exports.deleteEvent = async (req, res) => {
     await event.deleteOne();
     res.status(200).json({ message: "Event deleted successfully!" });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -254,7 +254,7 @@ exports.getEventById = async (req, res) => {
     
     res.status(200).json(transformedEvent);
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };

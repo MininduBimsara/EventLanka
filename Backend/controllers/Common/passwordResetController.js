@@ -50,7 +50,7 @@ const forgotPassword = async (req, res) => {
           "If that email exists in our system, a password reset link has been sent.",
       });
     } catch (error) {
-      console.error("Email send error:", error);
+      // console.error("Email send error:", error);
 
       // Reset the tokens in case of email failure
       user.resetPasswordToken = undefined;
@@ -62,7 +62,7 @@ const forgotPassword = async (req, res) => {
         .json({ message: "Could not send email. Please try again." });
     }
   } catch (error) {
-    console.error("Forgot password error:", error);
+    // console.error("Forgot password error:", error);
     res
       .status(500)
       .json({ message: "Something went wrong. Please try again." });
@@ -92,7 +92,7 @@ const verifyResetToken = async (req, res) => {
     // Token is valid
     res.status(200).json({ message: "Token is valid" });
   } catch (error) {
-    console.error("Verify token error:", error);
+    // console.error("Verify token error:", error);
     res
       .status(500)
       .json({ message: "Something went wrong. Please try again." });
@@ -163,7 +163,7 @@ const resetPassword = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Reset password error:", error);
+    // console.error("Reset password error:", error);
     res
       .status(500)
       .json({ message: "Something went wrong. Please try again." });

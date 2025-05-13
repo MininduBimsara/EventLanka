@@ -121,7 +121,7 @@ exports.exportList = asyncHandler(async (req, res) => {
       );
       return res.status(200).send(csv);
     } catch (err) {
-      console.error("CSV generation error:", err);
+      // console.error("CSV generation error:", err);
       return res.status(500).json({ message: "Error generating CSV file" });
     }
   } else if (format === "pdf") {
@@ -195,7 +195,7 @@ exports.exportList = asyncHandler(async (req, res) => {
       // Finalize the PDF
       doc.end();
     } catch (err) {
-      console.error("PDF generation error:", err);
+      // console.error("PDF generation error:", err);
       return res.status(500).json({ message: "Error generating PDF file" });
     }
   } else {
@@ -290,7 +290,7 @@ exports.resendConfirmation = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: "Confirmation email sent successfully" });
   } catch (error) {
-    console.error("Email sending error:", error);
+    // console.error("Email sending error:", error);
     res
       .status(500)
       .json({
@@ -349,7 +349,7 @@ exports.generateQRCode = asyncHandler(async (req, res) => {
       qrCode: qrCodeDataURL,
     });
   } catch (error) {
-    console.error("QR code generation error:", error);
+    // console.error("QR code generation error:", error);
     res
       .status(500)
       .json({ message: "Failed to generate QR code", error: error.message });
@@ -429,7 +429,7 @@ exports.validateQRCode = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("QR validation error:", error);
+    // console.error("QR validation error:", error);
     res
       .status(500)
       .json({ message: "Failed to validate QR code", error: error.message });
