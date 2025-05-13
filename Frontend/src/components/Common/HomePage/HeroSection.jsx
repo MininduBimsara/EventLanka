@@ -107,7 +107,7 @@ const HeroSection = () => {
         {/* Contact Information (Desktop) */}
         <div className="hidden md:block">
           <div className="mb-4">
-            <p>info@mysite.com</p>
+            <p>info@EventLanka.com</p>
             <p>123-456-7890</p>
           </div>
 

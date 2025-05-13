@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchEvents } from "../../Redux/Slicers/EventSlice"; // Adjust path as needed
+import { fetchAllEvents } from "../../Redux/Slicers/EventSlice"; // Adjust path as needed
 import EventCard from "../../components/Common/EventBrowsing/EventCard";
 import NavBar from "../../components/Common/Navbar";
 import SearchBar from "../../components/Common/EventBrowsing/SearchBar";
@@ -18,7 +18,7 @@ const EventBrowsingPage = () => {
 
   // Fetch events when component mounts
   useEffect(() => {
-    dispatch(fetchEvents());
+    dispatch(fetchAllEvents());
   }, [dispatch]);
 
   useEffect(() => {
