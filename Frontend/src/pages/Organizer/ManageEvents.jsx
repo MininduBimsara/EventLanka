@@ -5,6 +5,8 @@ import {
   getOrganizerEvents,
   getOrganizerEventById,
   deleteOrganizerEvent,
+  getEventAttendees,
+  clearAttendees,
 } from "../../Redux/Slicers/OrganizerSlice";
 import {
   Search,
@@ -143,7 +145,7 @@ const AttendeesModal = ({ attendees, eventTitle, loading, onClose }) => {
                     Ticket Type
                   </th>
                   <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                    Purchase Date
+                    Attendance Status
                   </th>
                 </tr>
               </thead>
@@ -152,20 +154,18 @@ const AttendeesModal = ({ attendees, eventTitle, loading, onClose }) => {
                   <tr key={attendee._id || index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {attendee.name ||
+                        {attendee.user_id.username ||
                           `${attendee.firstName} ${attendee.lastName}`}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {attendee.email}
+                      {attendee.user_id.email}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {attendee.ticketType || "Standard"}
+                      {attendee.ticket_type || "Standard"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {new Date(
-                        attendee.purchaseDate || attendee.createdAt
-                      ).toLocaleDateString()}
+                      {attendee.attendance_status}
                     </td>
                   </tr>
                 ))}
@@ -235,7 +235,7 @@ const ManageEvents = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showAttendeesModal, setShowAttendeesModal] = useState(false);
-  const [attendees, setAttendees] = useState([]);
+
   const [loadingAttendees, setLoadingAttendees] = useState(false);
   const [loadingEventDetails, setLoadingEventDetails] = useState(false);
 
@@ -286,7 +286,6 @@ const ManageEvents = () => {
 
   // View attendees in modal with direct API call
   const handleViewAttendees = async (id) => {
-    // Find the event for its title
     const event = events.find((e) => (e._id || e.id) === id);
 
     if (event) {
@@ -295,23 +294,18 @@ const ManageEvents = () => {
       setShowAttendeesModal(true);
 
       try {
-        // Direct API call since we don't have a Redux action for attendees
-        const ORGANIZER_API_URL = "http://localhost:5000/api/organizer";
-        const response = await axios.get(
-          `${ORGANIZER_API_URL}/events/${id}/attendees`,
-          {
-            withCredentials: true,
-          }
-        );
-        setAttendees(response.data || []);
+        // Use Redux thunk instead of direct API call
+        await dispatch(getEventAttendees(id));
+        // Attendees will be updated in Redux, so no need to setAttendees here
       } catch (error) {
         console.error("Failed to fetch attendees:", error);
-        setAttendees([]);
       } finally {
         setLoadingAttendees(false);
       }
     }
   };
+
+  const { attendees } = useSelector((state) => state.organizer);
 
   // Handle event deletion with API call
   const handleDelete = (id) => {
@@ -328,7 +322,7 @@ const ManageEvents = () => {
 
   const closeAttendeesModal = () => {
     setShowAttendeesModal(false);
-    setAttendees([]);
+    dispatch(clearAttendees());
   };
 
   // Filter and sort events
