@@ -4,7 +4,7 @@ const User = require("../../models/User");
 
 exports.getAnalyticsData = async (req, res) => {
   try {
-    console.log("Analytics API called with params:", req.query);
+    // console.log("Analytics API called with params:", req.query);
 
     // Get date range from query parameters or use default (last 12 months)
     const { startDate, endDate } = req.query;
@@ -15,7 +15,7 @@ exports.getAnalyticsData = async (req, res) => {
       : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // Last year instead of 12 months
     const end = endDate ? new Date(endDate) : new Date();
 
-    console.log("Using date range:", { start, end });
+    // console.log("Using date range:", { start, end });
 
     // Initialize with empty data structures to avoid undefined errors
     let revenueData = [];
@@ -48,7 +48,7 @@ exports.getAnalyticsData = async (req, res) => {
         { $sort: { _id: 1 } },
       ]);
 
-      console.log("Raw Revenue Data:", revenueResults);
+      // console.log("Raw Revenue Data:", revenueResults);
 
       if (revenueResults && revenueResults.length > 0) {
         // Transform to format needed by frontend
@@ -60,7 +60,7 @@ exports.getAnalyticsData = async (req, res) => {
           };
         });
       } else {
-        console.log("No revenue data found, using sample data");
+        // console.log("No revenue data found, using sample data");
         // Use sample data if no results
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
         revenueData = months.map((month) => ({
@@ -69,9 +69,9 @@ exports.getAnalyticsData = async (req, res) => {
         }));
       }
 
-      console.log("Formatted Revenue Data:", revenueData);
+      // console.log("Formatted Revenue Data:", revenueData);
     } catch (err) {
-      console.error("Error fetching revenue data:", err);
+      // console.error("Error fetching revenue data:", err);
       // Add fallback data
       revenueData = [
         { month: "Jan", revenue: 5000 },
@@ -90,7 +90,7 @@ exports.getAnalyticsData = async (req, res) => {
         { $limit: 5 },
       ]);
 
-      console.log("Category Data:", categoryResults);
+      // console.log("Category Data:", categoryResults);
 
       if (categoryResults && categoryResults.length > 0) {
         categoryData = categoryResults.map((item) => ({
@@ -98,7 +98,7 @@ exports.getAnalyticsData = async (req, res) => {
           value: item.count,
         }));
       } else {
-        console.log("No category data found, using sample data");
+        // console.log("No category data found, using sample data");
         // Use sample data if no results
         categoryData = [
           { name: "Music", value: 35 },
@@ -109,9 +109,9 @@ exports.getAnalyticsData = async (req, res) => {
         ];
       }
 
-      console.log("Formatted Category Data:", categoryData);
+      // console.log("Formatted Category Data:", categoryData);
     } catch (err) {
-      console.error("Error fetching category data:", err);
+      // console.error("Error fetching category data:", err);
       // Add fallback data
       categoryData = [
         { name: "Music", value: 35 },
@@ -135,7 +135,7 @@ exports.getAnalyticsData = async (req, res) => {
         { $limit: 5 },
       ]);
 
-      console.log("Best Selling Events Raw:", eventsResults);
+      // console.log("Best Selling Events Raw:", eventsResults);
 
       if (eventsResults && eventsResults.length > 0) {
         // Lookup event details
@@ -160,7 +160,7 @@ exports.getAnalyticsData = async (req, res) => {
           })
         );
       } else {
-        console.log("No best selling events found, using sample data");
+        // console.log("No best selling events found, using sample data");
         // Use sample data if no results
         bestSellingEvents = [
           {
@@ -174,9 +174,9 @@ exports.getAnalyticsData = async (req, res) => {
         ];
       }
 
-      console.log("Best Selling Events Populated:", bestSellingEvents);
+      // console.log("Best Selling Events Populated:", bestSellingEvents);
     } catch (err) {
-      console.error("Error fetching best selling events:", err);
+      // console.error("Error fetching best selling events:", err);
       // Add fallback data
       bestSellingEvents = [
         { id: "1", name: "Annual Music Festival", sales: 230, revenue: 12500 },
@@ -198,7 +198,7 @@ exports.getAnalyticsData = async (req, res) => {
         { $limit: 5 },
       ]);
 
-      console.log("Top Organizers Raw:", organizersResults);
+      // console.log("Top Organizers Raw:", organizersResults);
 
       if (organizersResults && organizersResults.length > 0) {
         // Calculate revenue for each organizer
@@ -248,7 +248,7 @@ exports.getAnalyticsData = async (req, res) => {
           })
         );
       } else {
-        console.log("No top organizers found, using sample data");
+        // console.log("No top organizers found, using sample data");
         // Use sample data if no results
         topOrganizers = [
           {
@@ -262,9 +262,9 @@ exports.getAnalyticsData = async (req, res) => {
         ];
       }
 
-      console.log("Top Organizers Processed:", topOrganizers);
+      // console.log("Top Organizers Processed:", topOrganizers);
     } catch (err) {
-      console.error("Error fetching top organizers:", err);
+      // console.error("Error fetching top organizers:", err);
       // Add fallback data
       topOrganizers = [
         { id: "1", name: "Sarah Johnson", eventCount: 12, totalRevenue: 68000 },
@@ -289,7 +289,7 @@ exports.getAnalyticsData = async (req, res) => {
         { $sort: { _id: 1 } },
       ]);
 
-      console.log("User Growth Raw:", userResults);
+      // console.log("User Growth Raw:", userResults);
 
       if (userResults && userResults.length > 0) {
         userGrowthData = userResults.map((item) => {
@@ -300,7 +300,7 @@ exports.getAnalyticsData = async (req, res) => {
           };
         });
       } else {
-        console.log("No user growth data found, using sample data");
+        // console.log("No user growth data found, using sample data");
         // Use sample data if no results
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
         userGrowthData = months.map((month) => ({
@@ -309,9 +309,9 @@ exports.getAnalyticsData = async (req, res) => {
         }));
       }
 
-      console.log("User Growth Formatted:", userGrowthData);
+      // console.log("User Growth Formatted:", userGrowthData);
     } catch (err) {
-      console.error("Error fetching user growth data:", err);
+      // console.error("Error fetching user growth data:", err);
       // Add fallback data
       userGrowthData = [
         { month: "Jan", users: 120 },
@@ -339,9 +339,9 @@ exports.getAnalyticsData = async (req, res) => {
           totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0,
       };
 
-      console.log("Statistics:", statistics);
+      // console.log("Statistics:", statistics);
     } catch (err) {
-      console.error("Error fetching statistics:", err);
+      // console.error("Error fetching statistics:", err);
       // Add fallback data
       statistics = {
         totalUsers: 18740,
@@ -351,7 +351,7 @@ exports.getAnalyticsData = async (req, res) => {
     }
 
     // Send the response with all collected data
-    console.log("Sending response with data...");
+    // console.log("Sending response with data...");
     res.json({
       revenueData,
       categoryData,
@@ -361,7 +361,7 @@ exports.getAnalyticsData = async (req, res) => {
       statistics,
     });
   } catch (err) {
-    console.error("Analytics data error:", err);
+    // console.error("Analytics data error:", err);
     res.status(500).json({ error: "Server error in analytics data" });
   }
 };

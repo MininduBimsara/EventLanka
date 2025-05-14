@@ -65,7 +65,7 @@ const verifyGoogleToken = async (token) => {
       token: authToken,
     };
   } catch (error) {
-    console.error("Google auth verification error:", error);
+    // console.error("Google auth verification error:", error);
     throw new Error("Failed to verify Google token");
   }
 };

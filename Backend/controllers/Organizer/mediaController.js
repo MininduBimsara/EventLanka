@@ -133,7 +133,7 @@ exports.delete = asyncHandler(async (req, res) => {
   try {
     fs.unlinkSync(media.path);
   } catch (error) {
-    console.error("Error deleting file:", error);
+    // console.error("Error deleting file:", error);
     // Continue even if file deletion fails
   }
 

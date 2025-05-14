@@ -9,10 +9,10 @@ const createTransporter = () => {
   // For development, use Mailtrap (free email testing service)
   if (process.env.NODE_ENV === "development") {
     // Log credentials to verify they're loaded (don't do this in production!)
-    console.log("Mailtrap credentials:", {
-      user: process.env.MAILTRAP_USER ? "Set" : "Not set",
-      pass: process.env.MAILTRAP_PASSWORD ? "Set" : "Not set",
-    });
+    // console.log("Mailtrap credentials:", {
+    //   user: process.env.MAILTRAP_USER ? "Set" : "Not set",
+    //   pass: process.env.MAILTRAP_PASSWORD ? "Set" : "Not set",
+    // });
 
     return nodemailer.createTransport({
       host: "sandbox.smtp.mailtrap.io",
@@ -25,10 +25,10 @@ const createTransporter = () => {
   }
 
   // For production, you can use your actual email service
-  console.log("Gmail credentials:", {
-    user: process.env.EMAIL_USER ? "Set" : "Not set",
-    pass: process.env.EMAIL_PASSWORD ? "Set" : "Not set",
-  });
+  // console.log("Gmail credentials:", {
+  //   user: process.env.EMAIL_USER ? "Set" : "Not set",
+  //   pass: process.env.EMAIL_PASSWORD ? "Set" : "Not set",
+  // });
 
   return nodemailer.createTransport({
     service: "Gmail",
@@ -58,7 +58,7 @@ const sendPasswordResetEmail = async (to, resetUrl) => {
     `;
 
     // Log email details (remove in production)
-    console.log(`Attempting to send email to: ${to}`);
+    // console.log(`Attempting to send email to: ${to}`);
 
     const mailOptions = {
       from:
@@ -71,10 +71,10 @@ const sendPasswordResetEmail = async (to, resetUrl) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully:", info.messageId);
+    // console.log("Email sent successfully:", info.messageId);
     return info;
   } catch (error) {
-    console.error("Error sending email:", error);
+    // console.error("Error sending email:", error);
     throw error; // Re-throw to handle in the controller
   }
 };

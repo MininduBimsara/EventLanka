@@ -56,7 +56,7 @@ exports.getDashboardStats = async (req, res) => {
       charts: { monthlySales, newUserGrowth },
     });
   } catch (err) {
-    console.error("Dashboard stats error:", err);
+    // console.error("Dashboard stats error:", err);
     res.status(500).json({ error: "Server error in dashboard stats" });
   }
 };
@@ -94,7 +94,7 @@ exports.getSettings = async (req, res) => {
 
     res.json(settings);
   } catch (err) {
-    console.error("Get settings error:", err);
+    // console.error("Get settings error:", err);
     res.status(500).json({ error: "Server error while retrieving settings" });
   }
 };
@@ -138,7 +138,7 @@ exports.updateSettings = async (req, res) => {
 
     res.json(updatedSettings);
   } catch (err) {
-    console.error("Update settings error:", err);
+    // console.error("Update settings error:", err);
     res.status(500).json({ error: "Server error while updating settings" });
   }
 };
@@ -189,7 +189,7 @@ exports.changeAdminPassword = async (req, res) => {
 
     res.json({ message: "Admin password changed successfully" });
   } catch (err) {
-    console.error("Change password error:", err);
+    // console.error("Change password error:", err);
     res.status(500).json({ error: "Server error while changing password" });
   }
 };
@@ -261,7 +261,7 @@ exports.updateAdminProfile = async (req, res) => {
       adminProfile,
     });
   } catch (err) {
-    console.error("Update admin profile error:", err);
+    // console.error("Update admin profile error:", err);
     res
       .status(500)
       .json({ error: "Server error while updating admin profile" });
@@ -291,7 +291,7 @@ exports.getAdminProfile = async (req, res) => {
 
     res.json(adminProfile);
   } catch (err) {
-    console.error("Get admin profile error:", err);
+    // console.error("Get admin profile error:", err);
     res.status(500).json({ error: "Server error while getting admin profile" });
   }
 };
