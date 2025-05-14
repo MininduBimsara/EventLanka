@@ -51,11 +51,11 @@ const Sidebar = () => {
     //   icon: <ArrowLeftRight className="w-5 h-5" />,
     //   path: "/admin/refund-requests",
     // },
-    {
-      title: "Reports",
-      icon: <BarChart2 className="w-5 h-5" />,
-      path: "/admin/reports",
-    },
+    // {
+    //   title: "Reports",
+    //   icon: <BarChart2 className="w-5 h-5" />,
+    //   path: "/admin/reports",
+    // },
     {
       title: "Transactions",
       icon: <ArrowLeftRight className="w-5 h-5" />,
