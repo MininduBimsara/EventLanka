@@ -98,7 +98,7 @@ const FeaturedEvents = () => {
 
   return (
     <section
-      className="relative w-full py-16 overflow-hidden md:py-24 bg-gray-50"
+      className="relative w-full py-16 overflow-hidden select-none md:py-24 bg-gray-50"
       id="featured-events"
     >
       {/* Enhanced Decorative Elements */}

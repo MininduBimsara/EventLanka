@@ -8,7 +8,7 @@ const HeroSection = () => {
   return (
     <div className="flex flex-col h-screen md:flex-row">
       {/* Left Section - Light Background with Logo and Tagline */}
-      <div className="flex flex-col items-center justify-center w-full p-8 text-center bg-white md:w-1/2">
+      <div className="flex flex-col items-center justify-center w-full p-8 text-center bg-white pointer-events-none select-none md:w-1/2">
         <div className="max-w-md">
           {/* Logo Container */}
           <div className="mb-6">
@@ -85,12 +85,13 @@ const HeroSection = () => {
       </div>
 
       {/* Right Section - Blue Background with Content */}
-      <div className="flex flex-col justify-between w-full p-8 text-white bg-blue-800 md:w-1/2">
-        
+      <div className="flex flex-col justify-between w-full p-8 text-white bg-blue-800 md:w-1/2 ">
         {/* Content */}
         <div className="max-w-md my-auto">
-          <h2 className="mb-6 text-3xl font-bold md:text-4xl">Welcome</h2>
-          <p className="mb-6 text-sm md:text-base">
+          <h2 className="mb-6 text-3xl font-bold pointer-events-none select-none md:text-4xl">
+            Welcome
+          </h2>
+          <p className="mb-6 text-sm pointer-events-none select-none md:text-base">
             Since our opening, we have become masters of our craft. Our
             commitment to quality products, exceptional services and
             incomparable customer care keep our community coming back again and
@@ -98,14 +99,16 @@ const HeroSection = () => {
           </p>
 
           {/* CTA Button */}
-          <button className="px-6 py-2 mt-4 transition-all duration-300 bg-white rounded-full bg-opacity-20 hover:bg-opacity-30"
-          onClick={() => navigate("/eventbrowsing")}>
+          <button
+            className="px-6 py-2 mt-4 transition-all duration-300 bg-white rounded-full select-none bg-opacity-20 hover:bg-opacity-30"
+            onClick={() => navigate("/eventbrowsing")}
+          >
             Browse Events
           </button>
         </div>
 
         {/* Contact Information (Desktop) */}
-        <div className="hidden md:block">
+        <div className="hidden select-none md:block">
           <div className="mb-4">
             <p>info@EventLanka.com</p>
             <p>123-456-7890</p>

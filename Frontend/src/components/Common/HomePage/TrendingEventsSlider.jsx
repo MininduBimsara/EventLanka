@@ -68,7 +68,7 @@ const TrendingEventsSlider = () => {
   // If there are no events or still loading, show loading state
   if (loading) {
     return (
-      <div className="py-20 bg-blue-800" id="trending-events">
+      <div className="py-20 bg-blue-800 select-none" id="trending-events">
         <div className="container px-4 mx-auto">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold text-white">
@@ -102,7 +102,7 @@ const TrendingEventsSlider = () => {
   // If there are no events, show no events message
   if (trendingEvents.length === 0) {
     return (
-      <div className="py-20 bg-blue-800" id="trending-events">
+      <div className="py-20 bg-blue-800 select-none" id="trending-events">
         <div className="container px-4 mx-auto">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold text-white">
@@ -119,7 +119,7 @@ const TrendingEventsSlider = () => {
   }
 
   return (
-    <div className="py-20 bg-blue-800" id="trending-events">
+    <div className="py-20 bg-blue-800 select-none" id="trending-events">
       <div className="container px-4 mx-auto">
         <div className="mb-12 text-center">
           <h2 className="mb-4 text-3xl font-bold text-white">
