@@ -4,7 +4,7 @@ const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative flex items-center justify-center min-h-screen p-4 overflow-hidden bg-gradient-to-b from-[#D0A2F7] from-0% via-[#8ECAE6] via-60% to-[#023E8A] to-100%">
+    <section className="select-none relative flex items-center justify-center min-h-screen p-4 overflow-hidden bg-gradient-to-b from-[#D0A2F7] from-0% via-[#8ECAE6] via-60% to-[#023E8A] to-100%">
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(50)].map((_, i) => (
           <div
@@ -37,7 +37,8 @@ const Hero = () => {
           Your one-stop destination for discovering and booking the most
           exciting events in town
         </p>
-        <button className="px-8 py-3 text-lg font-bold text-[#6622CC] transition-all duration-300 transform bg-white rounded-full animate-pulse hover:bg-[#D2A1B8] hover:shadow-lg hover:scale-105"
+        <button
+          className="px-8 py-3 text-lg font-bold text-[#6622CC] transition-all duration-300 transform bg-white rounded-full animate-pulse hover:bg-[#D2A1B8] hover:shadow-lg hover:scale-105"
           onClick={() => navigate("/eventbrowsing")}
         >
           Explore Events

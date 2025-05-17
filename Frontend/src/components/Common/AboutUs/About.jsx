@@ -2,7 +2,7 @@ import React from "react";
 
 const About = () => {
   return (
-    <section className="relative px-4 py-24 overflow-hidden bg-white">
+    <section className="relative px-4 py-24 overflow-hidden bg-white select-none ">
       {/* Keep the bubble effect but refine it to match new style */}
       <div className="absolute hidden w-64 h-64 bg-pink-400 rounded-full md:block top-40 -left-20 opacity-10 blur-3xl"></div>
       <div className="absolute hidden bg-blue-500 rounded-full w-80 h-80 md:block bottom-20 -right-20 opacity-10 blur-3xl"></div>

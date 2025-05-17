@@ -1,6 +1,6 @@
 export const CalltoAction = () => {
   return (
-    <section className="px-4 py-24 text-white bg-gradient-to-b from-[#935de4] from-0% to-[#016999] to-70%">
+    <section className="select-none px-4 py-24 text-white bg-gradient-to-b from-[#935de4] from-0% to-[#016999] to-70%">
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="mb-6 text-4xl font-bold md:text-5xl">
           Ready to Experience the Magic?

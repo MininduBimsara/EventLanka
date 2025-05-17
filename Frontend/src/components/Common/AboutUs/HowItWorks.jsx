@@ -1,6 +1,6 @@
 const HowItWorks = ({ howItWorks }) => {
   return (
-    <section className="px-4 py-24 bg-gradient-to-b from-[#06a9f5] from-0% via-[#038bca] to-[#D0A2F7]">
+    <section className="select-none px-4 py-24 bg-gradient-to-b from-[#06a9f5] from-0% via-[#038bca] to-[#D0A2F7]">
       <div className="max-w-6xl mx-auto">
         <h2 className="mb-16 text-4xl font-bold text-center text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-[#6622CC] to-[#A755C2]">
           How It Works
