@@ -16,7 +16,7 @@ const ContactFormSection = () => {
   };
 
   return (
-    <div className="p-6 transition-all duration-500 transform bg-white border border-white bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20 hover:scale-102 hover:shadow-xl">
+    <div className="p-6 transition-all duration-500 transform bg-white border border-white select-none bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20 hover:scale-102 hover:shadow-xl">
       <h2 className="mb-6 text-3xl font-bold text-[#2a2e60]">
         Send Us a Message
       </h2>
