@@ -4,7 +4,7 @@ import { FaEnvelope, FaArrowRight } from "react-icons/fa";
 // Redesigned Newsletter Component
 const Newsletter = () => {
   return (
-    <section className="relative py-20 bg-blue-800" id="newsletter">
+    <section className="relative py-20 bg-blue-800 select-none" id="newsletter">
       <div className="container px-4 mx-auto">
         <div className="max-w-4xl mx-auto overflow-hidden rounded-lg shadow-lg">
           {/* Content Container with Gradient */}

@@ -26,7 +26,7 @@ const RedesignedFooter = () => {
   };
 
   return (
-    <footer className="relative w-full overflow-hidden">
+    <footer className="relative w-full overflow-hidden select-none">
       {/* Footer content with split design matching hero */}
       <div className="flex flex-col md:flex-row">
         {/* Left section - white background */}

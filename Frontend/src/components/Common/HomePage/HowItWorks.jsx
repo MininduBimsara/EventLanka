@@ -25,7 +25,7 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section className="py-16 bg-white" id="how-it-works">
+    <section className="py-16 bg-white select-none" id="how-it-works">
       <div className="container px-4 mx-auto">
         {/* Section Header */}
         <div className="mb-12 text-center">

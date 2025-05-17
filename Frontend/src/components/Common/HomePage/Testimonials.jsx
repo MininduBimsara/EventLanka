@@ -56,7 +56,7 @@ const RedesignedTestimonials = () => {
   };
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 select-none bg-gray-50">
       <div className="container px-4 mx-auto">
         {/* Section heading with decorative element similar to hero */}
         <div className="flex flex-col items-center mb-12">
