@@ -399,18 +399,18 @@ const AdminTransactions = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            transaction.status === "completed"
+                            transaction.payment_status === "completed"
                               ? "bg-green-100 text-green-800"
-                              : transaction.status === "pending"
+                              : transaction.payment_status === "pending"
                               ? "bg-yellow-100 text-yellow-800"
-                              : transaction.status === "failed"
+                              : transaction.payment_status === "failed"
                               ? "bg-red-100 text-red-800"
-                              : transaction.status === "refunded"
+                              : transaction.payment_status === "refunded"
                               ? "bg-purple-100 text-purple-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {transaction.status}
+                          {transaction.payment_status}
                         </span>
                       </td>
                     </tr>
