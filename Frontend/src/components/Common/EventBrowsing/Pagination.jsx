@@ -54,7 +54,7 @@ const Pagination = ({ currentPage = 1, totalPages = 1, onPageChange }) => {
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex justify-center mt-8">
+    <div className="flex justify-center mt-8 select-none">
       <nav
         id="event-pagination"
         className="relative overflow-hidden border border-blue-100 rounded-lg shadow-lg"

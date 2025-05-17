@@ -4,12 +4,8 @@ import { motion } from "framer-motion";
 
 const EventImage = ({ image , title }) => {
   return (
-    <div className="relative">
-      <img
-        src={image}
-        alt={title}
-        className="object-cover w-full h-96"
-      />
+    <div className="relative select-none">
+      <img src={image} alt={title} className="object-cover w-full h-96" />
       <div className="absolute inset-0 bg-gradient-to-t from-purple-900 to-transparent opacity-70"></div>
       <div className="absolute top-0 left-0 right-0 p-4">
         <div className="flex items-center justify-between">

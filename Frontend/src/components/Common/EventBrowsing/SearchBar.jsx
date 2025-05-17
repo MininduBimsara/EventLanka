@@ -6,7 +6,7 @@ const SearchBar = ({ searchTerm, setSearchTerm }) => {
   };
 
   return (
-    <div className="relative w-full md:w-64 lg:w-80">
+    <div className="relative w-full select-none md:w-64 lg:w-80">
       <div className="relative overflow-hidden transition-all duration-300 transform border border-blue-100 rounded-md shadow-md hover:shadow-lg">
         <input
           type="text"

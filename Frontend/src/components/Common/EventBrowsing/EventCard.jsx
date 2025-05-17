@@ -14,7 +14,7 @@ const EventCard = ({ event }) => {
   };
 
   return (
-    <div className="h-full overflow-hidden transition-all duration-300 transform bg-white border border-blue-100 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2">
+    <div className="h-full overflow-hidden transition-all duration-300 transform bg-white border border-blue-100 rounded-lg shadow-lg select-none hover:shadow-xl hover:-translate-y-2">
       {/* Banner Image */}
       <div className="relative h-48 overflow-hidden">
         {event.banner ? (

@@ -3,7 +3,7 @@ import React from "react";
 
 const EventDetails = ({ date, time, location }) => {
   return (
-    <div className="flex flex-col flex-wrap gap-4 mb-6 text-gray-700 md:flex-row">
+    <div className="flex flex-col flex-wrap gap-4 mb-6 text-gray-700 select-none md:flex-row">
       <div className="flex items-center px-4 py-2 bg-purple-100 rounded-full">
         <svg
           className="w-5 h-5 mr-2 text-purple-600"

@@ -53,7 +53,7 @@ const TicketSelection = ({ tickets, ticketTypes, handleTicketChange }) => {
   };
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 select-none">
       <h2 className="mb-5 text-2xl font-bold text-purple-800">
         Select Tickets
       </h2>

@@ -13,7 +13,7 @@ const OrderSummary = ({ tickets, ticketTypes, totalPrice }) => {
   const hasTickets = selectedTickets.length > 0;
 
   return (
-    <div className="p-6 mb-8 bg-gray-50 rounded-xl">
+    <div className="p-6 mb-8 select-none bg-gray-50 rounded-xl">
       <h2 className="mb-4 text-2xl font-bold text-gray-800">Order Summary</h2>
 
       <div className="mb-4 space-y-3">

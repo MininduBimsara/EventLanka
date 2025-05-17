@@ -2,7 +2,7 @@ import React from "react";
 
 const OrganizerInfo = ({ organizer, email }) => {
   return (
-    <div className="p-4 mb-8 border-2 border-purple-100 rounded-xl bg-purple-50">
+    <div className="p-4 mb-8 border-2 border-purple-100 select-none rounded-xl bg-purple-50">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-bold text-purple-800">

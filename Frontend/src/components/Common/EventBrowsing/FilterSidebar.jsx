@@ -9,7 +9,7 @@ const FilterSidebar = ({
   handleLocationChange,
 }) => {
   return (
-    <aside className="overflow-hidden bg-white border border-blue-100 rounded-lg shadow-lg">
+    <aside className="overflow-hidden bg-white border border-blue-100 rounded-lg shadow-lg select-none">
       <div className="p-6">
         <h2 className="mb-4 text-xl font-bold text-blue-900">Filters</h2>
         <div className="w-16 h-1 mb-6 bg-pink-400 rounded-full"></div>
