@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { downloadReceipt } from "../../Redux/Slicers/PaymentSlice";
 import NavBar from "../../components/Common/Navbar";
+import { motion } from "framer-motion";
 
 const PaymentSuccessPage = () => {
   const { paymentIntentId } = useParams();
