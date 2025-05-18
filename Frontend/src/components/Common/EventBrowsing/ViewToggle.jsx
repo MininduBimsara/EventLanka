@@ -2,7 +2,10 @@ import { React } from "react";
 
 const ViewToggle = () => {
   return (
-    <div id="event-view-toggle" className="relative overflow-hidden rounded-md">
+    <div
+      id="event-view-toggle"
+      className="relative overflow-hidden rounded-md select-none"
+    >
       {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] opacity-90 animate-gradient-event"></div>
 
@@ -22,8 +25,6 @@ const ViewToggle = () => {
           </svg>
         </button>
       </div>
-
-      
     </div>
   );
 };

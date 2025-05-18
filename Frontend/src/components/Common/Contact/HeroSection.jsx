@@ -3,7 +3,7 @@ import React from "react";
 
 const HeroSection = () => {
   return (
-    <div className="relative px-6 pt-20 pb-10 text-center md:px-12">
+    <div className="relative px-6 pt-20 pb-10 text-center select-none md:px-12">
       <h1 className="mb-4 text-4xl font-bold text-white md:text-6xl animate-pulse">
         Get in Touch & Let's Make Magic Happen!
       </h1>

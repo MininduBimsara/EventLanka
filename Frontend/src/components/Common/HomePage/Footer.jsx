@@ -1,22 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 
-const RedesignedFooter = () => {
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [email, setEmail] = useState("");
-
-  // Handle newsletter subscription
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (email) {
-      setIsSubscribed(true);
-      setEmail("");
-      // Reset subscription success message after 3 seconds
-      setTimeout(() => {
-        setIsSubscribed(false);
-      }, 3000);
-    }
-  };
-
+const EnhancedFooter = () => {
   // Back to top functionality
   const scrollToTop = () => {
     window.scrollTo({
@@ -27,114 +11,196 @@ const RedesignedFooter = () => {
 
   return (
     <footer className="relative w-full overflow-hidden select-none">
-      {/* Footer content with split design matching hero */}
+      {/* Wave separator */}
+      <div className="relative h-16 bg-blue-900">
+        <svg
+          className="absolute bottom-0 w-full text-white"
+          viewBox="0 0 1440 60"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="currentColor"
+            d="M0,0 C240,40 480,60 720,40 C960,20 1200,0 1440,20 L1440,60 L0,60 Z"
+          />
+        </svg>
+      </div>
+
+      {/* Main footer content */}
       <div className="flex flex-col md:flex-row">
         {/* Left section - white background */}
         <div className="w-full p-10 bg-white md:w-1/2">
           <div className="max-w-md mx-auto">
-            {/* Brand section */}
+            {/* Brand section with enhanced styling */}
             <div className="mb-8">
-              <h2 className="mb-2 text-3xl font-bold text-blue-900">
-                EVENTLANKA
-              </h2>
-              <p className="text-blue-900">Making every event memorable</p>
+              <div className="flex items-center mb-4">
+                <div className="flex items-center justify-center w-12 h-12 mr-3 text-white bg-blue-800 rounded-full">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 9l-7 7-3-3 7-7 3 3z"
+                    ></path>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 9v5m0 0h-5"
+                    ></path>
+                  </svg>
+                </div>
+                <h2 className="text-3xl font-bold tracking-wide text-blue-900">
+                  EVENTLANKA
+                </h2>
+              </div>
+              <p className="pl-1 text-blue-900 border-l-4 border-pink-400">
+                Making every event memorable
+              </p>
             </div>
 
-            {/* Quick Links */}
+            {/* Quick Links with hover effects */}
             <div className="mb-8">
-              <h3 className="mb-4 text-lg font-semibold text-blue-900">
+              <h3 className="mb-5 text-lg font-semibold text-blue-900 after:content-[''] after:block after:w-12 after:h-1 after:bg-pink-400 after:mt-2">
                 Quick Links
               </h3>
-              <ul className="space-y-2">
-                {["HOME", "ABOUT US", "OUR SERVICES", "CONTACT", "FAQ"].map(
-                  (link) => (
-                    <li key={link}>
-                      <a
-                        href="#"
-                        className="text-gray-600 transition-colors hover:text-blue-800"
+              <ul className="space-y-3">
+                {["HOME", "ABOUT", "CONTACT"].map((link) => (
+                  <li
+                    key={link}
+                    className="transition-transform hover:translate-x-2"
+                  >
+                    <a
+                      href={`/${link.toLowerCase()}`}
+                      className="flex items-center text-gray-600 transition-colors hover:text-blue-800"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
-                        {link}
-                      </a>
-                    </li>
-                  )
-                )}
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5l7 7-7 7"
+                        ></path>
+                      </svg>
+                      {link}
+                    </a>
+                  </li>
+                ))}
+                <li className="transition-transform hover:translate-x-2">
+                  <a
+                    href="/events"
+                    className="flex items-center text-gray-600 transition-colors hover:text-blue-800"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    EVENTS
+                  </a>
+                </li>
               </ul>
-            </div>
-
-            {/* Contact Info */}
-            <div>
-              <h3 className="mb-4 text-lg font-semibold text-blue-900">
-                Contact Us
-              </h3>
-              <p className="text-gray-600">info@mysite.com</p>
-              <p className="mb-4 text-gray-600">123-456-7890</p>
             </div>
           </div>
         </div>
 
-        {/* Right section - blue background */}
-        <div className="w-full p-10 text-white bg-blue-800 md:w-1/2">
+        {/* Right section - blue background with gradient */}
+        <div className="w-full p-10 text-white bg-gradient-to-br from-blue-800 to-blue-900 md:w-1/2">
           <div className="max-w-md mx-auto">
-            {/* Newsletter Signup */}
-            <h3 className="mb-4 text-2xl font-semibold">Stay Updated</h3>
-            <p className="mb-6">
-              Subscribe to our newsletter for the latest events and exclusive
-              offers.
-            </p>
+            {/* Contact Info with icons */}
+            <div className="mb-10">
+              <h3 className="mb-5 text-2xl font-semibold after:content-[''] after:block after:w-12 after:h-1 after:bg-pink-400 after:mt-2">
+                Contact Us
+              </h3>
+              <p className="mb-6 text-lg">Get in touch with our team</p>
 
-            <form onSubmit={handleSubscribe} className="mb-8">
-              <div className="mb-3">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 text-gray-800 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-6 py-2 font-medium text-blue-900 transition-colors bg-pink-400 rounded-md hover:bg-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-400"
-              >
-                Subscribe
-              </button>
-
-              {isSubscribed && (
-                <div className="p-2 mt-3 text-center text-blue-800 bg-blue-100 rounded-md">
-                  Thanks for subscribing!
+              <div className="flex items-center mb-4">
+                <div className="flex items-center justify-center w-10 h-10 mr-4 text-blue-900 bg-blue-100 rounded-full">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    ></path>
+                  </svg>
                 </div>
-              )}
-            </form>
+                <span className="text-blue-100">info@mysite.com</span>
+              </div>
 
-            {/* Social Media */}
+              <div className="flex items-center">
+                <div className="flex items-center justify-center w-10 h-10 mr-4 text-blue-900 bg-blue-100 rounded-full">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    ></path>
+                  </svg>
+                </div>
+                <span className="text-blue-100">123-456-7890</span>
+              </div>
+            </div>
+
+            {/* Social Media with enhanced styling */}
             <div>
-              <h3 className="mb-4 text-lg font-semibold">Follow Us</h3>
+              <h3 className="mb-5 text-lg font-semibold after:content-[''] after:block after:w-12 after:h-1 after:bg-pink-400 after:mt-2">
+                Follow Us
+              </h3>
               <div className="flex space-x-4">
                 <a
                   href="#"
-                  className="transition-colors hover:text-blue-200"
+                  className="flex items-center justify-center w-10 h-10 text-blue-900 transition-all duration-300 bg-white rounded-full hover:bg-pink-400 hover:text-white hover:scale-110"
                   aria-label="Facebook"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
-                      clipRule="evenodd"
-                    />
+                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
                   </svg>
                 </a>
                 <a
                   href="#"
-                  className="transition-colors hover:text-blue-200"
+                  className="flex items-center justify-center w-10 h-10 text-blue-900 transition-all duration-300 bg-white rounded-full hover:bg-pink-400 hover:text-white hover:scale-110"
                   aria-label="Twitter"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -143,11 +209,11 @@ const RedesignedFooter = () => {
                 </a>
                 <a
                   href="#"
-                  className="transition-colors hover:text-blue-200"
+                  className="flex items-center justify-center w-10 h-10 text-blue-900 transition-all duration-300 bg-white rounded-full hover:bg-pink-400 hover:text-white hover:scale-110"
                   aria-label="Instagram"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -164,29 +230,45 @@ const RedesignedFooter = () => {
         </div>
       </div>
 
-      {/* Copyright bar */}
-      <div className="p-4 text-center text-white bg-blue-900">
-        <div className="flex flex-wrap justify-center gap-4 mb-2">
-          <a href="#" className="text-sm hover:underline">
+      {/* Copyright bar with enhanced styling */}
+      <div className="p-6 text-center text-white bg-gradient-to-r from-blue-900 to-blue-800">
+        <div className="flex flex-wrap justify-center gap-6 mb-3">
+          <a href="#" className="text-sm transition-colors hover:text-pink-300">
             Privacy Policy
           </a>
-          <span>|</span>
-          <a href="#" className="text-sm hover:underline">
+          <span className="text-blue-400">•</span>
+          <a href="#" className="text-sm transition-colors hover:text-pink-300">
             Terms of Service
           </a>
-          <span>|</span>
+          <span className="text-blue-400">•</span>
           <button
             onClick={scrollToTop}
-            className="text-sm hover:underline"
+            className="text-sm transition-colors hover:text-pink-300 focus:outline-none"
             aria-label="Back to top"
           >
             Back to top
+            <svg
+              className="inline-block w-4 h-4 ml-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 10l7-7m0 0l7 7m-7-7v18"
+              ></path>
+            </svg>
           </button>
         </div>
-        <p className="text-sm">© 2025 EVENTLANKA. All Rights Reserved.</p>
+        <p className="text-sm text-blue-100">
+          © 2025 EVENTLANKA. All Rights Reserved.
+        </p>
       </div>
     </footer>
   );
 };
 
-export default RedesignedFooter;
+export default EnhancedFooter;

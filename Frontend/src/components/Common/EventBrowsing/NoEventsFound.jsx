@@ -2,7 +2,7 @@ import React from "react";
 
 const NoEventsFound = () => {
   return (
-    <div className="p-8 text-center transition-all duration-300 transform bg-white border border-blue-100 rounded-lg shadow-lg">
+    <div className="p-8 text-center transition-all duration-300 transform bg-white border border-blue-100 rounded-lg shadow-lg select-none">
       <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 overflow-hidden bg-blue-100 rounded-full">
         <svg
           className="w-10 h-10 text-pink-400"

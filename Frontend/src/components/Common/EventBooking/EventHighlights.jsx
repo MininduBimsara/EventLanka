@@ -3,7 +3,7 @@ import React from "react";
 
 const EventHighlights = () => {
   return (
-    <div className="p-4 mb-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl">
+    <div className="p-4 mb-8 select-none bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl">
       <h3 className="mb-3 font-bold text-purple-800">Event Highlights</h3>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="flex items-center">

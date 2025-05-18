@@ -3,7 +3,6 @@ const User = require("../models/User");
 const asyncHandler = require("express-async-handler");
 
 exports.protect = asyncHandler(async (req, res, next) => {
-
   // List of public routes that don't require authentication
   const publicRoutes = [
     "/api/events/all", // Use the path, not the full URL
@@ -15,18 +14,27 @@ exports.protect = asyncHandler(async (req, res, next) => {
   }
 
   // Check for token in cookies
-  const token = req.cookies.token;
+  // Check for token in different locations (in order of preference)
+  let finalToken = null;
 
-  // If no token in cookies, check Authorization header as fallback
-  // (Helpful during transition from client-side token storage to cookies)
-  const authHeader = req.headers.authorization;
-  const headerToken =
-    authHeader && authHeader.startsWith("Bearer ")
-      ? authHeader.split(" ")[1]
-      : null;
+  // 1. Check cookies first (both regular token and Google auth token)
+  if (req.cookies.token || req.cookies.authToken) {
+    finalToken = req.cookies.token || req.cookies.authToken;
+  }
 
-  // Use cookie token if available, otherwise try header token
-  const finalToken = token || headerToken;
+  // 2. Check Authorization header as fallback
+  if (!finalToken) {
+    const authHeader = req.headers.authorization;
+    finalToken =
+      authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : null;
+  }
+
+  // 3. Check session if enabled and available
+  if (!finalToken && req.session && req.session.token) {
+    finalToken = req.session.token;
+  }
 
   if (!finalToken) {
     return res

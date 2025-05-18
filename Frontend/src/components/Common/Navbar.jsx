@@ -18,10 +18,13 @@ import {
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
+import { googleLogout, clearGoogleUser } from "../../Redux/Slicers/GoogleAuthSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const isGoogleAuth = useSelector((state) => state.googleAuth.isAuthenticated);
 
   // Retrieve authentication details from redux
   const { isAuthenticated, user, loading } = useSelector((state) => state.user);
@@ -100,13 +103,20 @@ const Navbar = () => {
 
   const handleLogoutClick = async () => {
     try {
-      await dispatch(logoutUser()).unwrap();
+      if (isGoogleAuth) {
+        await dispatch(googleLogout()).unwrap();
+        dispatch(clearGoogleUser()); // Force clear just in case
+      } else {
+        await dispatch(logoutUser()).unwrap();
+      }
+
       setDropdownOpen(false);
       setMobileMenuOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Optionally show a notification to the user
+      // Optional: add a toast notification here
+      // toast.error("Logout failed. Please try again.");
     }
   };
 
@@ -237,7 +247,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed w-full z-50 transition-all duration-300 ${
+      className={`select-none fixed w-full z-50 transition-all duration-300 ${
         isScrolled
           ? "bg-gray-900 text-white shadow-lg py-2"
           : "bg-transparent py-4"

@@ -1,8 +1,10 @@
 import React from "react";
 import { FaCompass, FaTicketAlt, FaGlassCheers } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 // Redesigned How It Works Component
 const HowItWorks = () => {
+  const navigate = useNavigate();
   const steps = [
     {
       id: 1,
@@ -67,7 +69,10 @@ const HowItWorks = () => {
 
         {/* CTA Button */}
         <div className="mt-12 text-center">
-          <button className="px-8 py-3 font-bold text-white transition-all duration-300 transform bg-blue-800 rounded-full shadow-lg hover:bg-pink-400 hover:scale-105">
+          <button
+            className="px-8 py-3 font-bold text-white transition-all duration-300 transform bg-blue-800 rounded-full shadow-lg hover:bg-pink-400 hover:scale-105"
+            onClick={() => navigate("/eventbrowsing")}
+          >
             Find Events Now
           </button>
         </div>

@@ -32,7 +32,7 @@ const InfoFaqSection = () => {
   ];
 
   return (
-    <div className="p-6 bg-white border border-white bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20">
+    <div className="p-6 bg-white border border-white select-none bg-opacity-10 rounded-2xl backdrop-blur-md border-opacity-20">
       <h2 className="mb-6 text-3xl font-bold text-[#2a2e60]">
         Frequently Asked Questions
       </h2>

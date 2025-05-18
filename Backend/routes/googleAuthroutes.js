@@ -52,18 +52,36 @@ router.get("/user", (req, res) => {
 
 // Logout
 router.get("/logout", (req, res) => {
+  console.log("Before clearing - Cookies:", req.cookies);
+
+  // Clear authToken
+  res.clearCookie("authToken", {
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+
+  // Clear session cookie if it exists
   if (req.session) {
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ message: "Failed to logout" });
+        console.error("Session destruction error:", err);
       }
 
-      res.clearCookie("connect.sid"); // Clear the session cookie
-      return res.json({ message: "Logged out successfully" });
+      res.clearCookie("connect.sid", {
+        path: "/", // Match how it was originally set
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      });
+
+      return res.status(200).json({ message: "Logged out successfully" });
     });
   } else {
-    return res.json({ message: "Not logged in" });
+    return res.status(200).json({ message: "Logged out successfully" });
   }
 });
+
 
 module.exports = router;

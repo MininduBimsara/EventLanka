@@ -6,7 +6,7 @@ const Testimonials = ({
   setActiveTestimonial,
 }) => {
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-20 select-none bg-gray-50 ">
       {/* Decorative Elements similar to Story component */}
       <div className="absolute left-0 hidden w-32 h-32 transform -translate-y-12 bg-pink-100 rounded-full opacity-50 lg:block"></div>
       <div className="absolute right-0 hidden w-24 h-24 transform translate-y-12 bg-blue-100 rounded-full opacity-50 lg:block"></div>
