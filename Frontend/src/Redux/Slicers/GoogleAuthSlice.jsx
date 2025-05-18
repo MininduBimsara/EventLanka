@@ -81,7 +81,7 @@ export const googleLogout = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Make a request to the logout endpoint
-      await axios.get(`${AUTH_API_URL}/logout`);
+      await axios.get(`${AUTH_API_URL}/logout`, { withCredentials: true });
 
       // Remove the token from localStorage and headers
       localStorage.removeItem("authToken");
@@ -89,6 +89,10 @@ export const googleLogout = createAsyncThunk(
 
       return null;
     } catch (error) {
+      // Even if the server-side logout fails, clear local storage and headers
+      localStorage.removeItem("authToken");
+      delete axios.defaults.headers.common["Authorization"];
+      
       return rejectWithValue(
         error.response?.data?.message || "Failed to logout"
       );

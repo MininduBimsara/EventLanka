@@ -8,9 +8,11 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { fetchAllEvents } from "../../../Redux/Slicers/EventSlice";
-
+import { useNavigate } from "react-router-dom";
+ 
 // Updated Trending Events Slider Component
 const TrendingEventsSlider = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { events, loading, error } = useSelector((state) => state.events);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -164,9 +166,8 @@ const TrendingEventsSlider = () => {
 
                       <button
                         className="px-6 py-2 mt-2 font-medium text-blue-900 transition-all duration-300 transform bg-white rounded-full hover:bg-pink-100 hover:scale-105 w-fit"
-                        onClick={() =>
-                          (window.location.href = `/events/${event._id}`)
-                        }
+                        onClick={() => navigate(`/event/${event._id}`)}
+                        
                       >
                         Book Tickets
                       </button>

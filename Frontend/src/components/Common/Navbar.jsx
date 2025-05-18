@@ -18,7 +18,7 @@ import {
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
-import { googleLogout } from "../../Redux/Slicers/GoogleAuthSlice";
+import { googleLogout, clearGoogleUser } from "../../Redux/Slicers/GoogleAuthSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -105,15 +105,18 @@ const Navbar = () => {
     try {
       if (isGoogleAuth) {
         await dispatch(googleLogout()).unwrap();
+        dispatch(clearGoogleUser()); // Force clear just in case
       } else {
         await dispatch(logoutUser()).unwrap();
       }
+
       setDropdownOpen(false);
       setMobileMenuOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Optionally show a notification to the user
+      // Optional: add a toast notification here
+      // toast.error("Logout failed. Please try again.");
     }
   };
 
