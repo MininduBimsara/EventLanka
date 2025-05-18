@@ -6,7 +6,7 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col h-screen md:flex-row">
+    <div className="flex flex-col min-h-screen md:flex-row">
       {/* Left Section - Light Background with Logo and Tagline */}
       <div className="flex flex-col items-center justify-center w-full p-8 text-center bg-white pointer-events-none select-none md:w-1/2">
         <div className="max-w-md">

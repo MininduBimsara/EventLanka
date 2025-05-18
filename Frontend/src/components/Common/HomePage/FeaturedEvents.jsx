@@ -41,17 +41,17 @@ const FeaturedEvents = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Auto-slide functionality with pause on hover
-  useEffect(() => {
-    if (totalSlides <= 1) return; // Don't auto-slide if only one slide
+  // useEffect(() => {
+  //   if (totalSlides <= 1) return; // Don't auto-slide if only one slide
 
-    const interval = setInterval(() => {
-      if (!activeEvent) {
-        setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
-      }
-    }, 6000); // Change slide every 6 seconds
+  //   const interval = setInterval(() => {
+  //     if (!activeEvent) {
+  //       setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
+  //     }
+  //   }, 6000); // Change slide every 6 seconds
 
-    return () => clearInterval(interval);
-  }, [totalSlides, activeEvent]);
+  //   return () => clearInterval(interval);
+  // }, [totalSlides, activeEvent]);
 
   // Manual navigation with transition state
   const goToSlide = (index) => {
@@ -129,17 +129,17 @@ const FeaturedEvents = () => {
           onMouseEnter={() => setActiveEvent("carousel")}
           onMouseLeave={() => setActiveEvent(null)}
         >
-          {/* Enhanced Carousel navigation arrows */}
+          {/* CAROUSEL NAVIGATION ARROWS */}
           {totalSlides > 1 && (
             <>
               <button
                 onClick={goToPrevSlide}
-                className="absolute left-0 z-10 flex items-center justify-center w-10 h-10 text-blue-800 transition duration-300 transform -translate-x-5 -translate-y-1/2 rounded-full shadow-lg top-1/2 md:flex bg-white/90 hover:bg-white hover:scale-110 md:translate-x-0 group"
+                className="absolute z-20 flex items-center justify-center w-12 h-12 text-white transition duration-300 transform -translate-y-1/2 bg-blue-800 rounded-full shadow-lg left-4 opacity-90 top-1/2 md:left-6 md:w-14 md:h-14 hover:bg-pink-500 hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
                 aria-label="Previous slide"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 transition-transform group-hover:-translate-x-1"
+                  className="w-6 h-6 transition-transform md:w-7 md:h-7 group-hover:-translate-x-1"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -147,19 +147,19 @@ const FeaturedEvents = () => {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M15 19l-7-7 7-7"
                   />
                 </svg>
               </button>
               <button
                 onClick={goToNextSlide}
-                className="absolute right-0 z-10 flex items-center justify-center w-10 h-10 text-blue-800 transition duration-300 transform translate-x-5 -translate-y-1/2 rounded-full shadow-lg top-1/2 md:flex bg-white/90 hover:bg-white hover:scale-110 md:translate-x-0 group"
+                className="absolute z-20 flex items-center justify-center w-12 h-12 text-white transition duration-300 transform -translate-y-1/2 bg-blue-800 rounded-full shadow-lg right-4 opacity-90 top-1/2 md:right-6 md:w-14 md:h-14 hover:bg-pink-500 hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
                 aria-label="Next slide"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 transition-transform group-hover:translate-x-1"
+                  className="w-6 h-6 transition-transform md:w-7 md:h-7 group-hover:translate-x-1"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -167,7 +167,7 @@ const FeaturedEvents = () => {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M9 5l7 7-7 7"
                   />
                 </svg>
