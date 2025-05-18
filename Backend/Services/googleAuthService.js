@@ -47,10 +47,17 @@ const verifyGoogleToken = async (token) => {
       {
         id: user._id,
         role: user.role,
+        // Add a small unique identifier to help track token source
+        auth: "google",
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
+    if (!authToken) {
+      throw new Error("Failed to generate JWT token");
+    }
+
+    console.log("Generated JWT token for Google user:", user._id);
 
     // Return user data and token
     return {

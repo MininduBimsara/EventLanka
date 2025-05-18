@@ -18,10 +18,13 @@ import {
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
+import { googleLogout } from "../../Redux/Slicers/GoogleAuthSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const isGoogleAuth = useSelector((state) => state.googleAuth.isAuthenticated);
 
   // Retrieve authentication details from redux
   const { isAuthenticated, user, loading } = useSelector((state) => state.user);
@@ -100,7 +103,11 @@ const Navbar = () => {
 
   const handleLogoutClick = async () => {
     try {
-      await dispatch(logoutUser()).unwrap();
+      if (isGoogleAuth) {
+        await dispatch(googleLogout()).unwrap();
+      } else {
+        await dispatch(logoutUser()).unwrap();
+      }
       setDropdownOpen(false);
       setMobileMenuOpen(false);
       navigate("/");
