@@ -146,12 +146,27 @@ const UpdateEvent = () => {
 
       // Only append banner if a new one was selected
       if (formData.banner instanceof File) {
-        eventData.append("banner", formData.banner);
-        console.log("Appending banner file:", formData.banner.name);
+        console.log("Banner file object:", formData.banner);
+        console.log("Banner file size:", formData.banner.size);
+        console.log("Banner file type:", formData.banner.type);
+
+        // Ensure the name is correct - this is critical for multer
+        eventData.append("banner", formData.banner, formData.banner.name);
+
+        // Log the form data for debugging
+        console.log("Form data entries:");
+        for (let pair of eventData.entries()) {
+          console.log(
+            pair[0] + ": " + (pair[0] === "banner" ? "File object" : pair[1])
+          );
+        }
       }
 
       // Dispatch update event action
       const resultAction = await dispatch(updateEvent({ id, eventData }));
+
+      // Log the result
+      console.log("Update result action:", resultAction);
 
       if (updateEvent.fulfilled.match(resultAction)) {
         setSubmitSuccess(true);
@@ -161,6 +176,7 @@ const UpdateEvent = () => {
         setSubmitError(resultAction.payload || "Failed to update event");
       }
     } catch (error) {
+      console.error("Error in form submission:", error);
       setSubmitError(
         error.message || "An error occurred while updating the event"
       );

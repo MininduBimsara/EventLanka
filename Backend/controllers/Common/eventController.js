@@ -126,8 +126,10 @@ exports.updateEvent = async (req, res) => {
     // Handle file upload if there's a new banner
     const updateData = { ...req.body };
 
+    // Important: Make sure the banner filename is correctly saved
     if (req.file) {
       updateData.banner = req.file.filename;
+      console.log("New banner filename:", req.file.filename); // Add logging
     }
 
     // Parse ticket_types if it's sent as a string
@@ -144,12 +146,17 @@ exports.updateEvent = async (req, res) => {
 
     updateData.updatedAt = Date.now(); // Update the timestamp
 
+    console.log("Update data being sent to DB:", updateData); // Add logging
+    
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true, runValidators: true } // Ensure validation is applied
+      { new: true, runValidators: true } // Ensure validation is applied and return new document
     );
 
+    console.log("Updated event from DB:", updatedEvent); // Add logging
+
+    // Make sure the response contains the proper banner path
     res.status(200).json({
       message: "Event updated successfully!",
       event: {
@@ -160,7 +167,7 @@ exports.updateEvent = async (req, res) => {
       },
     });
   } catch (error) {
-    // console.error(error);
+    console.error("Error updating event:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
