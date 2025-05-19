@@ -29,8 +29,9 @@ const FeaturedEvents = () => {
     }
   };
 
-  const getBannerUrl = () => {
-    if (!event.banner) {
+  // Fixed getBannerUrl function - now accepts event as a parameter
+  const getBannerUrl = (event) => {
+    if (!event || !event.banner) {
       return "https://via.placeholder.com/600x300.png?text=No+Banner";
     }
 
@@ -59,19 +60,6 @@ const FeaturedEvents = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeEvent, setActiveEvent] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Auto-slide functionality with pause on hover
-  // useEffect(() => {
-  //   if (totalSlides <= 1) return; // Don't auto-slide if only one slide
-
-  //   const interval = setInterval(() => {
-  //     if (!activeEvent) {
-  //       setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
-  //     }
-  //   }, 6000); // Change slide every 6 seconds
-
-  //   return () => clearInterval(interval);
-  // }, [totalSlides, activeEvent]);
 
   // Manual navigation with transition state
   const goToSlide = (index) => {
@@ -233,7 +221,24 @@ const FeaturedEvents = () => {
                             <div className="relative mb-5 overflow-hidden md:mb-6">
                               <div className="flex items-center justify-center mx-auto mb-3 transition-transform duration-300 bg-pink-100 rounded-full w-14 h-14 md:w-18 md:h-18 md:mb-4 group-hover:scale-110">
                                 <span className="text-3xl md:text-4xl">
-                                  {event.banner || "🎟️"}
+                                  {event.banner ? (
+                                    <img
+                                      src={getBannerUrl(event)}
+                                      alt={event.title}
+                                      className="object-cover w-full h-full"
+                                      onError={(e) => {
+                                        console.error(
+                                          "Image failed to load:",
+                                          e.target.src
+                                        );
+                                        e.target.onerror = null;
+                                        e.target.src =
+                                          "https://via.placeholder.com/600x300.png?text=Image+Error";
+                                      }}
+                                    />
+                                  ) : (
+                                    "🎟️"
+                                  )}
                                 </span>
 
                                 {/* Enhanced decorative element */}

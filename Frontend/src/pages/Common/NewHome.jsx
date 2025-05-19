@@ -20,7 +20,7 @@ function NewHome() {
   return (
     <>
       {" "}
-      <div className="min-h-screen ">
+      <div className="min-h-screen">
         <Navbar />
         <GradientSync />
         <HeroSection />
