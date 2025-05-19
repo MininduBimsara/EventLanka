@@ -25,14 +25,24 @@ export const fetchAllEvents = createAsyncThunk(
   "events/fetchAllEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("http://localhost:5000/api/events/public/all", {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await axios.get(
+        "http://localhost:5000/api/events/public/all",
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       // Ensure the response is an array
-      return Array.isArray(response.data) ? response.data : [];
+      const events = Array.isArray(response.data) ? response.data : [];
+
+      // Ensure banner paths are properly formatted
+      return events.map((event) => ({
+        ...event,
+        // Make sure banner path is consistently formatted
+        banner: event.banner || null,
+      }));
     } catch (error) {
       console.error("Fetch all events error:", error);
       return rejectWithValue("Failed to fetch events");

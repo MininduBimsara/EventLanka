@@ -1,12 +1,34 @@
 import { useNavigate } from "react-router-dom";
+// import { useEffect } from "react";
 
 const EventCard = ({ event }) => {
   const navigate = useNavigate();
-  const API_URL = "http://localhost:5000/api/events";
+  const API_URL = "http://localhost:5000";
 
-  const bannerUrl = event.banner
-    ? `${API_URL}${event.banner}`
-    : "https://via.placeholder.com/600x300.png?text=No+Banner";
+  // useEffect(() => {
+  //   // Debug: Log the banner value we're receiving
+  //   console.log("Event:", event._id, "Banner value:", event.banner);
+  // }, [event]);
+
+  // Simpler, more direct banner URL construction
+  const getBannerUrl = () => {
+    if (!event.banner) {
+      return "https://via.placeholder.com/600x300.png?text=No+Banner";
+    }
+
+    // If it's just a filename with no slashes
+    if (!event.banner.includes("/")) {
+      return `${API_URL}/event-images/${event.banner}`;
+    }
+    
+    // If it starts with a slash, assume it's a relative path to the server
+    if (event.banner.startsWith("/")) {
+      return `${API_URL}${event.banner}`;
+    }
+    
+    // Otherwise use as is (full URL)
+    return event.banner;
+  };
 
   const handleButtonClick = () => {
     if (!event.bookingAvailable) return;
@@ -15,13 +37,23 @@ const EventCard = ({ event }) => {
 
   return (
     <div className="h-full overflow-hidden transition-all duration-300 transform bg-white border border-blue-100 rounded-lg shadow-lg select-none hover:shadow-xl hover:-translate-y-2">
+      {/* Debug info (remove in production) */}
+      {/* <div className="p-1 text-xs bg-yellow-100">
+        Banner: {event.banner ? event.banner : "None"}
+      </div> */}
+      
       {/* Banner Image */}
       <div className="relative h-48 overflow-hidden">
         {event.banner ? (
           <img
-            src={bannerUrl}
+            src={getBannerUrl()}
             alt={event.title}
             className="object-cover w-full h-full"
+            onError={(e) => {
+              console.error("Image failed to load:", e.target.src);
+              e.target.onerror = null;
+              e.target.src = "https://via.placeholder.com/600x300.png?text=Image+Error";
+            }}
           />
         ) : (
           <div className="flex items-center justify-center h-full bg-blue-800">

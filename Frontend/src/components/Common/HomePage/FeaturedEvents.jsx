@@ -9,6 +9,7 @@ const FeaturedEvents = () => {
   const dispatch = useDispatch();
   const { events = [], loading, error } = useSelector((state) => state.events);
   const carouselRef = useRef(null);
+  const API_URL = "http://localhost:5000";
 
   useEffect(() => {
     dispatch(fetchAllEvents());
@@ -26,6 +27,25 @@ const FeaturedEvents = () => {
     } catch (e) {
       return dateString; // Return original if parsing fails
     }
+  };
+
+  const getBannerUrl = () => {
+    if (!event.banner) {
+      return "https://via.placeholder.com/600x300.png?text=No+Banner";
+    }
+
+    // If it's just a filename with no slashes
+    if (!event.banner.includes("/")) {
+      return `${API_URL}/event-images/${event.banner}`;
+    }
+
+    // If it starts with a slash, assume it's a relative path to the server
+    if (event.banner.startsWith("/")) {
+      return `${API_URL}${event.banner}`;
+    }
+
+    // Otherwise use as is (full URL)
+    return event.banner;
   };
 
   // Responsive settings for number of events per slide
