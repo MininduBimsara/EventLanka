@@ -70,7 +70,13 @@ router.post(
   eventUpload.single("banner"),
   eventController.createEvent
 );
-router.put("/events/:id", protect, organizerOnly, eventController.updateEvent);
+router.put(
+  "/events/:id",
+  protect,
+  organizerOnly,
+  eventUpload.single("banner"),
+  eventController.updateEvent
+);
 router.get("/events", protect, organizerOnly, eventController.getEvents);
 router.get("/events/:id", protect, eventController.getEventById);
 router.delete("/events/:id", protect, eventController.deleteEvent);

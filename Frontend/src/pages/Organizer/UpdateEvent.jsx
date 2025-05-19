@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getOrganizerEventById, updateEvent } from "../../Redux/Slicers/OrganizerSlice";
+import {
+  getOrganizerEventById,
+  updateEvent,
+} from "../../Redux/Slicers/OrganizerSlice";
 import {
   ArrowLeft,
   Upload,
@@ -63,6 +66,7 @@ const UpdateEvent = () => {
         duration: currentEvent.duration || 1,
         category: currentEvent.category || "Other",
         ticket_types: currentEvent.ticket_types || [],
+        banner: null, // Initialize banner as null, we'll handle it separately
       });
 
       // Set preview image if banner exists
@@ -143,6 +147,7 @@ const UpdateEvent = () => {
       // Only append banner if a new one was selected
       if (formData.banner instanceof File) {
         eventData.append("banner", formData.banner);
+        console.log("Appending banner file:", formData.banner.name);
       }
 
       // Dispatch update event action
@@ -151,7 +156,7 @@ const UpdateEvent = () => {
       if (updateEvent.fulfilled.match(resultAction)) {
         setSubmitSuccess(true);
         // Navigate back after successful update
-        setTimeout(() => navigate("/manage-events"), 1500);
+        setTimeout(() => navigate("/organizer/manage-events"), 1500);
       } else {
         setSubmitError(resultAction.payload || "Failed to update event");
       }
@@ -209,7 +214,7 @@ const UpdateEvent = () => {
       </div>
 
       <div className="p-6 bg-white rounded-lg shadow-md">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
           {/* Event Details Section */}
           <div className="mb-6">
             <h2 className="mb-4 text-xl font-semibold">Event Details</h2>
