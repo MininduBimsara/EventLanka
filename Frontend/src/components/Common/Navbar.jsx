@@ -260,7 +260,9 @@ const Navbar = () => {
             onClick={() => navigateTo("/")}
             className="flex items-center cursor-pointer"
           >
-            <div className="w-10 h-10 mr-2 bg-gray-100 rounded-full"></div>
+            <div className="w-10 h-10 mt-5 mr-2">
+              <img src="/2.png" className="justify-center align-middle" />
+            </div>
             <h1 className="text-2xl font-bold">EventLanka</h1>
           </div>
         </div>

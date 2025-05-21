@@ -29,7 +29,19 @@ const eventStorage = multer.diskStorage({
 });
 
 // Fix: Changed from { eventStorage } to { storage: eventStorage }
-const eventUpload = multer({ storage: eventStorage });
+const eventUpload = multer({
+  storage: eventStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed."), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
 
 // Configure multer for profile image uploads
 const profileStorage = multer.diskStorage({
@@ -70,7 +82,13 @@ router.post(
   eventUpload.single("banner"),
   eventController.createEvent
 );
-router.put("/events/:id", protect, organizerOnly, eventController.updateEvent);
+router.put(
+  "/events/:id",
+  protect,
+  organizerOnly,
+  eventUpload.single("banner"),
+  eventController.updateEvent
+);
 router.get("/events", protect, organizerOnly, eventController.getEvents);
 router.get("/events/:id", protect, eventController.getEventById);
 router.delete("/events/:id", protect, eventController.deleteEvent);

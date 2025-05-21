@@ -56,10 +56,10 @@ app.use(
   "/profile-images",
   express.static(path.join(__dirname, "uploads/profile-images"))
 );
-// app.use(
-//   "/event-images",
-//   express.static(path.join(__dirname, "uploads/event-images"))
-// );
+app.use(
+  "/event-images",
+  express.static(path.join(__dirname, "uploads/event-images"))
+);
 // app.use(
 //   "/ticket-images",
 //   express.static(path.join(__dirname, "uploads/ticket-images"))

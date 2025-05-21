@@ -38,12 +38,30 @@ export const updateEvent = createAsyncThunk(
   "organizer/updateEvent",
   async ({ id, eventData }, { rejectWithValue }) => {
     try {
+      // Log what we're sending (for debugging)
+      console.log("Updating event with ID:", id);
+
+      // Ensure proper headers for FormData with file uploads
+      const config = {
+        headers: {
+          // Don't set Content-Type manually when sending FormData!
+          // axios will set it automatically with the proper boundary
+        },
+      };
+
       const response = await axios.put(
         `${ORGANIZER_API_URL}/events/${id}`,
-        eventData
+        eventData,
+        config
       );
+
+      console.log("Update response:", response.data);
       return response.data;
     } catch (error) {
+      console.error(
+        "Error updating event:",
+        error.response?.data || error.message
+      );
       return rejectWithValue(
         error.response?.data?.message || "Failed to update event"
       );
@@ -333,7 +351,7 @@ export const getEventDiscounts = createAsyncThunk(
         `${ORGANIZER_API_URL}/events/${eventId}/discounts`,
         config
       );
-      
+
       return { eventId, discounts: response.data };
     } catch (error) {
       return rejectWithValue(
@@ -614,25 +632,31 @@ const organizerSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Update Event
+      // Update Event reducers
       .addCase(updateEvent.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateEvent.fulfilled, (state, action) => {
         state.loading = false;
+
+        // Get the updated event from the payload
+        const updatedEvent = action.payload;
+
+        // Find the event in the events array and update it
         const index = state.events.findIndex(
-          (event) => event._id === action.payload._id
+          (event) => event._id === updatedEvent._id
         );
+
         if (index !== -1) {
-          state.events[index] = action.payload;
+          state.events[index] = updatedEvent;
         }
-        if (
-          state.currentEvent &&
-          state.currentEvent._id === action.payload._id
-        ) {
-          state.currentEvent = action.payload;
+
+        // Also update currentEvent if it matches
+        if (state.currentEvent && state.currentEvent._id === updatedEvent._id) {
+          state.currentEvent = updatedEvent;
         }
+
         state.success = true;
         state.message = "Event updated successfully";
       })

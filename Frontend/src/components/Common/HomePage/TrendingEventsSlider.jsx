@@ -9,13 +9,14 @@ import {
 } from "react-icons/fa";
 import { fetchAllEvents } from "../../../Redux/Slicers/EventSlice";
 import { useNavigate } from "react-router-dom";
- 
+
 // Updated Trending Events Slider Component
 const TrendingEventsSlider = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { events, loading, error } = useSelector((state) => state.events);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const API_URL = "http://localhost:5000";
 
   // Fetch events when component mounts
   useEffect(() => {
@@ -32,12 +33,12 @@ const TrendingEventsSlider = () => {
   }, [dispatch]);
 
   // Get the 4 most recent approved events
-  const trendingEvents = Array.isArray(events) 
-  ? events
-    .filter((event) => event.event_status === "approved")
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 4)
-  : [];
+  const trendingEvents = Array.isArray(events)
+    ? events
+        .filter((event) => event.event_status === "approved")
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 4)
+    : [];
 
   // Auto-slide functionality
   useEffect(() => {
@@ -65,6 +66,26 @@ const TrendingEventsSlider = () => {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  // Added getBannerUrl function similar to FeaturedEvents component
+  const getBannerUrl = (event) => {
+    if (!event || !event.banner) {
+      return "https://via.placeholder.com/600x300.png?text=No+Banner";
+    }
+
+    // If it's just a filename with no slashes
+    if (!event.banner.includes("/")) {
+      return `${API_URL}/event-images/${event.banner}`;
+    }
+
+    // If it starts with a slash, assume it's a relative path to the server
+    if (event.banner.startsWith("/")) {
+      return `${API_URL}${event.banner}`;
+    }
+
+    // Otherwise use as is (full URL)
+    return event.banner;
   };
 
   // If there are no events or still loading, show loading state
@@ -167,7 +188,6 @@ const TrendingEventsSlider = () => {
                       <button
                         className="px-6 py-2 mt-2 font-medium text-blue-900 transition-all duration-300 transform bg-white rounded-full hover:bg-pink-100 hover:scale-105 w-fit"
                         onClick={() => navigate(`/event/${event._id}`)}
-                        
                       >
                         Book Tickets
                       </button>
@@ -175,13 +195,22 @@ const TrendingEventsSlider = () => {
                   </div>
 
                   <div className="w-full h-48 md:w-1/2 md:h-full">
-                    {/* Event image */}
+                    {/* Event image with error handling */}
                     <div className="flex items-center justify-center h-full border rounded-lg bg-pink-400/40 border-white/20">
                       {event.banner ? (
                         <img
-                          src={event.banner}
+                          src={getBannerUrl(event)}
                           alt={event.title}
                           className="object-cover w-full h-full rounded-lg"
+                          onError={(e) => {
+                            console.error(
+                              "Image failed to load:",
+                              e.target.src
+                            );
+                            e.target.onerror = null;
+                            e.target.src =
+                              "https://via.placeholder.com/600x300.png?text=Image+Error";
+                          }}
                         />
                       ) : (
                         <div className="relative">
