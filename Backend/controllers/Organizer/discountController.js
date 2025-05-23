@@ -1,272 +1,273 @@
-const Discount = require("../../models/Discount");
-const Event = require("../../models/Event");
+const discountService = require("../../services/discountService");
 const asyncHandler = require("express-async-handler");
-const mongoose = require("mongoose");
 
 // Create a new discount code
 exports.create = asyncHandler(async (req, res) => {
-  const {
-    applicable_events,
-    code,
-    description,
-    discount_type,
-    discount_value,
-    usage_limit,
-    start_date,
-    end_date,
-    minimum_purchase_amount,
-  } = req.body;
+  try {
+    const discount = await discountService.createDiscount(
+      req.body,
+      req.user.id,
+      req.user.role
+    );
 
-  // Check if user is authorized (event organizer or admin)
-  const events = await Event.find({ _id: { $in: applicable_events } });
-  if (!events || events.length === 0) {
-    return res.status(404).json({ message: "One or more events not found" });
-  }
+    res.status(201).json({
+      message: "Discount code created successfully",
+      discount,
+    });
+  } catch (error) {
+    const errorMessages = {
+      "One or more events not found": 404,
+      "Unauthorized to manage discount codes for one or more events": 403,
+      "Discount code already exists": 400,
+      "Invalid discount type. Must be 'percentage' or 'fixed'": 400,
+      "Discount value must be greater than 0": 400,
+      "Percentage discount cannot exceed 100%": 400,
+      "Start date must be before end date": 400,
+    };
 
-  const unauthorizedEvent = events.find(
-    (event) =>
-      event.organizer_id.toString() !== req.user.id && req.user.role !== "admin"
-  );
-  if (unauthorizedEvent) {
-    return res.status(403).json({
-      message: "Unauthorized to create discount codes for one or more events",
+    const statusCode = errorMessages[error.message] || 500;
+    res.status(statusCode).json({
+      message: error.message,
+      ...(statusCode === 500 && { error: error.message }),
     });
   }
-
-  // Check if code already exists
-  const existingCode = await Discount.findOne({ code: code.toUpperCase() });
-  if (existingCode) {
-    return res.status(400).json({ message: "Discount code already exists" });
-  }
-
-  const discount = await Discount.create({
-    applicable_events,
-    code: code.toUpperCase(),
-    description: description || "",
-    discount_type,
-    discount_value,
-    usage_limit: usage_limit || null,
-    usage_count: 0,
-    start_date: start_date || Date.now(),
-    end_date,
-    minimum_purchase_amount: minimum_purchase_amount || 0,
-    is_active: true,
-    created_by: req.user.id,
-  });
-
-  res
-    .status(201)
-    .json({ message: "Discount code created successfully", discount });
 });
 
 // Get all discount codes for an event
 exports.getAll = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
 
-  // Validate eventId
-  if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
-    return res.status(400).json({ message: "Invalid event ID" });
-  }
+  try {
+    const discounts = await discountService.getDiscountsByEvent(
+      eventId,
+      req.user.id,
+      req.user.role
+    );
 
-  // Check if user is authorized (event organizer or admin)
-  const event = await Event.findById(eventId);
-  if (!event) {
-    return res.status(404).json({ message: "Event not found" });
-  }
+    res.status(200).json(discounts);
+  } catch (error) {
+    const errorMessages = {
+      "Invalid event ID": 400,
+      "One or more events not found": 404,
+      "Unauthorized to manage discount codes for one or more events": 403,
+    };
 
-  if (
-    event.organizer_id.toString() !== req.user.id &&
-    req.user.role !== "admin"
-  ) {
-    return res
-      .status(403)
-      .json({ message: "Unauthorized to view discount codes" });
+    const statusCode = errorMessages[error.message] || 500;
+    res.status(statusCode).json({
+      message:
+        error.message ===
+        "Unauthorized to manage discount codes for one or more events"
+          ? "Unauthorized to view discount codes"
+          : error.message,
+      ...(statusCode === 500 && { error: error.message }),
+    });
   }
-
-  const discounts = await Discount.find({ applicable_events: eventId });
-  res.status(200).json(discounts);
 });
 
 // Update a discount code
 exports.update = asyncHandler(async (req, res) => {
   const { discountId } = req.params;
-  const updates = req.body;
 
-  const discount = await Discount.findById(discountId);
-  if (!discount) {
-    return res.status(404).json({ message: "Discount code not found" });
+  try {
+    const updatedDiscount = await discountService.updateDiscount(
+      discountId,
+      req.body,
+      req.user.id,
+      req.user.role
+    );
+
+    res.status(200).json({
+      message: "Discount code updated successfully",
+      discount: updatedDiscount,
+    });
+  } catch (error) {
+    const errorMessages = {
+      "Discount code not found": 404,
+      "Unauthorized to manage discount codes for one or more events": 403,
+      "Invalid discount type. Must be 'percentage' or 'fixed'": 400,
+      "Discount value must be greater than 0": 400,
+      "Percentage discount cannot exceed 100%": 400,
+      "Start date must be before end date": 400,
+    };
+
+    const statusCode = errorMessages[error.message] || 500;
+    res.status(statusCode).json({
+      message:
+        error.message ===
+        "Unauthorized to manage discount codes for one or more events"
+          ? "Unauthorized to update discount codes"
+          : error.message,
+      ...(statusCode === 500 && { error: error.message }),
+    });
   }
-
-  // Check if user is authorized (event organizer or admin)
-  const events = await Event.find({ _id: { $in: discount.applicable_events } });
-  const unauthorizedEvent = events.find(
-    (event) =>
-      event.organizer_id.toString() !== req.user.id && req.user.role !== "admin"
-  );
-  if (unauthorizedEvent) {
-    return res
-      .status(403)
-      .json({ message: "Unauthorized to update discount codes" });
-  }
-
-  // Don't allow changing the code itself, only other properties
-  delete updates.code;
-  delete updates.created_by;
-  delete updates.usage_count;
-
-  const updatedDiscount = await Discount.findByIdAndUpdate(
-    discountId,
-    updates,
-    { new: true, runValidators: true }
-  );
-
-  res.status(200).json({
-    message: "Discount code updated successfully",
-    discount: updatedDiscount,
-  });
 });
 
 // Delete a discount code
 exports.delete = asyncHandler(async (req, res) => {
   const { discountId } = req.params;
 
-  const discount = await Discount.findById(discountId);
-  if (!discount) {
-    return res.status(404).json({ message: "Discount code not found" });
-  }
+  try {
+    await discountService.deleteDiscount(
+      discountId,
+      req.user.id,
+      req.user.role
+    );
 
-  // Check if user is authorized (event organizer or admin)
-  const events = await Event.find({ _id: { $in: discount.applicable_events } });
-  const unauthorizedEvent = events.find(
-    (event) =>
-      event.organizer_id.toString() !== req.user.id && req.user.role !== "admin"
-  );
-  if (unauthorizedEvent) {
-    return res
-      .status(403)
-      .json({ message: "Unauthorized to delete discount codes" });
-  }
+    res.status(200).json({ message: "Discount code deleted successfully" });
+  } catch (error) {
+    const errorMessages = {
+      "Discount code not found": 404,
+      "Unauthorized to manage discount codes for one or more events": 403,
+    };
 
-  await discount.deleteOne();
-  res.status(200).json({ message: "Discount code deleted successfully" });
-});
-
-// Validate a discount code
-exports.validateCode = asyncHandler(async (req, res) => {
-  const { eventId, code, ticketCount, ticketType } = req.body;
-
-  const event = await Event.findById(eventId);
-  if (!event) {
-    return res.status(404).json({ message: "Event not found" });
-  }
-
-  const discount = await Discount.findOne({
-    applicable_events: eventId,
-    code: code.toUpperCase(),
-    is_active: true,
-  });
-
-  if (!discount) {
-    return res.status(404).json({ message: "Invalid discount code" });
-  }
-
-  // Check if code has expired
-  if (discount.end_date && new Date() > new Date(discount.end_date)) {
-    return res.status(400).json({ message: "Discount code has expired" });
-  }
-
-  // Check if code has reached maximum uses
-  if (discount.usage_limit && discount.usage_count >= discount.usage_limit) {
-    return res
-      .status(400)
-      .json({ message: "Discount code has reached maximum uses" });
-  }
-
-  // Check if minimum purchase amount is met
-  if (ticketCount < discount.minimum_purchase_amount) {
-    return res.status(400).json({
-      message: `Minimum ${discount.minimum_purchase_amount} tickets required for this discount code`,
+    const statusCode = errorMessages[error.message] || 500;
+    res.status(statusCode).json({
+      message:
+        error.message ===
+        "Unauthorized to manage discount codes for one or more events"
+          ? "Unauthorized to delete discount codes"
+          : error.message,
+      ...(statusCode === 500 && { error: error.message }),
     });
   }
-
-  // Calculate discount amount
-  let discountAmount = 0;
-  const ticketTypeDetails = event.ticket_types.find(
-    (t) => t.type === ticketType
-  );
-
-  if (!ticketTypeDetails) {
-    return res.status(400).json({ message: "Invalid ticket type" });
-  }
-
-  const ticketPrice = ticketTypeDetails.price;
-
-  if (discount.discount_type === "percentage") {
-    discountAmount =
-      ((ticketPrice * discount.discount_value) / 100) * ticketCount;
-  } else {
-    // fixed amount
-    discountAmount = discount.discount_value * ticketCount;
-  }
-
-  res.status(200).json({
-    valid: true,
-    discountAmount,
-    discountType: discount.discount_type,
-    discountValue: discount.discount_value,
-  });
 });
 
+// Validate a discount code for specific event and ticket details
+exports.validateCodeForEvent = asyncHandler(async (req, res) => {
+  const { eventId, code, ticketCount, ticketType } = req.body;
 
-// Validate a discount code
+  try {
+    const validationResult = await discountService.validateDiscountForEvent(
+      eventId,
+      code,
+      ticketCount,
+      ticketType
+    );
+
+    res.status(200).json(validationResult);
+  } catch (error) {
+    const errorMessages = {
+      "Event not found": 404,
+      "Invalid discount code": 404,
+      "Discount code has expired": 400,
+      "Discount code has reached maximum uses": 400,
+      "Invalid ticket type": 400,
+    };
+
+    const statusCode = errorMessages[error.message] || 500;
+
+    // Handle minimum ticket requirement errors
+    if (
+      error.message.includes("Minimum") &&
+      error.message.includes("tickets required")
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.status(statusCode).json({
+      message: error.message,
+      ...(statusCode === 500 && { error: error.message }),
+    });
+  }
+});
+
+// Validate a discount code (general validation)
 exports.validateCode = asyncHandler(async (req, res) => {
   const { code, subtotal } = req.body;
 
-  const discount = await Discount.findOne({
-    code: code.toUpperCase(),
-    is_active: true,
-  });
+  try {
+    const validationResult = await discountService.validateDiscountCode(
+      code,
+      subtotal
+    );
 
-  if (!discount) {
-    return res.status(404).json({ valid: false, message: "Invalid discount code" });
-  }
+    res.status(200).json(validationResult);
+  } catch (error) {
+    const errorMessages = {
+      "Invalid discount code": 404,
+      "Discount code has expired": 400,
+      "Discount code has reached maximum uses": 400,
+    };
 
-  // Check if code has expired
-  const now = new Date();
-  if (discount.end_date && now > new Date(discount.end_date)) {
-    return res.status(400).json({ valid: false, message: "Discount code has expired" });
-  }
+    const statusCode = errorMessages[error.message] || 500;
 
-  // Check if code has reached maximum uses
-  if (discount.usage_limit && discount.usage_count >= discount.usage_limit) {
-    return res
-      .status(400)
-      .json({ valid: false, message: "Discount code has reached maximum uses" });
-  }
+    // Handle minimum purchase amount errors
+    if (error.message.includes("Minimum purchase amount")) {
+      return res.status(400).json({
+        valid: false,
+        message: error.message,
+      });
+    }
 
-  // Check if minimum purchase amount is met
-  if (subtotal < discount.minimum_purchase_amount) {
-    return res.status(400).json({
+    // Return validation format for client-side handling
+    if (statusCode <= 400) {
+      return res.status(statusCode).json({
+        valid: false,
+        message: error.message,
+      });
+    }
+
+    res.status(statusCode).json({
       valid: false,
-      message: `Minimum purchase amount of $${discount.minimum_purchase_amount} required for this discount`,
+      message: "Failed to validate discount code",
+      error: error.message,
     });
   }
+});
 
-  // Calculate discount amount
-  let discountAmount = 0;
-  if (discount.discount_type === "percentage") {
-    discountAmount = (subtotal * discount.discount_value) / 100;
-  } else {
-    discountAmount = discount.discount_value;
+// Apply discount code (increment usage count)
+exports.applyDiscount = asyncHandler(async (req, res) => {
+  const { discountId } = req.body;
+
+  try {
+    const discount = await discountService.applyDiscountCode(discountId);
+
+    res.status(200).json({
+      message: "Discount applied successfully",
+      discount: {
+        id: discount._id,
+        code: discount.code,
+        usage_count: discount.usage_count,
+        usage_limit: discount.usage_limit,
+      },
+    });
+  } catch (error) {
+    const statusCode = error.message === "Discount not found" ? 404 : 500;
+    res.status(statusCode).json({
+      message: error.message,
+      ...(statusCode === 500 && { error: error.message }),
+    });
   }
+});
 
-  res.status(200).json({
-    valid: true,
-    discountAmount,
-    discountId: discount._id,
-    discountType: discount.discount_type,
-    discountValue: discount.discount_value,
-  });
+// Get discount usage statistics
+exports.getStats = asyncHandler(async (req, res) => {
+  const { discountId } = req.params;
+
+  try {
+    const stats = await discountService.getDiscountStats(
+      discountId,
+      req.user.id,
+      req.user.role
+    );
+
+    res.status(200).json(stats);
+  } catch (error) {
+    const errorMessages = {
+      "Discount code not found": 404,
+      "Unauthorized to manage discount codes for one or more events": 403,
+    };
+
+    const statusCode = errorMessages[error.message] || 500;
+    res.status(statusCode).json({
+      message:
+        error.message ===
+        "Unauthorized to manage discount codes for one or more events"
+          ? "Unauthorized to view discount statistics"
+          : error.message,
+      ...(statusCode === 500 && { error: error.message }),
+    });
+  }
 });
 
 module.exports = exports;
