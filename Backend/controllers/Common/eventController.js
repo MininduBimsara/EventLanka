@@ -1,106 +1,42 @@
-const Event = require("../../models/Event");
+const eventService = require("../../Services/Common/eventService");
 
 // Create a new event (Only Organizer)
 exports.createEvent = async (req, res) => {
   try {
-    if (req.user.role !== "organizer") {
-      return res
-        .status(403)
-        .json({ message: "Access Denied. Only organizers can create events." });
-    }
-
-    const {
-      title,
-      description,
-      location,
-      date,
-      category,
-      duration,
-      ticket_types,
-    } = req.body;
-
     const bannerImage = req.file ? req.file.filename : null;
 
-    // ✅ Removed bannerImage from required field check
-    if (!title || !description || !location || !date || !ticket_types) {
-      return res.status(400).json({ message: "Missing required fields." });
-    }
-
-    // Parse ticket_types if it's sent as a string
-    const parsedTicketTypes =
-      typeof ticket_types === "string"
-        ? JSON.parse(ticket_types)
-        : ticket_types;
-
-    const newEvent = new Event({
-      organizer_id: req.user.id,
-      title,
-      description,
-      location,
-      date,
-      duration: duration || 1, // Default duration is 1 hour
-      category: category || "Other", // Default category is "Other"
-      ticket_types: parsedTicketTypes,
-      banner: bannerImage, // 👈 null if no image uploaded
-      event_status: "pending",
-    });
-
-    await newEvent.save();
+    const event = await eventService.createEvent(
+      req.body,
+      req.user,
+      bannerImage
+    );
 
     res.status(201).json({
       message: "Event created successfully!",
-      event: {
-        ...newEvent._doc,
-        banner: bannerImage ? `/event-images/${bannerImage}` : null, // 👈 handle null case in response
-      },
+      event,
     });
   } catch (error) {
-    // console.error(error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(error.message.includes("Access Denied") ? 403 : 400).json({
+      message: error.message,
+    });
   }
 };
 
 exports.getPublicEvents = async (req, res) => {
   try {
-    const events = await Event.find({ event_status: "approved" }).lean();
-
-    // Transform banner URLs to be fully qualified
-    const transformedEvents = events.map((event) => ({
-      ...event,
-      banner: event.banner ? `/event-images/${event.banner}` : null,
-    }));
-
-    res.status(200).json(transformedEvents);
+    const events = await eventService.getPublicEvents();
+    res.status(200).json(events);
   } catch (error) {
-    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
-
 // Get all events (Admin sees all, Organizers see their own, Users see only approved events)
 exports.getEvents = async (req, res) => {
   try {
-    let events;
-
-    // Check if req.user exists before accessing its properties
-    if (req.user && req.user.role === "admin") {
-      events = await Event.find(); // Admin sees all events
-    } else if (req.user && req.user.role === "organizer") {
-      events = await Event.find({ organizer_id: req.user.id }); // Organizer sees their own
-    } else {
-      events = await Event.find({ event_status: "approved" }); // Regular users see only approved events
-    }
-
-    // Transform banner URLs to be fully qualified
-    const transformedEvents = events.map((event) => ({
-      ...event._doc,
-      banner: event.banner ? `/event-images/${event.banner}` : null,
-    }));
-
-    res.status(200).json(transformedEvents);
+    const events = await eventService.getEvents(req.user);
+    res.status(200).json(events);
   } catch (error) {
-    // console.error(error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -108,192 +44,99 @@ exports.getEvents = async (req, res) => {
 // Update an event (Only Organizer who created it)
 exports.updateEvent = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id);
+    const bannerImage = req.file ? req.file.filename : null;
 
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    if (
-      event.organizer_id.toString() !== req.user.id &&
-      req.user.role !== "admin"
-    ) {
-      return res.status(403).json({
-        message: "Access Denied. You can only update your own events.",
-      });
-    }
-
-    // Handle file upload if there's a new banner
-    const updateData = { ...req.body };
-
-    // Important: Make sure the banner filename is correctly saved
-    if (req.file) {
-      updateData.banner = req.file.filename;
-      console.log("New banner filename:", req.file.filename); // Add logging
-    }
-
-    // Parse ticket_types if it's sent as a string
-    if (
-      updateData.ticket_types &&
-      typeof updateData.ticket_types === "string"
-    ) {
-      updateData.ticket_types = JSON.parse(updateData.ticket_types);
-    }
-
-    if (req.user.role === "organizer") {
-      updateData.event_status = "pending"; // Re-review after changes
-    }
-
-    updateData.updatedAt = Date.now(); // Update the timestamp
-
-    console.log("Update data being sent to DB:", updateData); // Add logging
-    
-    const updatedEvent = await Event.findByIdAndUpdate(
+    const updatedEvent = await eventService.updateEvent(
       req.params.id,
-      updateData,
-      { new: true, runValidators: true } // Ensure validation is applied and return new document
+      req.body,
+      req.user,
+      bannerImage
     );
 
-    console.log("Updated event from DB:", updatedEvent); // Add logging
-
-    // Make sure the response contains the proper banner path
     res.status(200).json({
       message: "Event updated successfully!",
-      event: {
-        ...updatedEvent._doc,
-        banner: updatedEvent.banner
-          ? `/event-images/${updatedEvent.banner}`
-          : null,
-      },
+      event: updatedEvent,
     });
   } catch (error) {
-    console.error("Error updating event:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    const statusCode = error.message.includes("Access Denied")
+      ? 403
+      : error.message.includes("not found")
+      ? 404
+      : 500;
+
+    res.status(statusCode).json({ message: error.message });
   }
 };
 
 // Delete an event (Only Organizer who created it)
 exports.deleteEvent = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id);
-
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    if (
-      event.organizer_id.toString() !== req.user.id &&
-      req.user.role !== "admin"
-    ) {
-      return res.status(403).json({
-        message: "Access Denied. You can only delete your own events.",
-      });
-    }
-
-    //You might want to handle file deletion here
-    const fs = require('fs');
-    const path = require('path');
-    if (event.banner) {
-      const filePath = path.join(__dirname, '../../public/event-images', event.banner);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    }
-
-    await event.deleteOne();
-    res.status(200).json({ message: "Event deleted successfully!" });
+    const result = await eventService.deleteEvent(req.params.id, req.user);
+    res.status(200).json(result);
   } catch (error) {
-    // console.error(error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    const statusCode = error.message.includes("Access Denied")
+      ? 403
+      : error.message.includes("not found")
+      ? 404
+      : 500;
+
+    res.status(statusCode).json({ message: error.message });
   }
 };
 
 // Get pending events (Admin)
 exports.listPendingEvents = async (req, res) => {
   try {
-    const pendingEvents = await Event.find({ event_status: "pending" });
+    const pendingEvents = await eventService.getPendingEvents();
     res.status(200).json(pendingEvents);
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
-// Get event by ID (Admin)
 // Get event by ID (Public - with proper data handling)
 exports.getEventById = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id);
-    
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-    
-    // For non-admin/non-organizers, only show approved events
-    if (
-      (!req.user || (req.user.role !== "admin" && req.user.role !== "organizer")) && 
-      event.event_status !== "approved"
-    ) {
-      return res.status(403).json({ 
-        message: "This event is not available for booking",
-        bookingAvailable: false
-      });
-    }
-    
-    // For organizers, only show their own events or approved events
-    if (
-      req.user && 
-      req.user.role === "organizer" && 
-      event.organizer_id.toString() !== req.user.id && 
-      event.event_status !== "approved"
-    ) {
-      return res.status(403).json({ 
-        message: "This event is not available for booking",
-        bookingAvailable: false
-      });
-    }
-    
-    // Transform banner URL
-    const transformedEvent = {
-      ...event._doc,
-      banner: event.banner ? `/event-images/${event.banner}` : null,
-      bookingAvailable: event.event_status === "approved"
-    };
-    
-    res.status(200).json(transformedEvent);
+    const event = await eventService.getEventById(req.params.id, req.user);
+    res.status(200).json(event);
   } catch (error) {
-    // console.error(error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    const statusCode = error.message.includes("not found")
+      ? 404
+      : error.message.includes("not available")
+      ? 403
+      : 500;
+
+    res.status(statusCode).json({
+      message: error.message,
+      bookingAvailable: false,
+    });
   }
 };
 
 // Approve event (Admin)
 exports.approveEvent = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id);
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    event.event_status = "approved";
-    await event.save();
-    res.status(200).json({ message: "Event approved successfully!" });
+    const result = await eventService.updateEventStatus(
+      req.params.id,
+      "approved"
+    );
+    res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    const statusCode = error.message.includes("not found") ? 404 : 500;
+    res.status(statusCode).json({ message: error.message });
   }
 };
 
 // Reject event (Admin)
 exports.rejectEvent = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id);
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    event.event_status = "rejected";
-    await event.save();
-    res.status(200).json({ message: "Event rejected successfully!" });
+    const result = await eventService.updateEventStatus(
+      req.params.id,
+      "rejected"
+    );
+    res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    const statusCode = error.message.includes("not found") ? 404 : 500;
+    res.status(statusCode).json({ message: error.message });
   }
 };

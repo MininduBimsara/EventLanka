@@ -65,7 +65,7 @@ const MyTransactions = () => {
       eventName: payment.event_id?.title || "Unknown Event",
       amount: payment.amount || 0,
       paymentMethod: payment.payment_method || "Unknown",
-      status: payment.status || "Pending",
+      status: payment.payment_status || "Pending",
     }));
   };
 
