@@ -1,4 +1,4 @@
-const attendeeService = require("../../services/attendeeService");
+const attendeeService = require("../../Services/Organizer/attendeeService");
 const asyncHandler = require("express-async-handler");
 
 // Get all attendees for a specific event

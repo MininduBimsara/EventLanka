@@ -1,4 +1,4 @@
-const discountService = require("../../services/discountService");
+const discountService = require("../../Services/Organizer/discountService");
 const asyncHandler = require("express-async-handler");
 
 // Create a new discount code

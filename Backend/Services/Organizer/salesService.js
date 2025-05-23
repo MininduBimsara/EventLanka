@@ -1,0 +1,353 @@
+const Ticket = require("../../models/Ticket");
+const Event = require("../../models/Event");
+const User = require("../../models/User");
+
+class SalesService {
+  /**
+   * Get sales data for a specific event
+   * @param {string} eventId - Event ID
+   * @param {string} userId - User ID (for authorization)
+   * @param {string} userRole - User role (for authorization)
+   * @returns {Object} Sales data for the event
+   */
+  async getSalesByEvent(eventId, userId, userRole) {
+    // Check if user is authorized (event organizer or admin)
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new Error("Event not found");
+    }
+
+    if (event.organizer_id.toString() !== userId && userRole !== "admin") {
+      throw new Error("Unauthorized to view sales data");
+    }
+
+    // Get all tickets for the event
+    const tickets = await Ticket.find({
+      event_id: eventId,
+      payment_status: "paid", // Only count paid tickets
+    });
+
+    // Calculate total sales
+    const totalSales = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
+
+    // Calculate sales by ticket type
+    const salesByTicketType = this._calculateSalesByTicketType(tickets);
+
+    return {
+      eventId,
+      totalSales,
+      ticketsSold: tickets.reduce((sum, ticket) => sum + ticket.quantity, 0),
+      salesByTicketType,
+    };
+  }
+
+  /**
+   * Get sales data within a time frame
+   * @param {string} startDate - Start date (optional)
+   * @param {string} endDate - End date (optional)
+   * @param {string} userId - User ID
+   * @param {string} userRole - User role
+   * @returns {Object} Sales data for the period
+   */
+  async getSalesByPeriod(startDate, endDate, userId, userRole) {
+    // Check if user is authorized (must be an organizer or admin)
+    if (userRole !== "organizer" && userRole !== "admin") {
+      throw new Error("Unauthorized to view sales data");
+    }
+
+    // Build query for date range
+    const query = {
+      payment_status: "paid",
+      createdAt: {},
+    };
+
+    if (startDate) {
+      query.createdAt.$gte = new Date(startDate);
+    }
+
+    if (endDate) {
+      query.createdAt.$lte = new Date(endDate);
+    }
+
+    // For organizers, only show their events
+    if (userRole === "organizer") {
+      const eventIds = await this._getOrganizerEventIds(userId);
+      query.event_id = { $in: eventIds };
+    }
+
+    // Get tickets in the date range
+    const tickets = await Ticket.find(query).populate("event_id", "title");
+
+    // Calculate sales by day and by event
+    const salesByDay = this._calculateSalesByDay(tickets);
+    const salesByEvent = this._calculateSalesByEventFromTickets(tickets);
+
+    return {
+      startDate: startDate || "All time",
+      endDate: endDate || "Present",
+      totalSales: tickets.reduce((sum, ticket) => sum + ticket.price, 0),
+      ticketsSold: tickets.reduce((sum, ticket) => sum + ticket.quantity, 0),
+      salesByDay,
+      salesByEvent,
+    };
+  }
+
+  /**
+   * Get comprehensive analytics data
+   * @param {string} userId - User ID
+   * @param {string} userRole - User role
+   * @returns {Object} Analytics data
+   */
+  async getAnalytics(userId, userRole) {
+    // Check if user is authorized (must be an organizer or admin)
+    if (userRole !== "organizer" && userRole !== "admin") {
+      throw new Error("Unauthorized to view analytics");
+    }
+
+    // Build query based on user role
+    const query = {};
+    if (userRole === "organizer") {
+      const eventIds = await this._getOrganizerEventIds(userId);
+      query.event_id = { $in: eventIds };
+    }
+
+    // Get all tickets
+    const tickets = await Ticket.find(query)
+      .populate("event_id", "title date location")
+      .populate("user_id", "email");
+
+    // Calculate various analytics
+    const totalRevenue = this._calculateTotalRevenue(tickets);
+    const popularEvents = this._calculatePopularEvents(tickets);
+    const customerRetention = this._calculateCustomerRetention(tickets);
+    const salesOverTime = this._calculateSalesOverTime(tickets);
+
+    return {
+      totalRevenue,
+      totalTicketsSold: tickets.reduce(
+        (sum, ticket) => sum + ticket.quantity,
+        0
+      ),
+      totalEvents: this._getUniqueEventCount(tickets),
+      totalCustomers: this._getUniqueCustomerCount(tickets),
+      popularEvents,
+      customerRetention,
+      salesOverTime,
+    };
+  }
+
+  /**
+   * Get organizer's event IDs
+   * @param {string} userId - User ID
+   * @returns {Array} Array of event IDs
+   */
+  async _getOrganizerEventIds(userId) {
+    const organizerEvents = await Event.find({
+      organizer_id: userId,
+    }).select("_id");
+    return organizerEvents.map((event) => event._id);
+  }
+
+  /**
+   * Calculate sales by ticket type
+   * @param {Array} tickets - Array of tickets
+   * @returns {Object} Sales grouped by ticket type
+   */
+  _calculateSalesByTicketType(tickets) {
+    const salesByTicketType = {};
+    tickets.forEach((ticket) => {
+      if (!salesByTicketType[ticket.ticket_type]) {
+        salesByTicketType[ticket.ticket_type] = {
+          count: 0,
+          revenue: 0,
+        };
+      }
+      salesByTicketType[ticket.ticket_type].count += ticket.quantity;
+      salesByTicketType[ticket.ticket_type].revenue += ticket.price;
+    });
+    return salesByTicketType;
+  }
+
+  /**
+   * Calculate sales by day
+   * @param {Array} tickets - Array of tickets
+   * @returns {Object} Sales grouped by day
+   */
+  _calculateSalesByDay(tickets) {
+    const salesByDay = {};
+    tickets.forEach((ticket) => {
+      const day = ticket.createdAt.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+      if (!salesByDay[day]) {
+        salesByDay[day] = {
+          count: 0,
+          revenue: 0,
+        };
+      }
+      salesByDay[day].count += ticket.quantity;
+      salesByDay[day].revenue += ticket.price;
+    });
+    return salesByDay;
+  }
+
+  /**
+   * Calculate sales by event from tickets with populated event data
+   * @param {Array} tickets - Array of tickets with populated event_id
+   * @returns {Object} Sales grouped by event
+   */
+  _calculateSalesByEventFromTickets(tickets) {
+    const salesByEvent = {};
+    tickets.forEach((ticket) => {
+      const eventId = ticket.event_id._id.toString();
+      const eventTitle = ticket.event_id.title;
+
+      if (!salesByEvent[eventId]) {
+        salesByEvent[eventId] = {
+          eventTitle,
+          count: 0,
+          revenue: 0,
+        };
+      }
+      salesByEvent[eventId].count += ticket.quantity;
+      salesByEvent[eventId].revenue += ticket.price;
+    });
+    return salesByEvent;
+  }
+
+  /**
+   * Calculate total revenue from paid tickets
+   * @param {Array} tickets - Array of tickets
+   * @returns {number} Total revenue
+   */
+  _calculateTotalRevenue(tickets) {
+    return tickets
+      .filter((ticket) => ticket.payment_status === "paid")
+      .reduce((sum, ticket) => sum + ticket.price, 0);
+  }
+
+  /**
+   * Calculate popular events based on ticket sales
+   * @param {Array} tickets - Array of tickets
+   * @returns {Array} Top 5 popular events
+   */
+  _calculatePopularEvents(tickets) {
+    const eventPopularity = {};
+    tickets.forEach((ticket) => {
+      const eventId = ticket.event_id._id.toString();
+      if (!eventPopularity[eventId]) {
+        eventPopularity[eventId] = {
+          eventTitle: ticket.event_id.title,
+          ticketsSold: 0,
+          revenue: 0,
+        };
+      }
+      eventPopularity[eventId].ticketsSold += ticket.quantity;
+      if (ticket.payment_status === "paid") {
+        eventPopularity[eventId].revenue += ticket.price;
+      }
+    });
+
+    // Sort events by tickets sold and return top 5
+    return Object.values(eventPopularity)
+      .sort((a, b) => b.ticketsSold - a.ticketsSold)
+      .slice(0, 5);
+  }
+
+  /**
+   * Calculate customer retention metrics
+   * @param {Array} tickets - Array of tickets
+   * @returns {Object} Retention data
+   */
+  _calculateCustomerRetention(tickets) {
+    const userTicketCounts = {};
+    tickets.forEach((ticket) => {
+      const userId = ticket.user_id._id.toString();
+      if (!userTicketCounts[userId]) {
+        userTicketCounts[userId] = 0;
+      }
+      userTicketCounts[userId]++;
+    });
+
+    const retention = {
+      singlePurchase: 0,
+      multiplePurchases: 0,
+    };
+
+    Object.values(userTicketCounts).forEach((count) => {
+      if (count === 1) {
+        retention.singlePurchase++;
+      } else {
+        retention.multiplePurchases++;
+      }
+    });
+
+    return retention;
+  }
+
+  /**
+   * Calculate sales over time (last 6 months)
+   * @param {Array} tickets - Array of tickets
+   * @returns {Object} Sales data over time
+   */
+  _calculateSalesOverTime(tickets) {
+    const today = new Date();
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(today.getMonth() - 6);
+
+    const salesOverTime = {};
+
+    // Initialize with last 6 months
+    for (let i = 0; i < 6; i++) {
+      const month = new Date();
+      month.setMonth(month.getMonth() - i);
+      const monthStr = month.toISOString().substring(0, 7); // Format: YYYY-MM
+      salesOverTime[monthStr] = {
+        tickets: 0,
+        revenue: 0,
+      };
+    }
+
+    tickets
+      .filter((ticket) => ticket.createdAt >= sixMonthsAgo)
+      .forEach((ticket) => {
+        const month = ticket.createdAt.toISOString().substring(0, 7); // Format: YYYY-MM
+        if (!salesOverTime[month]) {
+          salesOverTime[month] = {
+            tickets: 0,
+            revenue: 0,
+          };
+        }
+        salesOverTime[month].tickets += ticket.quantity;
+        if (ticket.payment_status === "paid") {
+          salesOverTime[month].revenue += ticket.price;
+        }
+      });
+
+    return salesOverTime;
+  }
+
+  /**
+   * Get unique event count from tickets
+   * @param {Array} tickets - Array of tickets
+   * @returns {number} Number of unique events
+   */
+  _getUniqueEventCount(tickets) {
+    const uniqueEvents = new Set(
+      tickets.map((ticket) => ticket.event_id._id.toString())
+    );
+    return uniqueEvents.size;
+  }
+
+  /**
+   * Get unique customer count from tickets
+   * @param {Array} tickets - Array of tickets
+   * @returns {number} Number of unique customers
+   */
+  _getUniqueCustomerCount(tickets) {
+    const uniqueCustomers = new Set(
+      tickets.map((ticket) => ticket.user_id._id.toString())
+    );
+    return uniqueCustomers.size;
+  }
+}
+
+module.exports = new SalesService();
