@@ -2,7 +2,11 @@ const { body, param, validationResult } = require("express-validator");
 
 
 
-// Validation rules for various endpoints
+
+
+
+
+
 const attendeeValidations = {
   markAttendance: [
     param("id").isMongoId().withMessage("Invalid ticket ID"),
