@@ -35,15 +35,7 @@ const attendeeValidations = {
   ],
 };
 
-// Add validation for event-related endpoints
-// const eventValidations = {
-//   createEvent: [
-//     body("title")
-//       .notEmpty()
-//       .withMessage("Event title is required")
-//       .isLength({ min: 3, max: 100 })
-//       .withMessage("Title must be between 3 and 100 characters"),
-//     body("description").notEmpty().withMessage("Event description is required"),
+ body("description").notEmpty().withMessage("Event description is required"),
 //     body("date").isISO8601().withMessage("Invalid date format"),
 //     body("location").notEmpty().withMessage("Event location is required"),
 //     body("category").notEmpty().withMessage("Event category is required"),
