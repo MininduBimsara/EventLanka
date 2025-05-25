@@ -1,97 +1,167 @@
-const RefundRequest = require("../../models/RefundRequest");
-const Payment = require("../../models/Payment");
-const Event = require("../../models/Event");
+const financeService = require("../../Services/Admin/financeService");
 
-exports.listRefundRequests = async (req, res) => {
-  try {
-    const refunds = await RefundRequest.find();
-    res.json(refunds);
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching refund requests" });
-  }
-};
-
-exports.approveRefundRequest = async (req, res) => {
-  try {
-    const refund = await RefundRequest.findByIdAndUpdate(
-      req.params.id,
-      { status: "approved", note: req.body.note },
-      { new: true }
-    );
-    if (!refund) return res.status(404).json({ error: "Refund not found" });
-    res.json({ message: "Approved", refund });
-  } catch (err) {
-    res.status(500).json({ error: "Error approving refund" });
-  }
-};
-
-exports.rejectRefundRequest = async (req, res) => {
-  try {
-    const refund = await RefundRequest.findByIdAndUpdate(
-      req.params.id,
-      { status: "rejected", note: req.body.note },
-      { new: true }
-    );
-    if (!refund) return res.status(404).json({ error: "Refund not found" });
-    res.json({ message: "Rejected", refund });
-  } catch (err) {
-    res.status(500).json({ error: "Error rejecting refund" });
-  }
-};
-
-exports.getTransactions = async (req, res) => {
-  try {
-    const { startDate, endDate, payment_method, status } = req.query;
-    const filter = {};
-    if (startDate || endDate) {
-      filter.createdAt = {};
-      if (startDate) filter.createdAt.$gte = new Date(startDate);
-      if (endDate) filter.createdAt.$lte = new Date(endDate);
+class FinanceController {
+  /**
+   * List all refund requests
+   */
+  async listRefundRequests(req, res) {
+    try {
+      const refunds = await financeService.getAllRefundRequests();
+      res.status(200).json({
+        success: true,
+        data: refunds,
+        message: "Refund requests fetched successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message || "Error fetching refund requests",
+      });
     }
-    if (payment_method) filter.payment_method = payment_method;
-    if (status) filter.status = status;
-
-    const transactions = await Payment.find(filter)
-      .populate("user_id", "username") // Populate user_id with the user's name
-      .populate("event_id", "title"); // Populate event_id with the event's name
-
-    res.json(transactions);
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching transactions" });
   }
-};
 
-exports.getRevenueReport = async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    const match = { status: "completed" };
-    if (startDate || endDate) {
-      match.createdAt = {};
-      if (startDate) match.createdAt.$gte = new Date(startDate);
-      if (endDate) match.createdAt.$lte = new Date(endDate);
+  /**
+   * Approve a refund request
+   */
+  async approveRefundRequest(req, res) {
+    try {
+      const { id } = req.params;
+      const { note } = req.body;
+
+      const refund = await financeService.approveRefundRequest(id, note);
+
+      res.status(200).json({
+        success: true,
+        data: refund,
+        message: "Refund request approved successfully",
+      });
+    } catch (error) {
+      const statusCode = error.message.includes("not found") ? 404 : 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message || "Error approving refund request",
+      });
     }
-
-    const report = await Payment.aggregate([
-      { $match: match },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-          totalRevenue: { $sum: "$amount" },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]);
-    res.json(report);
-  } catch (err) {
-    res.status(500).json({ error: "Error generating report" });
   }
-};
 
-exports.getPopularEvents = async (req, res) => {
-  try {
-    const events = await Event.find({ event_status: "approved" }).limit(5);
-    res.json(events);
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching popular events" });
+  /**
+   * Reject a refund request
+   */
+  async rejectRefundRequest(req, res) {
+    try {
+      const { id } = req.params;
+      const { note } = req.body;
+
+      const refund = await financeService.rejectRefundRequest(id, note);
+
+      res.status(200).json({
+        success: true,
+        data: refund,
+        message: "Refund request rejected successfully",
+      });
+    } catch (error) {
+      const statusCode = error.message.includes("not found") ? 404 : 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message || "Error rejecting refund request",
+      });
+    }
   }
-};
+
+  /**
+   * Get transactions with filtering
+   */
+  async getTransactions(req, res) {
+    try {
+      const filters = {
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+        payment_method: req.query.payment_method,
+        status: req.query.status,
+      };
+
+      const transactions = await financeService.getTransactions(filters);
+
+      res.status(200).json({
+        success: true,
+        data: transactions,
+        count: transactions.length,
+        message: "Transactions fetched successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message || "Error fetching transactions",
+      });
+    }
+  }
+
+  /**
+   * Generate revenue report
+   */
+  async getRevenueReport(req, res) {
+    try {
+      const dateRange = {
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+      };
+
+      const report = await financeService.generateRevenueReport(dateRange);
+
+      res.status(200).json({
+        success: true,
+        data: report,
+        message: "Revenue report generated successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message || "Error generating revenue report",
+      });
+    }
+  }
+
+  /**
+   * Get popular events
+   */
+  async getPopularEvents(req, res) {
+    try {
+      const limit = parseInt(req.query.limit) || 5;
+      const events = await financeService.getPopularEvents(limit);
+
+      res.status(200).json({
+        success: true,
+        data: events,
+        count: events.length,
+        message: "Popular events fetched successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message || "Error fetching popular events",
+      });
+    }
+  }
+
+  /**
+   * Get dashboard summary (bonus endpoint)
+   */
+  async getDashboardSummary(req, res) {
+    try {
+      const summary = await financeService.getDashboardSummary();
+
+      res.status(200).json({
+        success: true,
+        data: summary,
+        message: "Dashboard summary fetched successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message || "Error fetching dashboard summary",
+      });
+    }
+  }
+}
+
+module.exports = new FinanceController();
