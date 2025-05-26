@@ -128,28 +128,31 @@ const EventBookingPage = () => {
       return;
     }
 
-    // Create ticket selections array
-    const ticketSelections = Object.keys(tickets)
-      .filter((ticketType) => tickets[ticketType] > 0)
-      .map((ticketType) => {
-        const ticketInfo = currentEvent.ticket_types.find(
-          (t) => t.type === ticketType
-        );
-        return {
-          ticket_type: ticketType,
-          quantity: tickets[ticketType],
-          price: ticketInfo.price,
-        };
-      });
+    // Transform tickets object to array format expected by backend
+    const ticketsArray = Object.entries(tickets)
+      .filter(([ticketType, quantity]) => quantity > 0)
+      .map(([ticketType, quantity]) => ({
+        ticket_type: ticketType,
+        quantity: parseInt(quantity),
+      }));
 
-    // Create order data
+    // Double check we have tickets
+    if (ticketsArray.length === 0) {
+      alert("Please select at least one ticket.");
+      return;
+    }
+
+    // Create order data matching backend expectations
     const orderData = {
       event_id: currentEvent._id,
-      ticket_selections: ticketSelections,
+      tickets: ticketsArray, // Changed from 'ticket_selections' to 'tickets'
       total_amount: totalPrice,
-      payment_method: "pending", // No payment yet
-      payment_status: "pending",
+      discount_id: null,
+      discount_amount: 0,
+      payment_method: "pending",
     };
+
+    console.log("Sending order data:", orderData); // Debug log
 
     // Dispatch create order action
     dispatch(createOrder(orderData));
