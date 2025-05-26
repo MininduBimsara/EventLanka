@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEventById } from "../../Redux/Slicers/EventSlice";
+import { createOrder } from "../../Redux/Slicers/orderSlice"; // Import createOrder thunk
 import OrganizerInfo from "../../components/Common/EventBooking/OrganizerInfo";
 import OrderSummary from "../../components/Common/EventBooking/OrderSummary";
 import TicketSelection from "../../components/Common/EventBooking/TicketSelection";
@@ -21,6 +22,13 @@ const EventBookingPage = () => {
   const { currentEvent, loading, error, bookingError } = useSelector(
     (state) => state.events
   );
+
+  // Get order creation state from Redux store
+  const {
+    loading: orderLoading,
+    createSuccess,
+    error: orderError,
+  } = useSelector((state) => state.orders);
 
   // Initialize tickets state as an empty object
   const [tickets, setTickets] = useState({});
@@ -64,6 +72,35 @@ const EventBookingPage = () => {
     }
   }, [tickets, currentEvent]);
 
+  // Handle order creation success
+  useEffect(() => {
+    if (createSuccess) {
+      // Show success message
+      alert(
+        "Tickets selected successfully! You can view your booking in 'My Bookings' page."
+      );
+
+      // Reset tickets selection
+      const initialTickets = {};
+      if (currentEvent && currentEvent.ticket_types) {
+        currentEvent.ticket_types.forEach((ticket) => {
+          initialTickets[ticket.type] = 0;
+        });
+        setTickets(initialTickets);
+      }
+
+      // Optionally navigate to My Bookings page
+      // navigate("/my-bookings");
+    }
+  }, [createSuccess, navigate, currentEvent]);
+
+  // Handle order creation error
+  useEffect(() => {
+    if (orderError) {
+      alert("Failed to create order: " + orderError);
+    }
+  }, [orderError]);
+
   const handleTicketChange = (type, action) => {
     setTickets((prev) => {
       // Get the ticket info to check availability
@@ -84,7 +121,41 @@ const EventBookingPage = () => {
     });
   };
 
-  // Handle booking completion
+  // Handle select tickets (create order without payment)
+  const handleSelectTickets = () => {
+    if (totalPrice === 0) {
+      alert("Please select at least one ticket.");
+      return;
+    }
+
+    // Create ticket selections array
+    const ticketSelections = Object.keys(tickets)
+      .filter((ticketType) => tickets[ticketType] > 0)
+      .map((ticketType) => {
+        const ticketInfo = currentEvent.ticket_types.find(
+          (t) => t.type === ticketType
+        );
+        return {
+          ticket_type: ticketType,
+          quantity: tickets[ticketType],
+          price: ticketInfo.price,
+        };
+      });
+
+    // Create order data
+    const orderData = {
+      event_id: currentEvent._id,
+      ticket_selections: ticketSelections,
+      total_amount: totalPrice,
+      payment_method: "pending", // No payment yet
+      payment_status: "pending",
+    };
+
+    // Dispatch create order action
+    dispatch(createOrder(orderData));
+  };
+
+  // Handle booking completion (existing functionality)
   const handleCompleteBooking = () => {
     // Create order data to pass to checkout
     const orderData = {
@@ -220,23 +291,17 @@ const EventBookingPage = () => {
               handleTicketChange={handleTicketChange}
             />
 
-            {/* Order Summary Component - Pass actual ticket types from event */}
+            {/* Order Summary Component - Pass actual ticket types from event and new handlers */}
             <OrderSummary
               tickets={tickets}
               ticketTypes={currentEvent.ticket_types}
               totalPrice={totalPrice}
+              onSelectTickets={handleSelectTickets}
+              onCompleteBooking={handleCompleteBooking}
+              isCreatingOrder={orderLoading}
             />
 
-            {/* Book Now Button */}
-            <div className="px-6 py-4">
-              <button
-                className="w-full py-4 text-lg font-bold text-white transition-all duration-300 bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                onClick={handleCompleteBooking}
-                disabled={totalPrice === 0}
-              >
-                COMPLETE BOOKING
-              </button>
-            </div>
+            {/* Remove the old Book Now Button since it's now in OrderSummary */}
           </div>
         </div>
       </div>
