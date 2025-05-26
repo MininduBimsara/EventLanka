@@ -1,10 +1,10 @@
-
 # Event Management & Ticket Booking System 🎟️
 
 ## Overview
-The **Event Management & Ticket Booking System** is a full-stack MERN application designed to streamline event organization and ticket booking. This platform enables users to browse events, purchase tickets, and receive e-tickets with QR codes, while event organizers can manage their events, track ticket sales, and interact with attendees. Admins have access to an admin panel to monitor the system, approve events, and oversee transactions.
+The **Event Management & Ticket Booking System** is a full-stack MERN application designed to streamline event organization and ticket booking. This platform enables users to browse events, purchase tickets online, and organizers to manage their events efficiently.
 
 ## Features
+
 ### User Portal
 ✅ Register/Login using JWT Authentication  
 ✅ Browse and filter events  
@@ -25,22 +25,16 @@ The **Event Management & Ticket Booking System** is a full-stack MERN applicatio
 ✅ Manage users and organizers  
 ✅ Generate reports and analytics  
 
-### Mobile App (React Native)
-✅ Scan QR codes for ticket validation at event entrances  
-✅ Receive push notifications for event reminders  
-✅ View upcoming and past events  
-
 ## Tech Stack
 - **Frontend:** React.js, Tailwind CSS
 - **Backend:** Node.js, Express.js
 - **Database:** MongoDB (Mongoose)
-- **Mobile App:** React Native
 - **Authentication:** JWT (JSON Web Tokens)
 - **Payment Gateway:** Stripe / PayPal
-- **QR Code Generation & Scanning:** qrcode.react, React Native Camera
-- **Notifications:** Firebase Push Notifications (for mobile)  
+- **QR Code Generation & Scanning:** qrcode.react
 
 ## Installation & Setup
+
 ### Prerequisites
 Ensure you have the following installed:
 - Node.js (v16 or later)
@@ -49,42 +43,33 @@ Ensure you have the following installed:
 
 ### Clone the Repository
 ```sh
-git clone https://github.com/your-username/event-management-system.git
-cd event-management-system
+git clone https://github.com/MininduBimsara/EventLanka.git
+cd EventLanka
 ```
 
 ### Backend Setup
 ```sh
-cd backend
+cd Backend
 npm install  # Install dependencies
 npm run dev  # Start the backend server
 ```
 
 ### Frontend Setup
 ```sh
-cd frontend
+cd Frontend
 npm install  # Install dependencies
 npm start  # Start the frontend React app
-```
-
-### Mobile App Setup
-```sh
-cd mobile
-npm install  # Install dependencies
-npx react-native start  # Start Metro bundler
-npx react-native run-android  # Run on Android emulator/device
-npx react-native run-ios  # Run on iOS simulator (Mac only)
 ```
 
 ## API Endpoints (Sample)
 | Method | Endpoint | Description |
 |--------|---------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Authenticate user & get token |
-| GET | `/api/events` | Fetch all events |
-| POST | `/api/events` | Create a new event (Organizer only) |
-| POST | `/api/bookings` | Book a ticket for an event |
-| GET | `/api/bookings/:id` | Get booking details |
+| POST   | `/api/auth/register` | Register a new user |
+| POST   | `/api/auth/login`    | Authenticate user & get token |
+| GET    | `/api/events`        | Fetch all events |
+| POST   | `/api/events`        | Create a new event (Organizer only) |
+| POST   | `/api/bookings`      | Book a ticket for an event |
+| GET    | `/api/bookings/:id`  | Get booking details |
 
 ## Contributing
 Feel free to contribute by following these steps:
