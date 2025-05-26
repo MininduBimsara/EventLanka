@@ -17,19 +17,24 @@ const AdminSettings = () => {
   } = useSelector((state) => state.admin.settings);
   const error = useSelector((state) => state.admin.error);
 
-  // State for all form fields
-  const [settings, setSettings] = useState({
-    commission: 0.1,
-    taxRate: 0.07,
-    notificationPreferences: {
-      email: true,
-      sms: false,
+  // State for admin profile fields
+  const [adminProfile, setAdminProfile] = useState({
+    phone: "",
+    position: "System Administrator",
+    department: "IT",
+    permissions: {
+      manageUsers: true,
+      manageEvents: true,
+      managePayments: true,
+      manageRefunds: true,
+      managePlatformSettings: true,
     },
-    branding: {
-      logo: "",
-      theme: "default",
-      primaryColor: "#3B82F6",
-      secondaryColor: "#1E40AF",
+    twoFactorEnabled: false,
+    emailNotifications: {
+      newUsers: true,
+      newEvents: true,
+      refundRequests: true,
+      systemAlerts: true,
     },
   });
 
@@ -48,18 +53,23 @@ const AdminSettings = () => {
   // Update local state when settings data is loaded from backend
   useEffect(() => {
     if (settingsData) {
-      // Transform backend data to match frontend state structure
-      setSettings({
-        commission: settingsData.commission * 100, // Convert decimal to percentage for display
-        taxRate: settingsData.taxRate * 100, // Convert decimal to percentage for display
-        notificationPreferences: settingsData.notificationPreferences || {
-          email: true,
-          sms: false,
+      setAdminProfile({
+        phone: settingsData.phone || "",
+        position: settingsData.position || "System Administrator",
+        department: settingsData.department || "IT",
+        permissions: settingsData.permissions || {
+          manageUsers: true,
+          manageEvents: true,
+          managePayments: true,
+          manageRefunds: true,
+          managePlatformSettings: true,
         },
-        branding: {
-          ...settingsData.branding,
-          primaryColor: settingsData.branding?.primaryColor || "#3B82F6",
-          secondaryColor: settingsData.branding?.secondaryColor || "#1E40AF",
+        twoFactorEnabled: settingsData.twoFactorEnabled || false,
+        emailNotifications: settingsData.emailNotifications || {
+          newUsers: true,
+          newEvents: true,
+          refundRequests: true,
+          systemAlerts: true,
         },
       });
     }
@@ -68,7 +78,7 @@ const AdminSettings = () => {
   // Show toast notifications for success/error states
   useEffect(() => {
     if (updateSuccess) {
-      toast.success("Settings updated successfully!");
+      toast.success("Admin profile updated successfully!");
     }
     if (passwordChangeSuccess) {
       toast.success("Password changed successfully!");
@@ -83,22 +93,22 @@ const AdminSettings = () => {
     }
   }, [updateSuccess, passwordChangeSuccess, error]);
 
-  // Handle input changes for general settings
+  // Handle input changes for admin profile
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
     if (name.includes(".")) {
       const [category, field] = name.split(".");
-      setSettings({
-        ...settings,
+      setAdminProfile({
+        ...adminProfile,
         [category]: {
-          ...settings[category],
+          ...adminProfile[category],
           [field]: type === "checkbox" ? checked : value,
         },
       });
     } else {
-      setSettings({
-        ...settings,
+      setAdminProfile({
+        ...adminProfile,
         [name]: type === "checkbox" ? checked : value,
       });
     }
@@ -113,19 +123,10 @@ const AdminSettings = () => {
     });
   };
 
-  // Handle general settings submission
-  const handleSettingsSubmit = (e) => {
+  // Handle admin profile submission
+  const handleProfileSubmit = (e) => {
     e.preventDefault();
-
-    // Transform data before sending to backend
-    const dataToSend = {
-      commission: Number(settings.commission) / 100, // Convert percentage to decimal
-      taxRate: Number(settings.taxRate) / 100, // Convert percentage to decimal
-      notificationPreferences: settings.notificationPreferences,
-      branding: settings.branding,
-    };
-
-    dispatch(updateSettings(dataToSend));
+    dispatch(updateSettings(adminProfile));
   };
 
   // Handle password change submission
@@ -165,248 +166,267 @@ const AdminSettings = () => {
           </div>
         ) : (
           <>
-            {/* General Settings Form */}
-            <form onSubmit={handleSettingsSubmit}>
-              {/* Commission Settings */}
+            {/* Admin Profile Form */}
+            <form onSubmit={handleProfileSubmit}>
+              {/* Basic Information */}
               <section className="mb-8">
                 <h2 className="mb-4 text-xl font-semibold text-gray-700">
-                  Commission Settings
-                </h2>
-                <div className="p-4 rounded-md bg-gray-50">
-                  <div className="flex items-center">
-                    <label
-                      htmlFor="commission"
-                      className="block w-64 font-medium text-gray-700 text-md"
-                    >
-                      Platform Commission Rate (%)
-                    </label>
-                    <div className="flex items-center">
-                      <input
-                        type="number"
-                        id="commission"
-                        name="commission"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        value={settings.commission}
-                        onChange={handleChange}
-                        className="block w-24 px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
-                      />
-                      <span className="ml-2 text-gray-500">%</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Tax Settings */}
-              <section className="mb-8">
-                <h2 className="mb-4 text-xl font-semibold text-gray-700">
-                  Global Tax Rate
-                </h2>
-                <div className="p-4 rounded-md bg-gray-50">
-                  <div className="flex items-center">
-                    <label
-                      htmlFor="taxRate"
-                      className="block w-64 font-medium text-gray-700 text-md"
-                    >
-                      Standard Tax Rate (%)
-                    </label>
-                    <div className="flex items-center">
-                      <input
-                        type="number"
-                        id="taxRate"
-                        name="taxRate"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        value={settings.taxRate}
-                        onChange={handleChange}
-                        className="block w-24 px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
-                      />
-                      <span className="ml-2 text-gray-500">%</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Notification Preferences */}
-              <section className="mb-8">
-                <h2 className="mb-4 text-xl font-semibold text-gray-700">
-                  Notification Preferences
-                </h2>
-                <div className="p-4 space-y-4 rounded-md bg-gray-50">
-                  <div className="flex items-center">
-                    <label
-                      htmlFor="notificationPreferences.email"
-                      className="block w-64 font-medium text-gray-700 text-md"
-                    >
-                      Email Notifications
-                    </label>
-                    <div className="ml-4">
-                      <input
-                        type="checkbox"
-                        id="notificationPreferences.email"
-                        name="notificationPreferences.email"
-                        checked={settings.notificationPreferences.email}
-                        onChange={handleChange}
-                        className="w-4 h-4 px-3 py-2 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <label
-                      htmlFor="notificationPreferences.sms"
-                      className="block w-64 font-medium text-gray-700 text-md"
-                    >
-                      SMS Notifications
-                    </label>
-                    <div className="ml-4">
-                      <input
-                        type="checkbox"
-                        id="notificationPreferences.sms"
-                        name="notificationPreferences.sms"
-                        checked={settings.notificationPreferences.sms}
-                        onChange={handleChange}
-                        className="w-4 h-4 px-3 py-2 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Platform Branding */}
-              <section className="mb-8">
-                <h2 className="mb-4 text-xl font-semibold text-gray-700">
-                  Platform Branding
+                  Basic Information
                 </h2>
                 <div className="p-4 space-y-4 rounded-md bg-gray-50">
                   <div className="flex flex-col">
                     <label
-                      htmlFor="branding.logo"
+                      htmlFor="phone"
                       className="block mb-1 font-medium text-gray-700 text-md"
                     >
-                      Logo URL
+                      Phone Number
                     </label>
                     <input
-                      type="text"
-                      id="branding.logo"
-                      name="branding.logo"
-                      value={settings.branding.logo}
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={adminProfile.phone}
                       onChange={handleChange}
                       className="block w-full px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
-                      placeholder="https://example.com/logo.png"
+                      placeholder="Enter phone number"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="flex flex-col">
                       <label
-                        htmlFor="branding.primaryColor"
+                        htmlFor="position"
                         className="block mb-1 font-medium text-gray-700 text-md"
                       >
-                        Primary Color
+                        Position
                       </label>
-                      <div className="flex items-center">
-                        <input
-                          type="color"
-                          id="branding.primaryColor"
-                          name="branding.primaryColor"
-                          value={settings.branding.primaryColor || "#3B82F6"}
-                          onChange={handleChange}
-                          className="block w-10 h-10 mt-1 border-gray-300 rounded-md"
-                        />
-                        <input
-                          type="text"
-                          value={settings.branding.primaryColor || "#3B82F6"}
-                          onChange={(e) =>
-                            handleChange({
-                              target: {
-                                name: "branding.primaryColor",
-                                value: e.target.value,
-                              },
-                            })
-                          }
-                          className="block w-full px-3 py-2 ml-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        id="position"
+                        name="position"
+                        value={adminProfile.position}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
+                        placeholder="e.g., System Administrator"
+                      />
                     </div>
 
                     <div className="flex flex-col">
                       <label
-                        htmlFor="branding.secondaryColor"
+                        htmlFor="department"
                         className="block mb-1 font-medium text-gray-700 text-md"
                       >
-                        Secondary Color
+                        Department
                       </label>
-                      <div className="flex items-center">
-                        <input
-                          type="color"
-                          id="branding.secondaryColor"
-                          name="branding.secondaryColor"
-                          value={settings.branding.secondaryColor || "#1E40AF"}
-                          onChange={handleChange}
-                          className="block w-10 h-10 mt-1 border-gray-300 rounded-md"
-                        />
-                        <input
-                          type="text"
-                          value={settings.branding.secondaryColor || "#1E40AF"}
-                          onChange={(e) =>
-                            handleChange({
-                              target: {
-                                name: "branding.secondaryColor",
-                                value: e.target.value,
-                              },
-                            })
-                          }
-                          className="block w-full px-3 py-2 ml-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        id="department"
+                        name="department"
+                        value={adminProfile.department}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
+                        placeholder="e.g., IT"
+                      />
                     </div>
                   </div>
+                </div>
+              </section>
 
-                  <div className="flex flex-col">
-                    <label
-                      htmlFor="branding.theme"
-                      className="block mb-1 font-medium text-gray-700 text-md"
-                    >
-                      Theme
-                    </label>
-                    <select
-                      id="branding.theme"
-                      name="branding.theme"
-                      value={settings.branding.theme}
-                      onChange={handleChange}
-                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-md"
-                    >
-                      <option value="default">Default</option>
-                      <option value="dark">Dark</option>
-                      <option value="light">Light</option>
-                      <option value="custom">Custom</option>
-                    </select>
+              {/* Permissions */}
+              <section className="mb-8">
+                <h2 className="mb-4 text-xl font-semibold text-gray-700">
+                  Admin Permissions
+                </h2>
+                <div className="p-4 space-y-4 rounded-md bg-gray-50">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="permissions.manageUsers"
+                        name="permissions.manageUsers"
+                        checked={adminProfile.permissions.manageUsers}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="permissions.manageUsers"
+                        className="ml-2 font-medium text-gray-700 text-md"
+                      >
+                        Manage Users
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="permissions.manageEvents"
+                        name="permissions.manageEvents"
+                        checked={adminProfile.permissions.manageEvents}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="permissions.manageEvents"
+                        className="ml-2 font-medium text-gray-700 text-md"
+                      >
+                        Manage Events
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="permissions.managePayments"
+                        name="permissions.managePayments"
+                        checked={adminProfile.permissions.managePayments}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="permissions.managePayments"
+                        className="ml-2 font-medium text-gray-700 text-md"
+                      >
+                        Manage Payments
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="permissions.manageRefunds"
+                        name="permissions.manageRefunds"
+                        checked={adminProfile.permissions.manageRefunds}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="permissions.manageRefunds"
+                        className="ml-2 font-medium text-gray-700 text-md"
+                      >
+                        Manage Refunds
+                      </label>
+                    </div>
+
+                    <div className="flex items-center md:col-span-2">
+                      <input
+                        type="checkbox"
+                        id="permissions.managePlatformSettings"
+                        name="permissions.managePlatformSettings"
+                        checked={
+                          adminProfile.permissions.managePlatformSettings
+                        }
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="permissions.managePlatformSettings"
+                        className="ml-2 font-medium text-gray-700 text-md"
+                      >
+                        Manage Platform Settings
+                      </label>
+                    </div>
                   </div>
+                </div>
+              </section>
 
-                  <div className="mt-4">
-                    <h3 className="mb-2 font-medium text-gray-700 text-md">
-                      Preview
-                    </h3>
-                    <div className="flex space-x-4">
-                      <div
-                        className="flex items-center justify-center w-24 h-12 text-white rounded-md text-md"
-                        style={{
-                          backgroundColor: settings.branding.primaryColor,
-                        }}
+              {/* Security Settings */}
+              <section className="mb-8">
+                <h2 className="mb-4 text-xl font-semibold text-gray-700">
+                  Security Settings
+                </h2>
+                <div className="p-4 rounded-md bg-gray-50">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="twoFactorEnabled"
+                      name="twoFactorEnabled"
+                      checked={adminProfile.twoFactorEnabled}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="twoFactorEnabled"
+                      className="ml-2 font-medium text-gray-700 text-md"
+                    >
+                      Enable Two-Factor Authentication
+                    </label>
+                  </div>
+                </div>
+              </section>
+
+              {/* Email Notification Preferences */}
+              <section className="mb-8">
+                <h2 className="mb-4 text-xl font-semibold text-gray-700">
+                  Email Notification Preferences
+                </h2>
+                <div className="p-4 space-y-4 rounded-md bg-gray-50">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="emailNotifications.newUsers"
+                        name="emailNotifications.newUsers"
+                        checked={adminProfile.emailNotifications.newUsers}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="emailNotifications.newUsers"
+                        className="ml-2 font-medium text-gray-700 text-md"
                       >
-                        Primary
-                      </div>
-                      <div
-                        className="flex items-center justify-center w-24 h-12 text-white rounded-md text-md"
-                        style={{
-                          backgroundColor: settings.branding.secondaryColor,
-                        }}
+                        New User Registrations
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="emailNotifications.newEvents"
+                        name="emailNotifications.newEvents"
+                        checked={adminProfile.emailNotifications.newEvents}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="emailNotifications.newEvents"
+                        className="ml-2 font-medium text-gray-700 text-md"
                       >
-                        Secondary
-                      </div>
+                        New Event Creations
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="emailNotifications.refundRequests"
+                        name="emailNotifications.refundRequests"
+                        checked={adminProfile.emailNotifications.refundRequests}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="emailNotifications.refundRequests"
+                        className="ml-2 font-medium text-gray-700 text-md"
+                      >
+                        Refund Requests
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="emailNotifications.systemAlerts"
+                        name="emailNotifications.systemAlerts"
+                        checked={adminProfile.emailNotifications.systemAlerts}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="emailNotifications.systemAlerts"
+                        className="ml-2 font-medium text-gray-700 text-md"
+                      >
+                        System Alerts
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -419,7 +439,7 @@ const AdminSettings = () => {
                   className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   disabled={loading}
                 >
-                  {loading ? "Saving..." : "Save Settings"}
+                  {loading ? "Saving..." : "Save Profile"}
                 </button>
               </div>
             </form>
