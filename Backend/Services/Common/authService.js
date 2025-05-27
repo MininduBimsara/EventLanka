@@ -1,5 +1,6 @@
 const User = require("../../models/User");
 const Organizer = require("../../models/Organizer");
+const Admin = require("../../models/Admin");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -39,6 +40,11 @@ const registerUser = async (userData, profileImageFilename = null) => {
     await createOrganizerProfile(user._id);
   }
 
+  // Create admin profile if role is admin
+  if (role === "admin") {
+    await createAdminProfile(user._id);
+  }
+
   // Generate JWT token
   const token = generateToken(user._id, user.role);
 
@@ -66,6 +72,36 @@ const createOrganizerProfile = async (userId) => {
   });
   await organizer.save();
 };
+
+
+/**
+ * Create a default admin profile for a new admin user
+ * @param {String} userId - User ID
+ */
+const createAdminProfile = async (userId) => {
+  const admin = new Admin({
+    user: userId,
+    phone: "",
+    position: "System Administrator",
+    department: "IT",
+    permissions: {
+      manageUsers: true,
+      manageEvents: true,
+      managePayments: true,
+      manageRefunds: true,
+      managePlatformSettings: true,
+    },
+    twoFactorEnabled: false,
+    emailNotifications: {
+      newUsers: true,
+      newEvents: true,
+      refundRequests: true,
+      systemAlerts: true,
+    },
+  });
+  await admin.save();
+};
+
 
 /**
  * Authenticate a user
