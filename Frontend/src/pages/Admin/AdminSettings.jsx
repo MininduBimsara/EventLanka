@@ -1,20 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchSettings,
-  updateSettings,
+  fetchAdminProfile,
+  updateAdminProfile,
   changeAdminPassword,
+  resetProfileUpdateSuccess,
+  resetPasswordChangeSuccess,
 } from "../../Redux/Slicers/adminSlice";
 import { toast } from "react-toastify";
 
 const AdminSettings = () => {
   const dispatch = useDispatch();
+
+  // Get profile data from Redux store
   const {
-    data: settingsData,
-    loading,
-    updateSuccess,
-    passwordChangeSuccess,
-  } = useSelector((state) => state.admin.settings);
+    data: profileData,
+    loading: profileLoading,
+    updateSuccess: profileUpdateSuccess,
+  } = useSelector((state) => state.admin.profile);
+
+  // Get password change success from settings
+  const { passwordChangeSuccess } = useSelector(
+    (state) => state.admin.settings
+  );
+
   const error = useSelector((state) => state.admin.error);
 
   // State for admin profile fields
@@ -45,27 +54,27 @@ const AdminSettings = () => {
     confirmPassword: "",
   });
 
-  // Fetch settings on component mount
+  // Fetch admin profile on component mount
   useEffect(() => {
-    dispatch(fetchSettings());
+    dispatch(fetchAdminProfile());
   }, [dispatch]);
 
-  // Update local state when settings data is loaded from backend
+  // Update local state when profile data is loaded from backend
   useEffect(() => {
-    if (settingsData) {
+    if (profileData) {
       setAdminProfile({
-        phone: settingsData.phone || "",
-        position: settingsData.position || "System Administrator",
-        department: settingsData.department || "IT",
-        permissions: settingsData.permissions || {
+        phone: profileData.phone || "",
+        position: profileData.position || "System Administrator",
+        department: profileData.department || "IT",
+        permissions: profileData.permissions || {
           manageUsers: true,
           manageEvents: true,
           managePayments: true,
           manageRefunds: true,
           managePlatformSettings: true,
         },
-        twoFactorEnabled: settingsData.twoFactorEnabled || false,
-        emailNotifications: settingsData.emailNotifications || {
+        twoFactorEnabled: profileData.twoFactorEnabled || false,
+        emailNotifications: profileData.emailNotifications || {
           newUsers: true,
           newEvents: true,
           refundRequests: true,
@@ -73,13 +82,17 @@ const AdminSettings = () => {
         },
       });
     }
-  }, [settingsData]);
+  }, [profileData]);
 
   // Show toast notifications for success/error states
   useEffect(() => {
-    if (updateSuccess) {
+    if (profileUpdateSuccess) {
       toast.success("Admin profile updated successfully!");
+      dispatch(resetProfileUpdateSuccess());
     }
+  }, [profileUpdateSuccess, dispatch]);
+
+  useEffect(() => {
     if (passwordChangeSuccess) {
       toast.success("Password changed successfully!");
       setPasswordData({
@@ -87,11 +100,15 @@ const AdminSettings = () => {
         newPassword: "",
         confirmPassword: "",
       });
+      dispatch(resetPasswordChangeSuccess());
     }
+  }, [passwordChangeSuccess, dispatch]);
+
+  useEffect(() => {
     if (error) {
       toast.error(error);
     }
-  }, [updateSuccess, passwordChangeSuccess, error]);
+  }, [error]);
 
   // Handle input changes for admin profile
   const handleChange = (e) => {
@@ -126,7 +143,8 @@ const AdminSettings = () => {
   // Handle admin profile submission
   const handleProfileSubmit = (e) => {
     e.preventDefault();
-    dispatch(updateSettings(adminProfile));
+    console.log("Submitting profile data:", adminProfile);
+    dispatch(updateAdminProfile(adminProfile));
   };
 
   // Handle password change submission
@@ -160,7 +178,7 @@ const AdminSettings = () => {
           Admin Settings
         </h1>
 
-        {loading ? (
+        {profileLoading ? (
           <div className="flex justify-center py-10">
             <div className="w-12 h-12 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
           </div>
@@ -437,9 +455,9 @@ const AdminSettings = () => {
                 <button
                   type="submit"
                   className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  disabled={loading}
+                  disabled={profileLoading}
                 >
-                  {loading ? "Saving..." : "Save Profile"}
+                  {profileLoading ? "Saving..." : "Save Profile"}
                 </button>
               </div>
             </form>
@@ -517,9 +535,9 @@ const AdminSettings = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                    disabled={loading}
+                    disabled={profileLoading}
                   >
-                    {loading ? "Changing..." : "Change Password"}
+                    {profileLoading ? "Changing..." : "Change Password"}
                   </button>
                 </div>
               </section>
