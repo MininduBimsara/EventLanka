@@ -1,7 +1,14 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-const OrderSummary = ({ tickets, ticketTypes, totalPrice }) => {
+const OrderSummary = ({
+  tickets,
+  ticketTypes,
+  totalPrice,
+  onSelectTickets,
+  onCompleteBooking,
+  isCreatingOrder,
+}) => {
   // Get selected tickets (filter those with quantity > 0)
   const selectedTickets = ticketTypes
     ? ticketTypes.filter(
@@ -42,18 +49,45 @@ const OrderSummary = ({ tickets, ticketTypes, totalPrice }) => {
         </div>
       </div>
 
-      <motion.button
-        whileHover={{ scale: 1.03 }}
-        whileTap={{ scale: 0.98 }}
-        disabled={totalPrice === 0}
-        className={`w-full py-3 rounded-lg text-white font-bold text-lg ${
-          totalPrice > 0
-            ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            : "bg-gray-400 cursor-not-allowed"
-        }`}
-      >
-        {totalPrice > 0 ? "Book Now" : "Select Tickets"}
-      </motion.button>
+      {/* Two buttons side by side */}
+      <div className="flex gap-3">
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          disabled={totalPrice === 0 || isCreatingOrder}
+          onClick={onSelectTickets}
+          className={`flex-1 py-3 rounded-lg text-white font-bold text-lg ${
+            totalPrice > 0 && !isCreatingOrder
+              ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+              : "bg-gray-400 cursor-not-allowed"
+          }`}
+        >
+          {isCreatingOrder ? (
+            <div className="flex items-center justify-center">
+              <div className="w-5 h-5 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
+              Creating...
+            </div>
+          ) : totalPrice > 0 ? (
+            "Select Tickets"
+          ) : (
+            "Select Tickets"
+          )}
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          disabled={totalPrice === 0}
+          onClick={onCompleteBooking}
+          className={`flex-1 py-3 rounded-lg text-white font-bold text-lg ${
+            totalPrice > 0
+              ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              : "bg-gray-400 cursor-not-allowed"
+          }`}
+        >
+          {totalPrice > 0 ? "Complete Booking" : "Complete Booking"}
+        </motion.button>
+      </div>
     </div>
   );
 };

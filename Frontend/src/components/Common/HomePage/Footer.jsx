@@ -151,7 +151,7 @@ const EnhancedFooter = () => {
                     ></path>
                   </svg>
                 </div>
-                <span className="text-blue-100">info@mysite.com</span>
+                <span className="text-blue-100">info@EventLanka.com</span>
               </div>
 
               <div className="flex items-center">

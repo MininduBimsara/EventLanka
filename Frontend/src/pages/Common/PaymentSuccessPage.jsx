@@ -1,36 +1,61 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { downloadReceipt } from "../../Redux/Slicers/PaymentSlice";
+import {
+  downloadReceipt,
+  fetchPaymentHistory,
+} from "../../Redux/Slicers/PaymentSlice";
 import NavBar from "../../components/Common/Navbar";
 import { motion } from "framer-motion";
 
 const PaymentSuccessPage = () => {
   const { paymentIntentId } = useParams();
   const dispatch = useDispatch();
-  const [transactionId, setTransactionId] = useState(null);
-  const { currentPayment, downloading } = useSelector(
+  const [currentTransaction, setCurrentTransaction] = useState(null);
+  const { currentPayment, downloading, paymentHistory } = useSelector(
     (state) => state.payments
   );
 
   useEffect(() => {
-    // In a real app, you would fetch payment details using the payment intent ID
-    // For now, we'll simulate having the transaction ID
-    // This is where you'd make an API call to get payment details
-    const simulateLoadingPaymentDetails = async () => {
-      // Simulating an API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      // Creating a fake transaction ID (in real app, get this from API)
-      setTransactionId(`TXN-${Date.now().toString().slice(-6)}`);
-    };
+    // Fetch payment history to get the latest transaction
+    dispatch(fetchPaymentHistory());
+  }, [dispatch]);
 
-    simulateLoadingPaymentDetails();
-  }, [paymentIntentId]);
+  useEffect(() => {
+    // Find the current transaction from payment history
+    if (paymentHistory && paymentHistory.length > 0) {
+      // Get the most recent transaction or find by payment intent ID
+      const latestTransaction = paymentIntentId
+        ? paymentHistory.find(
+            (payment) => payment.payment_intent_id === paymentIntentId
+          )
+        : paymentHistory[0]; // Get the most recent one
+
+      if (latestTransaction) {
+        setCurrentTransaction({
+          id: latestTransaction.transaction_id || latestTransaction._id,
+          date: latestTransaction.createdAt || new Date().toISOString(),
+          eventName: latestTransaction.event_id?.title || "Unknown Event",
+          amount: latestTransaction.amount || 0,
+          paymentMethod: latestTransaction.payment_method || "Credit Card",
+          status: latestTransaction.payment_status || "Completed",
+        });
+      }
+    }
+  }, [paymentHistory, paymentIntentId]);
 
   const handleDownloadReceipt = () => {
-    if (transactionId) {
-      dispatch(downloadReceipt(transactionId));
+    if (currentTransaction?.id) {
+      dispatch(downloadReceipt(currentTransaction.id));
     }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   return (
@@ -76,28 +101,33 @@ const PaymentSuccessPage = () => {
               <h2 className="font-semibold text-gray-700">
                 Transaction Details
               </h2>
-              {transactionId ? (
+              {currentTransaction ? (
                 <div className="mt-2">
                   <p className="text-gray-600">
-                    Transaction ID: {transactionId}
+                    Transaction ID: {currentTransaction.id}
                   </p>
                   <p className="text-gray-600">
-                    Date: {new Date().toLocaleDateString()}
+                    Date: {formatDate(currentTransaction.date)}
                   </p>
-                  {currentPayment && (
-                    <>
-                      <p className="text-gray-600">
-                        Amount: ${currentPayment.amount}
-                      </p>
-                      <p className="text-gray-600">
-                        Payment Method: Credit Card
-                      </p>
-                    </>
-                  )}
+                  <p className="text-gray-600">
+                    Event: {currentTransaction.eventName}
+                  </p>
+                  <p className="text-gray-600">
+                    Amount: LKR {currentTransaction.amount.toLocaleString()}
+                  </p>
+                  <p className="text-gray-600">
+                    Payment Method: {currentTransaction.paymentMethod}
+                  </p>
+                  <p className="text-gray-600">
+                    Status: {currentTransaction.status}
+                  </p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-20">
                   <div className="w-8 h-8 border-b-2 border-gray-500 rounded-full animate-spin"></div>
+                  <span className="ml-2 text-gray-600">
+                    Loading transaction details...
+                  </span>
                 </div>
               )}
             </div>
@@ -106,8 +136,8 @@ const PaymentSuccessPage = () => {
             <div className="mt-6">
               <button
                 onClick={handleDownloadReceipt}
-                disabled={!transactionId || downloading}
-                className="flex items-center justify-center w-full py-3 font-medium text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-purple-300"
+                disabled={!currentTransaction?.id || downloading}
+                className="flex items-center justify-center w-full py-3 font-medium text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed"
               >
                 {downloading ? (
                   <>
@@ -154,6 +184,29 @@ const PaymentSuccessPage = () => {
                   ></path>
                 </svg>
                 View My Tickets
+              </Link>
+            </div>
+
+            {/* View All Transactions */}
+            <div className="mt-4">
+              <Link
+                to="/my-transactions"
+                className="flex items-center justify-center w-full py-3 font-medium text-purple-600 transition-colors border-2 border-purple-600 rounded-lg hover:bg-purple-600 hover:text-white"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  ></path>
+                </svg>
+                View All Transactions
               </Link>
             </div>
 

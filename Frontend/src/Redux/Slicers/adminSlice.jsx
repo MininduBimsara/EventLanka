@@ -54,6 +54,36 @@ export const updateSettings = createAsyncThunk(
   }
 );
 
+// Fetch admin profile (separate from platform settings)
+export const fetchAdminProfile = createAsyncThunk(
+  "admin/fetchAdminProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/profile`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch admin profile"
+      );
+    }
+  }
+);
+
+// Update admin profile (separate from platform settings)
+export const updateAdminProfile = createAsyncThunk(
+  "admin/updateAdminProfile",
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`${API_URL}/profile`, profileData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update admin profile"
+      );
+    }
+  }
+);
+
 export const changeAdminPassword = createAsyncThunk(
   "admin/changeAdminPassword",
   async (passwordData, { rejectWithValue }) => {
@@ -374,6 +404,11 @@ const initialState = {
     updateSuccess: false,
     passwordChangeSuccess: false,
   },
+  profile: {
+    data: null,
+    loading: false,
+    updateSuccess: false,
+  },
   events: {
     pendingEvents: [],
     currentEvent: null,
@@ -413,6 +448,9 @@ const adminSlice = createSlice({
     resetPasswordChangeSuccess(state) {
       state.settings.passwordChangeSuccess = false;
     },
+    resetProfileUpdateSuccess(state) {
+      state.profile.updateSuccess = false;
+    },
     clearCurrentUser(state) {
       state.users.currentUser = null;
     },
@@ -439,7 +477,7 @@ const adminSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Settings
+      // Platform Settings
       .addCase(fetchSettings.pending, (state) => {
         state.settings.loading = true;
         state.error = null;
@@ -467,6 +505,35 @@ const adminSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Admin Profile
+      .addCase(fetchAdminProfile.pending, (state) => {
+        state.profile.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminProfile.fulfilled, (state, action) => {
+        state.profile.loading = false;
+        state.profile.data = action.payload;
+      })
+      .addCase(fetchAdminProfile.rejected, (state, action) => {
+        state.profile.loading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(updateAdminProfile.pending, (state) => {
+        state.profile.loading = true;
+        state.error = null;
+      })
+      .addCase(updateAdminProfile.fulfilled, (state, action) => {
+        state.profile.loading = false;
+        state.profile.data = action.payload.adminProfile;
+        state.profile.updateSuccess = true;
+      })
+      .addCase(updateAdminProfile.rejected, (state, action) => {
+        state.profile.loading = false;
+        state.error = action.payload;
+      })
+
+      // Password Change
       .addCase(changeAdminPassword.pending, (state) => {
         state.settings.loading = true;
         state.error = null;
@@ -774,6 +841,7 @@ export const {
   clearAdminErrors,
   resetUpdateSuccess,
   resetPasswordChangeSuccess,
+  resetProfileUpdateSuccess,
   clearCurrentUser,
   clearCurrentOrganizer,
   clearCurrentEvent,
