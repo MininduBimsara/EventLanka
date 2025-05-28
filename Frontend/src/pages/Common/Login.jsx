@@ -5,6 +5,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser, registerUser } from "../../Redux/Slicers/AuthSlice";
 import { useNavigate } from "react-router-dom";
 import { googleAuth } from "../../Redux/Slicers/GoogleAuthSlice";
+import {
+  validateForm,
+  validateField,
+  getPasswordStrength,
+} from "../../Utils/loginFormValidation";
 
 
 const LoginRegistrationUI = () => {
@@ -18,11 +23,14 @@ const LoginRegistrationUI = () => {
     role: "user", // Default role
     profileImage: null,
   });
-  
+
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isGoogleInitialized, setIsGoogleInitialized] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+
+  const [formErrors, setFormErrors] = useState({});
+  const [passwordStrength, setPasswordStrength] = useState(null);
 
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.user);
@@ -56,55 +64,55 @@ const LoginRegistrationUI = () => {
   }, []);
 
   // Initialize Google Sign-In
-const initializeGoogleSignIn = () => {
-  if (window.google) {
-    try {
-      window.google.accounts.id.initialize({
-        client_id:
-          "220678971388-jevcp58ug9v8tsuro8jd00qd45sbvad5.apps.googleusercontent.com",
-        callback: handleGoogleCredentialResponse,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        // Add these new options to fix CORS issues
-        ux_mode: "popup",
-        context: "signin",
-        // Add an advanced option to allow the credential cookie
-        // use_fedcm_for_prompt: false,
-      });
+  const initializeGoogleSignIn = () => {
+    if (window.google) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id:
+            "220678971388-jevcp58ug9v8tsuro8jd00qd45sbvad5.apps.googleusercontent.com",
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          // Add these new options to fix CORS issues
+          ux_mode: "popup",
+          context: "signin",
+          // Add an advanced option to allow the credential cookie
+          // use_fedcm_for_prompt: false,
+        });
 
-      // Render the Google Sign-In buttons
-      if (document.getElementById("google-signin-button-login")) {
-        window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-button-login"),
-          {
-            theme: "outline",
-            size: "large",
-            text: "signin_with",
-            width: 270,
-            type: "standard",
-          }
-        );
+        // Render the Google Sign-In buttons
+        if (document.getElementById("google-signin-button-login")) {
+          window.google.accounts.id.renderButton(
+            document.getElementById("google-signin-button-login"),
+            {
+              theme: "outline",
+              size: "large",
+              text: "signin_with",
+              width: 270,
+              type: "standard",
+            }
+          );
+        }
+
+        if (document.getElementById("google-signin-button-register")) {
+          window.google.accounts.id.renderButton(
+            document.getElementById("google-signin-button-register"),
+            {
+              theme: "outline",
+              size: "large",
+              text: "signup_with",
+              width: 270,
+              type: "standard",
+            }
+          );
+        }
+
+        setIsGoogleInitialized(true);
+      } catch (error) {
+        console.error("Error initializing Google Sign-In:", error);
       }
-
-      if (document.getElementById("google-signin-button-register")) {
-        window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-button-register"),
-          {
-            theme: "outline",
-            size: "large",
-            text: "signup_with",
-            width: 270,
-            type: "standard",
-          }
-        );
-      }
-
-      setIsGoogleInitialized(true);
-    } catch (error) {
-      console.error("Error initializing Google Sign-In:", error);
     }
-  }
-};
+  };
 
   // Handle the credential response from Google
   const handleGoogleCredentialResponse = (response) => {
@@ -158,15 +166,134 @@ const initializeGoogleSignIn = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
+
+    // Update form data first
+    const updatedFormData = {
+      ...formData,
       [name]: value,
-    }));
+    };
+
+    setFormData(updatedFormData);
+
+    // Clear specific field error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+
+    // Real-time validation for password strength
+    if (name === "password" && activeForm === "register") {
+      const strength = getPasswordStrength(value);
+      setPasswordStrength(strength);
+
+      // Also validate password field
+      const passwordValidation = validateField("password", value);
+      if (!passwordValidation.isValid) {
+        setFormErrors((prev) => ({
+          ...prev,
+          password: passwordValidation.message,
+        }));
+      } else {
+        setFormErrors((prev) => ({
+          ...prev,
+          password: "",
+        }));
+      }
+
+      // Re-validate confirm password if it exists
+      if (updatedFormData.confirmPassword) {
+        const confirmValidation = validateField(
+          "confirmPassword",
+          updatedFormData.confirmPassword,
+          { password: value }
+        );
+        if (!confirmValidation.isValid) {
+          setFormErrors((prev) => ({
+            ...prev,
+            confirmPassword: confirmValidation.message,
+          }));
+        } else {
+          setFormErrors((prev) => ({
+            ...prev,
+            confirmPassword: "",
+          }));
+        }
+      }
+    }
+
+    //Real-time validation for confirm password
+    if (name === "confirmPassword" && activeForm === "register") {
+      const validation = validateField("confirmPassword", value, {
+        password: updatedFormData.password,
+      });
+      if (!validation.isValid) {
+        setFormErrors((prev) => ({
+          ...prev,
+          confirmPassword: validation.message,
+        }));
+      } else {
+        setFormErrors((prev) => ({
+          ...prev,
+          confirmPassword: "",
+        }));
+      }
+    }
+
+    // Real-time validation for other fields
+    if (name === "email") {
+      const validation = validateField("email", value);
+      if (!validation.isValid) {
+        setFormErrors((prev) => ({
+          ...prev,
+          email: validation.message,
+        }));
+      } else {
+        setFormErrors((prev) => ({
+          ...prev,
+          email: "",
+        }));
+      }
+    }
+
+    if (name === "username" && activeForm === "register") {
+      const validation = validateField("username", value);
+      if (!validation.isValid) {
+        setFormErrors((prev) => ({
+          ...prev,
+          username: validation.message,
+        }));
+      } else {
+        setFormErrors((prev) => ({
+          ...prev,
+          username: "",
+        }));
+      }
+    }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
+
     if (file) {
+      // Validate the image file
+      const validation = validateField("profileImage", file);
+
+      if (!validation.isValid) {
+        setFormErrors((prev) => ({
+          ...prev,
+          profileImage: validation.message,
+        }));
+        return;
+      }
+
+      // Clear any previous image error
+      setFormErrors((prev) => ({
+        ...prev,
+        profileImage: "",
+      }));
+
       setFormData((prev) => ({
         ...prev,
         profileImage: file,
@@ -185,11 +312,21 @@ const initializeGoogleSignIn = () => {
     e.preventDefault();
     setErrorMessage("");
 
+    //Validate form
+    const errors = validateForm(formData, true); // true for login form
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    // Clear form errors
+    setFormErrors({});
+
     // Dispatch the loginUser thunk
     dispatch(loginUser({ email: formData.email, password: formData.password }))
       .unwrap()
       .then((data) => {
-        // console.log("Login successful", data);
         setSuccessMessage("Login successful!");
 
         // Reset form data
@@ -202,6 +339,7 @@ const initializeGoogleSignIn = () => {
           profileImage: null,
         });
         setImagePreview(null);
+        setFormErrors({});
         navigate("/");
       })
       .catch((error) => {
@@ -220,11 +358,16 @@ const initializeGoogleSignIn = () => {
     e.preventDefault();
     setErrorMessage("");
 
-    // Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setErrorMessage("Passwords do not match");
+    // Validate form
+    const errors = validateForm(formData, false); // false for registration form
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+
+    // Clear form errors
+    setFormErrors({});
 
     try {
       // Create FormData object to handle file upload
@@ -241,7 +384,6 @@ const initializeGoogleSignIn = () => {
       dispatch(registerUser(registrationData))
         .unwrap()
         .then((data) => {
-          // console.log("Registration successful", data);
           setSuccessMessage("Registration successful!");
           // Reset form data and switch to login form after a delay
           setFormData({
@@ -253,6 +395,8 @@ const initializeGoogleSignIn = () => {
             profileImage: null,
           });
           setImagePreview(null);
+          setFormErrors({});
+          setPasswordStrength(null);
           setTimeout(() => {
             setSuccessMessage("");
             setActiveForm("login");
@@ -276,7 +420,76 @@ const initializeGoogleSignIn = () => {
   const switchForm = (form) => {
     setSuccessMessage("");
     setErrorMessage("");
+    setFormErrors({});
+    setPasswordStrength(null);
     setActiveForm(form);
+  };
+
+  // 8. Add error display helper function
+  const renderFieldError = (fieldName) => {
+    if (formErrors[fieldName]) {
+      return (
+        <p className="mt-1 text-sm text-red-600">{formErrors[fieldName]}</p>
+      );
+    }
+    return null;
+  };
+
+  const PasswordStrengthIndicator = ({ strength }) => {
+    if (!strength) return null;
+  
+    const getStrengthColor = (level) => {
+      switch (level) {
+        case 'Very Weak': return 'bg-red-500';
+        case 'Weak': return 'bg-orange-500';
+        case 'Fair': return 'bg-yellow-500';
+        case 'Good': return 'bg-blue-500';
+        case 'Strong': return 'bg-green-500';
+        case 'Very Strong': return 'bg-green-600';
+        default: return 'bg-gray-300';
+      }
+    };
+    return (
+      <div className="mt-2">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-gray-600">Password strength:</span>
+          <span
+            className={`text-xs font-medium ${
+              strength.strength >= 4
+                ? "text-green-600"
+                : strength.strength >= 3
+                ? "text-blue-600"
+                : strength.strength >= 2
+                ? "text-yellow-600"
+                : "text-red-600"
+            }`}
+          >
+            {strength.label}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div
+            className={`h-1.5 rounded-full transition-all duration-300 ${getStrengthColor(
+              strength.label
+            )}`}
+            style={{ width: `${strength.percentage}%` }}
+          ></div>
+        </div>
+        <div className="mt-1 text-xs text-gray-500">
+          {strength.requirements.map((req, index) => (
+            <div
+              key={index}
+              className={`flex items-center ${
+                req.test ? "text-green-600" : "text-gray-400"
+              }`}
+            >
+              <span className="mr-1">{req.test ? "✓" : "○"}</span>
+              {req.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -444,6 +657,7 @@ const initializeGoogleSignIn = () => {
                       required
                     />
                   </div>
+                  {renderFieldError("email")}
                 </div>
 
                 <div className="mb-6">
@@ -477,6 +691,7 @@ const initializeGoogleSignIn = () => {
                       required
                     />
                   </div>
+                  {renderFieldError("password")}
                 </div>
 
                 <button
@@ -547,6 +762,7 @@ const initializeGoogleSignIn = () => {
                           required
                         />
                       </div>
+                      {renderFieldError("username")}
                     </div>
 
                     {/* Email */}
@@ -572,6 +788,7 @@ const initializeGoogleSignIn = () => {
                           required
                         />
                       </div>
+                      {renderFieldError("email")}
                     </div>
 
                     {/* I want to / Role */}
@@ -624,6 +841,12 @@ const initializeGoogleSignIn = () => {
                           required
                         />
                       </div>
+                      {renderFieldError("password")}
+                      {activeForm === "register" && (
+                        <PasswordStrengthIndicator
+                          strength={passwordStrength}
+                        />
+                      )}
                     </div>
 
                     {/* Confirm Password */}
@@ -649,6 +872,7 @@ const initializeGoogleSignIn = () => {
                           required
                         />
                       </div>
+                      {renderFieldError("confirmPassword")}
                     </div>
 
                     {/* Profile Image Upload */}
@@ -687,6 +911,7 @@ const initializeGoogleSignIn = () => {
                           className="hidden"
                         />
                       </div>
+                      {renderFieldError("profileImage")}
                     </div>
                   </div>
                 </div>
