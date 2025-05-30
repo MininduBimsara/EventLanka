@@ -11,11 +11,18 @@ import {
   Mail,
   Eye,
   EyeOff,
+  AlertCircle,
 } from "lucide-react";
 import {
   fetchOrganizerProfile,
   updateOrganizerProfile,
-} from "../../Redux/Slicers/OrganizerSlice"; // Adjust path as needed
+} from "../../Redux/Slicers/OrganizerSlice";
+import {
+  validateOrganizerProfile,
+  validateNewCategory,
+  validateProfileImage,
+  validateFieldRealTime,
+} from "../../Utils/profileValidation"; // Adjust path as needed
 
 export default function OrganizerProfile() {
   const dispatch = useDispatch();
@@ -26,6 +33,10 @@ export default function OrganizerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [profileImage, setProfileImage] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -71,6 +82,17 @@ export default function OrganizerProfile() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Real-time validation
+    const error = validateFieldRealTime(
+      name.includes(".") ? name.split(".")[1] : name,
+      value
+    );
+    setFieldErrors((prev) => ({
+      ...prev,
+      [name]: error,
+    }));
+
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setProfile({
@@ -96,13 +118,25 @@ export default function OrganizerProfile() {
   };
 
   const handleAddCategory = () => {
-    if (newCategory && !profile.categories.includes(newCategory)) {
-      setProfile({
-        ...profile,
-        categories: [...profile.categories, newCategory],
-      });
-      setNewCategory("");
+    const validation = validateNewCategory(newCategory, profile.categories);
+
+    if (!validation.isValid) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        newCategory: validation.errors.category,
+      }));
+      return;
     }
+
+    setProfile({
+      ...profile,
+      categories: [...profile.categories, validation.sanitizedCategory],
+    });
+    setNewCategory("");
+    setValidationErrors((prev) => ({
+      ...prev,
+      newCategory: null,
+    }));
   };
 
   const handleRemoveCategory = (category) => {
@@ -114,22 +148,52 @@ export default function OrganizerProfile() {
 
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setProfileImage(e.target.files[0]);
+      const file = e.target.files[0];
+      const validation = validateProfileImage(file);
+
+      if (!validation.isValid) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          profileImage: validation.errors.file,
+        }));
+        return;
+      }
+
+      setProfileImage(file);
+      setValidationErrors((prev) => ({
+        ...prev,
+        profileImage: null,
+      }));
     }
   };
 
-  const handleSaveChanges = () => {
-    // Map the component state to what the backend expects
+  const handleSaveChanges = async () => {
+    setIsSubmitting(true);
+
+    // Validate the entire profile
+    const validation = validateOrganizerProfile(profile);
+
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Clear validation errors
+    setValidationErrors({});
+    setFieldErrors({});
+
+    // Map the sanitized profile data to what the backend expects
     const organizerData = {
-      username: profile.name,
-      phone: profile.phone,
-      bio: profile.bio,
-      website: profile.website,
-      instagram: profile.social.instagram,
-      facebook: profile.social.facebook,
-      linkedin: profile.social.linkedin,
-      categories: profile.categories,
-      isPublic: profile.isPublic,
+      username: validation.sanitizedProfile.name,
+      phone: validation.sanitizedProfile.phone,
+      bio: validation.sanitizedProfile.bio,
+      website: validation.sanitizedProfile.website,
+      instagram: validation.sanitizedProfile.social.instagram,
+      facebook: validation.sanitizedProfile.social.facebook,
+      linkedin: validation.sanitizedProfile.social.linkedin,
+      categories: validation.sanitizedProfile.categories,
+      isPublic: validation.sanitizedProfile.isPublic,
     };
 
     // Add profile image if one was selected
@@ -138,16 +202,28 @@ export default function OrganizerProfile() {
     }
 
     // Dispatch the update action
-    dispatch(updateOrganizerProfile(organizerData))
-      .unwrap()
-      .then(() => {
-        setIsEditing(false);
-        // Reset profile image selection
-        setProfileImage(null);
-      })
-      .catch((error) => {
-        console.error("Failed to update profile:", error);
+    try {
+      await dispatch(updateOrganizerProfile(organizerData)).unwrap();
+      setIsEditing(false);
+      setProfileImage(null);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      setValidationErrors({
+        submit: "Failed to update profile. Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const ErrorMessage = ({ error }) => {
+    if (!error) return null;
+    return (
+      <div className="flex items-center mt-1 text-sm text-red-600">
+        <AlertCircle size={14} className="mr-1" />
+        {error}
+      </div>
+    );
   };
 
   if (loading && !organizerProfile) {
@@ -165,6 +241,12 @@ export default function OrganizerProfile() {
       <h1 className="mb-6 text-3xl font-bold text-gray-800">
         Organizer Profile
       </h1>
+
+      {validationErrors.submit && (
+        <div className="p-4 mb-6 text-red-700 bg-red-100 border border-red-300 rounded-md">
+          {validationErrors.submit}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Left Column - Profile Picture */}
@@ -195,13 +277,14 @@ export default function OrganizerProfile() {
                   <input
                     id="profile-image-input"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     className="hidden"
                     onChange={handleImageChange}
                   />
                 </label>
               )}
             </div>
+            <ErrorMessage error={validationErrors.profileImage} />
 
             <div className="w-full mt-6">
               <div className="flex items-center justify-between mb-4">
@@ -210,11 +293,12 @@ export default function OrganizerProfile() {
                 </h3>
                 <button
                   onClick={handleTogglePublic}
+                  disabled={!isEditing}
                   className={`flex items-center px-3 py-2 rounded-md ${
                     profile.isPublic
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-600"
-                  }`}
+                  } ${!isEditing ? "cursor-not-allowed opacity-50" : ""}`}
                 >
                   {profile.isPublic ? (
                     <>
@@ -246,8 +330,15 @@ export default function OrganizerProfile() {
                 Personal Information
               </h2>
               <button
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => {
+                  setIsEditing(!isEditing);
+                  if (isEditing) {
+                    setValidationErrors({});
+                    setFieldErrors({});
+                  }
+                }}
                 className="text-blue-600 hover:text-blue-800"
+                disabled={isSubmitting}
               >
                 {isEditing ? "Cancel" : "Edit"}
               </button>
@@ -257,16 +348,27 @@ export default function OrganizerProfile() {
               {/* Name */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Organizer/Brand Name
+                  Organizer/Brand Name *
                 </label>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    name="name"
-                    value={profile.name}
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <>
+                    <input
+                      type="text"
+                      name="name"
+                      value={profile.name}
+                      onChange={handleChange}
+                      maxLength={100}
+                      className={`w-full p-3 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                        fieldErrors.name || validationErrors.name
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      }`}
+                      required
+                    />
+                    <ErrorMessage
+                      error={fieldErrors.name || validationErrors.name}
+                    />
+                  </>
                 ) : (
                   <p className="p-3 bg-white border border-gray-200 rounded-md">
                     {profile.name}
@@ -292,13 +394,23 @@ export default function OrganizerProfile() {
                   Phone Number
                 </label>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    name="phone"
-                    value={profile.phone}
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={profile.phone}
+                      onChange={handleChange}
+                      className={`w-full p-3 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                        fieldErrors.phone || validationErrors.phone
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      }`}
+                      placeholder="+1234567890"
+                    />
+                    <ErrorMessage
+                      error={fieldErrors.phone || validationErrors.phone}
+                    />
+                  </>
                 ) : (
                   <p className="p-3 bg-white border border-gray-200 rounded-md">
                     {profile.phone}
@@ -312,13 +424,29 @@ export default function OrganizerProfile() {
                   Bio / About
                 </label>
                 {isEditing ? (
-                  <textarea
-                    name="bio"
-                    value={profile.bio}
-                    onChange={handleChange}
-                    rows={4}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <>
+                    <textarea
+                      name="bio"
+                      value={profile.bio}
+                      onChange={handleChange}
+                      rows={4}
+                      maxLength={1000}
+                      className={`w-full p-3 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                        fieldErrors.bio || validationErrors.bio
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      }`}
+                      placeholder="Tell us about yourself..."
+                    />
+                    <div className="flex justify-between">
+                      <ErrorMessage
+                        error={fieldErrors.bio || validationErrors.bio}
+                      />
+                      <span className="text-sm text-gray-500">
+                        {profile.bio.length}/1000
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   <p className="p-3 bg-white border border-gray-200 rounded-md">
                     {profile.bio}
@@ -333,13 +461,23 @@ export default function OrganizerProfile() {
                   Website
                 </label>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    name="website"
-                    value={profile.website}
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <>
+                    <input
+                      type="url"
+                      name="website"
+                      value={profile.website}
+                      onChange={handleChange}
+                      className={`w-full p-3 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                        fieldErrors.website || validationErrors.website
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      }`}
+                      placeholder="https://www.example.com"
+                    />
+                    <ErrorMessage
+                      error={fieldErrors.website || validationErrors.website}
+                    />
+                  </>
                 ) : (
                   <a
                     href={profile.website}
@@ -361,14 +499,28 @@ export default function OrganizerProfile() {
                   <div className="flex items-center">
                     <Instagram size={20} className="mr-3 text-pink-600" />
                     {isEditing ? (
-                      <input
-                        type="text"
-                        name="social.instagram"
-                        value={profile.social.instagram}
-                        onChange={handleChange}
-                        placeholder="Instagram username"
-                        className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          name="social.instagram"
+                          value={profile.social.instagram}
+                          onChange={handleChange}
+                          placeholder="Instagram username"
+                          maxLength={30}
+                          className={`w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                            fieldErrors["social.instagram"] ||
+                            validationErrors.instagram
+                              ? "border-red-300"
+                              : "border-gray-300"
+                          }`}
+                        />
+                        <ErrorMessage
+                          error={
+                            fieldErrors["social.instagram"] ||
+                            validationErrors.instagram
+                          }
+                        />
+                      </div>
                     ) : (
                       <span>@{profile.social.instagram}</span>
                     )}
@@ -377,14 +529,28 @@ export default function OrganizerProfile() {
                   <div className="flex items-center">
                     <Facebook size={20} className="mr-3 text-blue-600" />
                     {isEditing ? (
-                      <input
-                        type="text"
-                        name="social.facebook"
-                        value={profile.social.facebook}
-                        onChange={handleChange}
-                        placeholder="Facebook username"
-                        className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          name="social.facebook"
+                          value={profile.social.facebook}
+                          onChange={handleChange}
+                          placeholder="Facebook username"
+                          maxLength={30}
+                          className={`w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                            fieldErrors["social.facebook"] ||
+                            validationErrors.facebook
+                              ? "border-red-300"
+                              : "border-gray-300"
+                          }`}
+                        />
+                        <ErrorMessage
+                          error={
+                            fieldErrors["social.facebook"] ||
+                            validationErrors.facebook
+                          }
+                        />
+                      </div>
                     ) : (
                       <span>{profile.social.facebook}</span>
                     )}
@@ -393,14 +559,28 @@ export default function OrganizerProfile() {
                   <div className="flex items-center">
                     <Linkedin size={20} className="mr-3 text-blue-700" />
                     {isEditing ? (
-                      <input
-                        type="text"
-                        name="social.linkedin"
-                        value={profile.social.linkedin}
-                        onChange={handleChange}
-                        placeholder="LinkedIn username"
-                        className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          name="social.linkedin"
+                          value={profile.social.linkedin}
+                          onChange={handleChange}
+                          placeholder="LinkedIn username"
+                          maxLength={30}
+                          className={`w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                            fieldErrors["social.linkedin"] ||
+                            validationErrors.linkedin
+                              ? "border-red-300"
+                              : "border-gray-300"
+                          }`}
+                        />
+                        <ErrorMessage
+                          error={
+                            fieldErrors["social.linkedin"] ||
+                            validationErrors.linkedin
+                          }
+                        />
+                      </div>
                     ) : (
                       <span>{profile.social.linkedin}</span>
                     )}
@@ -411,7 +591,7 @@ export default function OrganizerProfile() {
               {/* Event Categories */}
               <div>
                 <h3 className="mb-3 font-medium text-gray-700 text-md">
-                  Event Categories
+                  Event Categories ({profile.categories.length}/10)
                 </h3>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {profile.categories.map((category, index) => (
@@ -424,6 +604,7 @@ export default function OrganizerProfile() {
                         <button
                           onClick={() => handleRemoveCategory(category)}
                           className="ml-2 text-blue-800 hover:text-blue-900"
+                          type="button"
                         >
                           ×
                         </button>
@@ -433,22 +614,41 @@ export default function OrganizerProfile() {
                 </div>
 
                 {isEditing && (
-                  <div className="flex mt-2">
-                    <input
-                      type="text"
-                      value={newCategory}
-                      onChange={(e) => setNewCategory(e.target.value)}
-                      placeholder="Add category"
-                      className="flex-1 p-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      onClick={handleAddCategory}
-                      className="px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700"
-                    >
-                      Add
-                    </button>
+                  <div className="mt-2">
+                    <div className="flex">
+                      <input
+                        type="text"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        placeholder="Add category"
+                        maxLength={50}
+                        className={`flex-1 p-2 border rounded-l-md focus:ring-blue-500 focus:border-blue-500 ${
+                          validationErrors.newCategory
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddCategory();
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={handleAddCategory}
+                        className="px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700 disabled:opacity-50"
+                        type="button"
+                        disabled={
+                          !newCategory.trim() || profile.categories.length >= 10
+                        }
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <ErrorMessage error={validationErrors.newCategory} />
                   </div>
                 )}
+                <ErrorMessage error={validationErrors.categories} />
               </div>
             </div>
 
@@ -456,10 +656,14 @@ export default function OrganizerProfile() {
               <div className="mt-6">
                 <button
                   onClick={handleSaveChanges}
-                  className="flex items-center px-6 py-2 text-white bg-green-600 rounded-md hover:bg-green-700"
+                  disabled={
+                    isSubmitting ||
+                    Object.values(fieldErrors).some((error) => error)
+                  }
+                  className="flex items-center px-6 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save size={18} className="mr-2" />
-                  Save Changes
+                  {isSubmitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             )}
