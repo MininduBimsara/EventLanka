@@ -31,7 +31,7 @@ import {
   validateImageFile,
   getFieldConstraints,
   ALLOWED_IMAGE_TYPES,
-} from "../../Utils/validationUtils";
+} from "../../Utils/User/validationUtils";
 
 const EditProfile = () => {
   const dispatch = useDispatch();

@@ -9,7 +9,7 @@ import {
   validateForm,
   validateField,
   getPasswordStrength,
-} from "../../Utils/loginFormValidation";
+} from "../../Utils/Common/loginFormValidation";
 
 
 const LoginRegistrationUI = () => {

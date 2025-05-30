@@ -22,7 +22,7 @@ import {
   validateNewCategory,
   validateProfileImage,
   validateFieldRealTime,
-} from "../../Utils/profileValidation"; // Adjust path as needed
+} from "../../Utils/Organizer/profileValidation"; // Adjust path as needed
 
 export default function OrganizerProfile() {
   const dispatch = useDispatch();

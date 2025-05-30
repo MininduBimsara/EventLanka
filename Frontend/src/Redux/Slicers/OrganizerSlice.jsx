@@ -427,7 +427,6 @@ export const getSalesAnalytics = createAsyncThunk(
 
 // ===== ORGANIZER PROFILE THUNKS =====
 // Function to get the current organizer profile
-// Add this to your organizerSlice.js
 export const fetchOrganizerProfile = createAsyncThunk(
   "organizer/fetchOrganizerProfile",
   async (_, { rejectWithValue }) => {
