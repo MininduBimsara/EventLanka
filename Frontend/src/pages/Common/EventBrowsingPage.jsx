@@ -16,6 +16,8 @@ const EventBrowsingPage = () => {
 
   const [isVisible, setIsVisible] = useState(true);
 
+  const [viewMode, setViewMode] = useState("grid");
+
   // Fetch events when component mounts
   useEffect(() => {
     dispatch(fetchAllEvents());
@@ -218,7 +220,7 @@ const EventBrowsingPage = () => {
               <p>Error loading events: {error}</p>
               <button
                 className="px-4 py-2 mt-2 text-white bg-red-700 rounded hover:bg-red-800"
-                onClick={() => dispatch(fetchEvents())}
+                onClick={() => dispatch(fetchAllEvents())}
               >
                 Try Again
               </button>
@@ -256,31 +258,40 @@ const EventBrowsingPage = () => {
                   <div id="event-view-toggle" className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] rounded-lg opacity-90 animate-gradient-event"></div>
                     <div className="relative z-10">
-                      <ViewToggle />
+                      <ViewToggle
+                        viewMode={viewMode}
+                        onViewChange={setViewMode}
+                      />
                     </div>
                   </div>
                 </div>
-
                 {filteredEvents.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-                    {currentEvents.map((event) => (
-                      <div
-                        key={event._id || event.id}
-                        className="event-card-hover"
-                      >
-                        <EventCard event={event} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="relative overflow-hidden rounded-xl">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] opacity-70 animate-gradient-event"></div>
-                    <div className="relative z-10">
-                      <NoEventsFound />
+                <div
+                  className={
+                    viewMode === "list"
+                      ? "space-y-4"
+                      : "grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
+                  }
+                >
+                  {currentEvents.map((event) => (
+                    <div
+                      key={event._id || event.id}
+                      className={`event-card-hover ${
+                        viewMode === "list" ? "w-full" : ""
+                      }`}
+                    >
+                      <EventCard event={event} viewMode={viewMode} />
                     </div>
+                  ))}
+                </div>
+                ) : (
+                <div className="relative overflow-hidden rounded-xl">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#3D0C7D] via-[#7A4495] to-[#F0A8AE] opacity-70 animate-gradient-event"></div>
+                  <div className="relative z-10">
+                    <NoEventsFound />
                   </div>
+                </div>
                 )}
-
                 {filteredEvents.length > 0 && (
                   <div id="event-pagination" className="relative mt-8">
                     <div className="relative z-10">

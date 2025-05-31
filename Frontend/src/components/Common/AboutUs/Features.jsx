@@ -1,6 +1,8 @@
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Features = ({ features }) => {
+  const navigate = useNavigate();
   return (
     <section className="select-none px-4 py-20 bg-gradient-to-b from-[#D2A1B8] to-[#935de4]">
       <div className="max-w-6xl mx-auto">
@@ -38,7 +40,10 @@ export const Features = ({ features }) => {
         </div>
 
         <div className="mt-16 text-center">
-          <button className="inline-flex items-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform shadow-lg bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500/25">
+          <button
+            className="inline-flex items-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform shadow-lg bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500/25"
+            onClick={() => navigate("/eventbrowsing")}
+          >
             Get Started Today
             <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
           </button>

@@ -112,11 +112,11 @@ export const Story = () => {
         </div>
 
         {/* CTA Button styled like FeaturedEvents */}
-        <div className="mt-16 text-center">
+        {/* <div className="mt-16 text-center">
           <button className="px-10 py-3 text-white transition-colors transition-transform duration-300 transform bg-blue-800 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105">
             Join Our Journey
           </button>
-        </div>
+        </div> */}
       </div>
     </section>
   );

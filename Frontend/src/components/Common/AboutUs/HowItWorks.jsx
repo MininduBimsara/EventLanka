@@ -39,11 +39,11 @@ const HowItWorks = ({ howItWorks }) => {
           ))}
         </div>
 
-        <div className="mt-16 text-center">
+        {/* <div className="mt-16 text-center">
           <div className="inline-flex items-center px-6 py-3 text-white border rounded-full bg-white/20 backdrop-blur-sm border-white/30">
             <span className="text-sm font-medium">Ready to get started?</span>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );

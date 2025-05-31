@@ -98,7 +98,7 @@ const FilterSidebar = ({
         </div>
 
         {/* Price range filter */}
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <h3 className="mb-2 text-sm font-medium text-blue-900">PRICE</h3>
           <div className="px-2">
             <input
@@ -112,7 +112,7 @@ const FilterSidebar = ({
               <span>$300+</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Reset filters button */}
         <button

@@ -1,10 +1,12 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const Testimonials = ({
   testimonials,
   activeTestimonial,
   setActiveTestimonial,
 }) => {
+  const navigate = useNavigate();
   return (
     <section className="py-20 select-none bg-gray-50 ">
       {/* Decorative Elements similar to Story component */}
@@ -92,7 +94,10 @@ const Testimonials = ({
 
         {/* CTA Button styled like Story component */}
         <div className="mt-16 text-center">
-          <button className="px-10 py-3 text-white transition-colors transition-transform duration-300 transform bg-blue-800 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105">
+          <button
+            className="px-10 py-3 text-white transition-colors transition-transform duration-300 transform bg-blue-800 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105"
+            onClick={() => navigate("/contact")}
+          >
             Share Your Experience
           </button>
         </div>

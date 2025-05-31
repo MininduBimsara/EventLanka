@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
+
 export const CalltoAction = () => {
+  const navigate = useNavigate();
   return (
     <section className="select-none px-4 py-24 text-white bg-gradient-to-b from-[#935de4] from-0% to-[#016999] to-70%">
       <div className="max-w-4xl mx-auto text-center">
@@ -10,10 +13,16 @@ export const CalltoAction = () => {
           experience every day.
         </p>
         <div className="flex flex-col justify-center gap-4 sm:flex-row">
-          <button className="px-8 py-3 text-lg font-bold text-[#6622CC] transition-all duration-300 transform bg-white rounded-full hover:shadow-lg hover:scale-105">
+          <button
+            className="px-8 py-3 text-lg font-bold text-[#6622CC] transition-all duration-300 transform bg-white rounded-full hover:shadow-lg hover:scale-105"
+            onClick={() => navigate("/eventbrowsing")}
+          >
             Find Events
           </button>
-          <button className="px-8 py-3 text-lg font-bold text-white transition-all duration-300 transform bg-transparent border-2 border-white rounded-full hover:shadow-lg hover:scale-105">
+          <button
+            className="px-8 py-3 text-lg font-bold text-white transition-all duration-300 transform bg-transparent border-2 border-white rounded-full hover:shadow-lg hover:scale-105"
+            onClick={() => navigate("/about")}
+          >
             Learn More
           </button>
         </div>
