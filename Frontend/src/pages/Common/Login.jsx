@@ -6,11 +6,11 @@ import { loginUser, registerUser } from "../../Redux/Slicers/AuthSlice";
 import { useNavigate } from "react-router-dom";
 import { googleAuth } from "../../Redux/Slicers/GoogleAuthSlice";
 import { validateForm } from "../../Utils/Common/loginFormValidation";
-import LeftSideArtwork from "./components/LeftSideArtwork";
-import LoginForm from "./components/LoginForm";
-import RegistrationForm from "./components/RegistrationForm";
-import GoogleAuthHandler from "./components/GoogleAuthHandler";
-import MessageDisplay from "./components/MessageDisplay";
+import LeftSideArtwork from "../../components/Common/Login/LeftSideArtwork";
+import LoginForm from "../../components/Common/Login/LoginForm";
+import RegistrationForm from "../../components/Common/Login/RegistrationForm";
+import GoogleAuthHandler from "../../components/Common/Login/GoogleAuthHandler";
+import MessageDisplay from "../../components/Common/Login/MessageDisplay";
 
 const LoginRegistrationUI = () => {
   const navigate = useNavigate();
@@ -118,58 +118,64 @@ const LoginRegistrationUI = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="flex flex-1 w-full">
-        <LeftSideArtwork activeForm={activeForm} />
 
-        <div className="flex items-center justify-center w-full p-6 md:w-1/2">
-          <div className="w-full max-w-md">
-            <div className="mb-6 text-center">
-              <h2 className="mt-20 text-3xl font-bold text-gray-800">
-                {activeForm === "login" ? "Welcome Back" : "Create Account"}
-              </h2>
-              <p className="mt-2 text-gray-600">
-                {activeForm === "login"
-                  ? "Sign in to access your event dashboard"
-                  : "Register to discover and manage amazing events"}
-              </p>
+      {/* New Card-style Layout */}
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="w-full max-w-6xl overflow-hidden bg-white shadow-2xl rounded-2xl">
+          <div className="flex min-h-[600px]">
+            <LeftSideArtwork activeForm={activeForm} />
+
+            <div className="flex items-center justify-center w-full p-12 md:w-1/2">
+              <div className="w-full max-w-md">
+                <div className="mb-8 text-center">
+                  <h1 className="mb-2 text-3xl font-bold text-gray-800">
+                    {activeForm === "login" ? "Login" : "Create Account"}
+                  </h1>
+                  <p className="text-gray-600">
+                    {activeForm === "login"
+                      ? "Welcome back! Please sign in to your account"
+                      : "Fill up the form to create your account"}
+                  </p>
+                </div>
+
+                <MessageDisplay
+                  successMessage={successMessage}
+                  errorMessage={errorMessage}
+                />
+
+                <GoogleAuthHandler
+                  activeForm={activeForm}
+                  onSuccess={() => {
+                    setSuccessMessage("Google authentication successful!");
+                    navigate("/");
+                  }}
+                  onError={(error) => setErrorMessage(error)}
+                />
+
+                {activeForm === "login" ? (
+                  <LoginForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    formErrors={formErrors}
+                    setFormErrors={setFormErrors}
+                    onSubmit={handleLoginSubmit}
+                    onSwitchForm={() => switchForm("register")}
+                    navigate={navigate}
+                  />
+                ) : (
+                  <RegistrationForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    formErrors={formErrors}
+                    setFormErrors={setFormErrors}
+                    imagePreview={imagePreview}
+                    setImagePreview={setImagePreview}
+                    onSubmit={handleRegistrationSubmit}
+                    onSwitchForm={() => switchForm("login")}
+                  />
+                )}
+              </div>
             </div>
-
-            <MessageDisplay
-              successMessage={successMessage}
-              errorMessage={errorMessage}
-            />
-
-            <GoogleAuthHandler
-              activeForm={activeForm}
-              onSuccess={() => {
-                setSuccessMessage("Google authentication successful!");
-                navigate("/");
-              }}
-              onError={(error) => setErrorMessage(error)}
-            />
-
-            {activeForm === "login" ? (
-              <LoginForm
-                formData={formData}
-                setFormData={setFormData}
-                formErrors={formErrors}
-                setFormErrors={setFormErrors}
-                onSubmit={handleLoginSubmit}
-                onSwitchForm={() => switchForm("register")}
-                navigate={navigate}
-              />
-            ) : (
-              <RegistrationForm
-                formData={formData}
-                setFormData={setFormData}
-                formErrors={formErrors}
-                setFormErrors={setFormErrors}
-                imagePreview={imagePreview}
-                setImagePreview={setImagePreview}
-                onSubmit={handleRegistrationSubmit}
-                onSwitchForm={() => switchForm("login")}
-              />
-            )}
           </div>
         </div>
       </div>
