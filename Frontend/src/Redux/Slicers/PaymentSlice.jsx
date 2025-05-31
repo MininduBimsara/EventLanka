@@ -153,7 +153,8 @@ export const checkPaymentStatus = createAsyncThunk(
     try {
       // console.log("Checking payment status:", { paymentIntentId, orderId });
       const response = await axios.get(
-        `${PAYMENT_API_URL}/status/${paymentIntentId}?orderId=${orderId}`
+        `${PAYMENT_API_URL}/status/${paymentIntentId}?orderId=${orderId}`,
+        { timeout: 10000 } // 10 second timeout
       );
       return response.data;
     } catch (error) {

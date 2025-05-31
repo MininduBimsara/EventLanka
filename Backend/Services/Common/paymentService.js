@@ -423,22 +423,59 @@ class PaymentService {
    * @returns {Promise<Object>} Payment status data
    */
   async checkPaymentStatus(paymentIntentId, orderId, userId) {
-    // Validate order ownership
-    const order = await this.validateOrderOwnership(orderId, userId);
+    try {
+      // Validate order ownership first
+      const order = await this.validateOrderOwnership(orderId, userId);
 
-    // Find payment record
-    const payment = await Payment.findOne({
-      "payment_details.payment_intent_id": paymentIntentId,
-    });
+      // Try multiple ways to find the payment record
+      let payment = null;
 
-    if (!payment) {
-      throw new Error("Payment record not found");
+      // Method 1: Search by PayPal order ID
+      payment = await Payment.findOne({
+        "payment_details.paypal_order_id": paymentIntentId,
+      }).populate("event_id", "title date location");
+
+      // Method 2: If not found, search by transaction ID pattern
+      if (!payment) {
+        payment = await Payment.findOne({
+          transaction_id: { $regex: paymentIntentId, $options: "i" },
+        }).populate("event_id", "title date location");
+      }
+
+      // Method 3: If still not found, search by user and event
+      if (!payment && order) {
+        payment = await Payment.findOne({
+          user_id: userId,
+          event_id: order.tickets[0]?.event_id,
+          payment_status: "completed",
+        })
+          .populate("event_id", "title date location")
+          .sort({ createdAt: -1 }); // Get the most recent one
+      }
+
+      if (!payment) {
+        return {
+          success: false,
+          message: "Payment record not found",
+          payment: null,
+        };
+      }
+
+      // Verify payment belongs to the user
+      if (payment.user_id.toString() !== userId.toString()) {
+        throw new Error("Not authorized to access this payment");
+      }
+
+      return {
+        success: true,
+        status: payment.payment_status,
+        payment: payment,
+        message: "Payment found successfully",
+      };
+    } catch (error) {
+      console.error("Error in checkPaymentStatus:", error);
+      throw new Error(`Failed to check payment status: ${error.message}`);
     }
-
-    return {
-      status: payment.status,
-      payment,
-    };
   }
 
   /**
