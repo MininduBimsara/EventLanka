@@ -18,7 +18,10 @@ import {
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
-import { googleLogout, clearGoogleUser } from "../../Redux/Slicers/GoogleAuthSlice";
+import {
+  googleLogout,
+  clearGoogleUser,
+} from "../../Redux/Slicers/GoogleAuthSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -148,7 +151,7 @@ const Navbar = () => {
         </button>
       );
     } else if (user?.role === "admin" || user?.role === "organizer") {
-      // Admin or Organizer - show dashboard button
+      // Admin or Organizer - show dashboard button and logout button
       return (
         <div className="flex space-x-2">
           <button
@@ -156,19 +159,20 @@ const Navbar = () => {
             className="flex items-center px-4 py-1.5 text-sm font-medium text-white transition-colors bg-blue-600 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
             <FaTachometerAlt className="mr-2" />
-            <span className="hidden sm:inline">
+            <span className="hidden lg:inline">
               {user.role === "admin"
                 ? "Admin Dashboard"
                 : "Organizer Dashboard"}
             </span>
-            <span className="sm:hidden">Dashboard</span>
+            <span className="lg:hidden">Dashboard</span>
           </button>
           <button
             onClick={handleLogoutClick}
             className="flex items-center px-3 py-1.5 text-sm font-medium text-white transition-colors bg-gray-700 rounded-full hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            title="Logout" // Add tooltip for when text is hidden
           >
-            <FaSignOutAlt className="mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Logout</span>
+            <FaSignOutAlt className="mr-0 md:mr-2" />
+            <span className="hidden md:inline">Logout</span>
           </button>
         </div>
       );
