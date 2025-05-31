@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   downloadReceipt,
@@ -15,6 +15,7 @@ const PaymentSuccessPage = () => {
   const { currentPayment, downloading, paymentHistory } = useSelector(
     (state) => state.payments
   );
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch payment history to get the latest transaction
@@ -166,8 +167,8 @@ const PaymentSuccessPage = () => {
 
             {/* View Tickets Button */}
             <div className="mt-4">
-              <Link
-                to="/my-tickets"
+              <button
+                onClick={() => navigate("/user/mybookings")}
                 className="flex items-center justify-center w-full py-3 font-medium text-white transition-colors bg-green-600 rounded-lg hover:bg-green-700"
               >
                 <svg
@@ -184,13 +185,13 @@ const PaymentSuccessPage = () => {
                   ></path>
                 </svg>
                 View My Tickets
-              </Link>
+              </button>
             </div>
 
             {/* View All Transactions */}
             <div className="mt-4">
-              <Link
-                to="/my-transactions"
+              <button
+                onClick={() => navigate("/user/transactions")}
                 className="flex items-center justify-center w-full py-3 font-medium text-purple-600 transition-colors border-2 border-purple-600 rounded-lg hover:bg-purple-600 hover:text-white"
               >
                 <svg
@@ -207,14 +208,17 @@ const PaymentSuccessPage = () => {
                   ></path>
                 </svg>
                 View All Transactions
-              </Link>
+              </button>
             </div>
 
             {/* Back to Events */}
             <div className="mt-8 text-center">
-              <Link to="/events" className="text-purple-600 hover:underline">
+              <button
+                onClick={() => navigate("eventbrowsing")}
+                className="text-purple-600 hover:underline"
+              >
                 Browse More Events
-              </Link>
+              </button>
             </div>
 
             {/* Confetti Animation Effect */}

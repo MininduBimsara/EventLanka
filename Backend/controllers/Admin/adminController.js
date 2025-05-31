@@ -5,7 +5,7 @@ exports.getDashboardStats = async (req, res) => {
     const stats = await adminService.getDashboardStatistics();
     res.json(stats);
   } catch (err) {
-    console.error("Dashboard stats error:", err);
+    // console.error("Dashboard stats error:", err);
     res.status(500).json({ error: "Server error in dashboard stats" });
   }
 };
@@ -15,7 +15,7 @@ exports.getSettings = async (req, res) => {
     const settings = await adminService.getPlatformSettings(req.user.id);
     res.json(settings);
   } catch (err) {
-    console.error("Get settings error:", err);
+    // console.error("Get settings error:", err);
 
     // Handle specific authorization errors
     if (err.message.includes("Not authorized")) {
@@ -34,7 +34,7 @@ exports.updateSettings = async (req, res) => {
     );
     res.json(updatedSettings);
   } catch (err) {
-    console.error("Update settings error:", err);
+    // console.error("Update settings error:", err);
 
     // Handle specific authorization errors
     if (err.message.includes("Not authorized")) {
@@ -57,7 +57,7 @@ exports.changeAdminPassword = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("Change password error:", err);
+    // console.error("Change password error:", err);
 
     // Handle specific validation errors
     if (err.message.includes("All fields are required")) {
@@ -88,7 +88,7 @@ exports.updateAdminProfile = async (req, res) => {
     const result = await adminService.updateAdminProfile(req.user.id, req.body);
     res.json(result);
   } catch (err) {
-    console.error("Update admin profile error:", err);
+    // console.error("Update admin profile error:", err);
 
     // Handle specific errors
     if (err.message.includes("User not found")) {
@@ -110,7 +110,7 @@ exports.getAdminProfile = async (req, res) => {
     const adminProfile = await adminService.getAdminProfile(req.user.id);
     res.json(adminProfile);
   } catch (err) {
-    console.error("Get admin profile error:", err);
+    // console.error("Get admin profile error:", err);
 
     // Handle specific errors
     if (

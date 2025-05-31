@@ -5,7 +5,7 @@ const analyticsService = require("../../Services/Admin/analyticsService");
  */
 exports.getAnalyticsData = async (req, res) => {
   try {
-    console.log("Analytics API called with params:", req.query);
+    // console.log("Analytics API called with params:", req.query);
 
     // Extract date range from query parameters
     const { startDate, endDate } = req.query;
@@ -14,10 +14,10 @@ exports.getAnalyticsData = async (req, res) => {
     // Get analytics data from service
     const analyticsData = await analyticsService.getAnalyticsData(dateRange);
 
-    console.log("Sending analytics response...");
+    // console.log("Sending analytics response...");
     res.json(analyticsData);
   } catch (err) {
-    console.error("Analytics data error:", err);
+    // console.error("Analytics data error:", err);
     res.status(500).json({
       error: "Server error in analytics data",
       message: err.message,
@@ -39,7 +39,7 @@ exports.getRevenueAnalytics = async (req, res) => {
       period,
     });
   } catch (err) {
-    console.error("Revenue analytics error:", err);
+    // console.error("Revenue analytics error:", err);
     res.status(500).json({
       error: "Server error in revenue analytics",
       message: err.message,
@@ -59,7 +59,7 @@ exports.getCategoryAnalytics = async (req, res) => {
       data: categoryData,
     });
   } catch (err) {
-    console.error("Category analytics error:", err);
+    // console.error("Category analytics error:", err);
     res.status(500).json({
       error: "Server error in category analytics",
       message: err.message,
@@ -85,7 +85,7 @@ exports.getTopPerformers = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Top performers analytics error:", err);
+    // console.error("Top performers analytics error:", err);
     res.status(500).json({
       error: "Server error in top performers analytics",
       message: err.message,
@@ -114,7 +114,7 @@ exports.getUserGrowthAnalytics = async (req, res) => {
       dateRange: { startDate: start, endDate: end },
     });
   } catch (err) {
-    console.error("User growth analytics error:", err);
+    // console.error("User growth analytics error:", err);
     res.status(500).json({
       error: "Server error in user growth analytics",
       message: err.message,
@@ -134,7 +134,7 @@ exports.getPlatformStatistics = async (req, res) => {
       data: statistics,
     });
   } catch (err) {
-    console.error("Platform statistics error:", err);
+    // console.error("Platform statistics error:", err);
     res.status(500).json({
       error: "Server error in platform statistics",
       message: err.message,
@@ -163,7 +163,7 @@ exports.getRevenueData = async (req, res) => {
       dateRange: { startDate: start, endDate: end },
     });
   } catch (err) {
-    console.error("Revenue data error:", err);
+    // console.error("Revenue data error:", err);
     res.status(500).json({
       error: "Server error in revenue data",
       message: err.message,
@@ -212,7 +212,7 @@ exports.getAnalyticsSummary = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Analytics summary error:", err);
+    // console.error("Analytics summary error:", err);
     res.status(500).json({
       error: "Server error in analytics summary",
       message: err.message,
@@ -311,7 +311,7 @@ exports.getCustomAnalytics = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Custom analytics error:", err);
+    // console.error("Custom analytics error:", err);
     res.status(500).json({
       error: "Server error in custom analytics",
       message: err.message,

@@ -9,7 +9,7 @@ exports.getProfile = asyncHandler(async (req, res) => {
     );
     res.status(200).json(organizerData);
   } catch (error) {
-    console.error("Error fetching organizer profile:", error);
+    // console.error("Error fetching organizer profile:", error);
     if (error.message === "Organizer not found") {
       return res.status(404).json({ message: error.message });
     }
