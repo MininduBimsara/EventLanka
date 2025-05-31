@@ -1,4 +1,9 @@
 import React from "react";
+import newImg1 from "../../../assets/2.jpeg";
+import newImg2 from "../../../assets/3.jpeg";
+import newImg3 from "../../../assets/4.png";
+import { image } from "framer-motion/client";
+
 
 export const Story = () => {
   const storyElements = [
@@ -8,6 +13,7 @@ export const Story = () => {
       content:
         "It all started with a missed concert. Our founders, tired of complicated booking processes and sold-out shows, decided there had to be a better way to connect people with the events they love. In 2018, from a tiny apartment and a big dream, Festiva was born.",
       imageAlt: "The beginning",
+      image: newImg1,
       rotate: "rotate-3",
       containerColor: "bg-pink-400",
     },
@@ -17,6 +23,7 @@ export const Story = () => {
       content:
         "What began as a simple ticket marketplace quickly evolved into a community. We partnered with venues, artists, and event creators who shared our vision. Together, we've built more than just a platform—we've created a movement that celebrates the magic of live experiences.",
       imageAlt: "Company growth",
+      image: newImg2,
       rotate: "-rotate-3",
       containerColor: "bg-blue-800",
     },
@@ -26,6 +33,7 @@ export const Story = () => {
       content:
         "Now, with millions of users across the country, we're just getting started. Our vision extends beyond tickets—we're building a platform where memories are made, communities are formed, and culture thrives. As we grow, our commitment remains the same: to make every event an unforgettable experience.",
       imageAlt: "Our vision",
+      image: newImg3,
       rotate: "rotate-3",
       containerColor: "bg-pink-400",
     },
@@ -71,9 +79,9 @@ export const Story = () => {
                       className={`absolute inset-0 transform ${element.containerColor} rounded-lg ${element.rotate}`}
                     ></div>
                     <img
-                      src="/api/placeholder/600/400"
+                      src={element.image}
                       alt={element.imageAlt}
-                      className={`relative transition-all duration-500 transform rounded-lg ${
+                      className={`relative w-90 h-90  transition-all duration-500 transform rounded-lg ${
                         element.rotate === "rotate-3" ? "-rotate-3" : "rotate-3"
                       } hover:rotate-0`}
                     />

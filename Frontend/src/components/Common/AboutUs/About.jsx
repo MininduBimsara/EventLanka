@@ -1,4 +1,5 @@
 import React from "react";
+import aboutImg from "../../../assets/1.jpg";
 
 const About = () => {
   return (
@@ -27,7 +28,7 @@ const About = () => {
           <div className="order-2 md:order-1">
             <p className="mb-6 text-lg leading-relaxed text-gray-700">
               Welcome to{" "}
-              <span className="font-bold text-blue-900">Festiva!</span> – where
+              <span className="font-bold text-blue-900">EventLanka!</span> – where
               every ticket opens the door to unforgettable experiences. We're
               not just an event platform; we're your personal guide to a world
               of entertainment, culture, and celebration.
@@ -72,7 +73,7 @@ const About = () => {
                 </div>
 
                 <img
-                  src="/api/placeholder/600/400"
+                  src={aboutImg}
                   alt="People enjoying an event"
                   className="w-full h-auto transition-transform duration-500 transform group-hover:scale-105"
                 />

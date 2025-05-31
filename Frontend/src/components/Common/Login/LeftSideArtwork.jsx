@@ -1,5 +1,7 @@
 // 2. Left Side Artwork Component (components/LeftSideArtwork.jsx)
 import React from "react";
+import { loginUser } from "../../../Redux/Slicers/AuthSlice";
+import loginImg from "../../../assets/login.png";
 
 const LeftSideArtwork = ({ activeForm }) => {
   return (
@@ -8,7 +10,7 @@ const LeftSideArtwork = ({ activeForm }) => {
       <div
         className="absolute inset-0 bg-center bg-no-repeat bg-cover"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80')`,
+          backgroundImage: `url(${loginImg})`,
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 to-indigo-800/80"></div>

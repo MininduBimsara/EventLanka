@@ -20,6 +20,11 @@ import { Team } from "../../components/Common/AboutUs/Team";
 import { CalltoAction } from "../../components/Common/AboutUs/CalltoAction";
 import Navbar from "../../components/Common/Navbar";
 
+import newImg1 from "../../assets/6.jpg";
+import newImg2 from "../../assets/7.jpg";
+import newImg3 from "../../assets/8.jpg";
+import newImg4 from "../../assets/9.jpg";
+
 const AboutPage = () => {
   const [animateCounter, setAnimateCounter] = useState(false);
   const [counters, setCounters] = useState({ events: 0, users: 0, tickets: 0 });
@@ -151,22 +156,22 @@ const AboutPage = () => {
     {
       name: "Jordan Rivera",
       role: "Founder & CEO",
-      image: "/api/placeholder/200/200",
+      image: newImg1,
     },
     {
       name: "Casey Wong",
       role: "Event Director",
-      image: "/api/placeholder/200/200",
+      image: newImg2,
     },
     {
       name: "Taylor Morgan",
       role: "Head of Design",
-      image: "/api/placeholder/200/200",
+      image: newImg4,
     },
     {
       name: "Alex Johnson",
       role: "Customer Experience",
-      image: "/api/placeholder/200/200",
+      image: newImg3,
     },
   ];
 
