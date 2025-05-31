@@ -14,7 +14,7 @@ import HowItWorks from "../../components/Common/HomePage/HowItWorks";
 import HeroSection from "../../components/Common/HomePage/HeroSection";
 import FeaturedEvents from "../../components/Common/HomePage/FeaturedEvents";
 import GradientSync from "../../components/Common/HomePage/GradientSync";
-import MouseEffect from "../../Artifacts/MouseEffects";
+// import MouseEffect from "../../Artifacts/MouseEffects";
 
 // Main NewHome Component
 function NewHome() {
@@ -25,7 +25,7 @@ function NewHome() {
         <Navbar />
         <GradientSync />
         <HeroSection />
-        <MouseEffect />
+        {/* <MouseEffect /> */}
         <FeaturedEvents />
         <TrendingEventsSlider />
         <HowItWorks />

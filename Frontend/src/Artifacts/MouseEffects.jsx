@@ -1,82 +1,125 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
-const MouseEffect = () => {
+const MinimalisticMouseEffect = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isVisible, setIsVisible] = useState(false);
+  const [trail, setTrail] = useState([]);
+  const [isActive, setIsActive] = useState(false);
+  const trailRef = useRef([]);
+  const animationFrameRef = useRef();
+  const lastPositionRef = useRef({ x: 0, y: 0 });
+
+  const updateTrail = useCallback(() => {
+    setTrail([...trailRef.current]);
+
+    // Fade out particles gradually
+    trailRef.current = trailRef.current
+      .map((particle) => ({
+        ...particle,
+        opacity: particle.opacity - 0.05,
+        scale: particle.scale * 0.99,
+      }))
+      .filter((particle) => particle.opacity > 0.1);
+
+    if (trailRef.current.length > 0) {
+      animationFrameRef.current = requestAnimationFrame(updateTrail);
+    }
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-      setIsVisible(true);
+      const newPosition = { x: e.clientX, y: e.clientY };
+      setMousePosition(newPosition);
+      setIsActive(true);
+
+      // Calculate velocity for subtle trail effect
+      const velocity = Math.sqrt(
+        Math.pow(newPosition.x - lastPositionRef.current.x, 2) +
+          Math.pow(newPosition.y - lastPositionRef.current.y, 2)
+      );
+
+      // Add subtle trail dots only on movement
+      if (velocity > 3 && trailRef.current.length < 8) {
+        const particle = {
+          id: Date.now() + Math.random(),
+          x: lastPositionRef.current.x,
+          y: lastPositionRef.current.y,
+          opacity: 0.4,
+          scale: 0.6,
+        };
+        trailRef.current.push(particle);
+      }
+
+      lastPositionRef.current = newPosition;
+
+      // Start animation loop if not already running
+      if (!animationFrameRef.current && trailRef.current.length > 0) {
+        updateTrail();
+      }
     };
 
     const handleMouseLeave = () => {
-      setIsVisible(false);
+      setIsActive(false);
+    };
+
+    const handleMouseEnter = () => {
+      setIsActive(true);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener("mouseenter", handleMouseEnter);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("mouseenter", handleMouseEnter);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [updateTrail]);
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, []);
 
   return (
-    <>
-      {/* Main cursor effect */}
+    <div className="fixed inset-0 z-50 pointer-events-none">
+      {/* Subtle main cursor */}
       <div
-        className={`fixed top-0 left-0 pointer-events-none z-50 transition-opacity duration-300 ${
-          isVisible ? "opacity-100" : "opacity-0"
+        className={`absolute transition-opacity duration-200 ${
+          isActive ? "opacity-100" : "opacity-0"
         }`}
         style={{
-          transform: `translate(${mousePosition.x - 20}px, ${
-            mousePosition.y - 20
-          }px)`,
+          left: mousePosition.x - 6,
+          top: mousePosition.y - 6,
+          transform: "translate3d(0, 0, 0)",
         }}
       >
-        {/* Outer glow */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 blur-md animate-pulse"></div>
+        {/* Simple glowing dot */}
+        <div className="w-3 h-3 rounded-full bg-purple-500/40 blur-sm"></div>
+        <div className="absolute w-1 h-1 bg-purple-400 rounded-full inset-1"></div>
+      </div>
 
-        {/* Inner dot */}
+      {/* Minimal trail dots */}
+      {trail.map((particle) => (
         <div
-          className="absolute w-2 h-2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 left-1/2"
+          key={particle.id}
+          className="absolute w-1 h-1 rounded-full bg-purple-400/60"
           style={{
-            boxShadow: "0 0 10px rgba(139, 92, 246, 0.6)",
+            left: particle.x,
+            top: particle.y,
+            transform: `scale(${particle.scale})`,
+            opacity: particle.opacity,
           }}
-        ></div>
-      </div>
-
-      {/* Trailing effect */}
-      <div
-        className={`fixed top-0 left-0 pointer-events-none z-40 transition-all duration-700 ease-out ${
-          isVisible ? "opacity-60" : "opacity-0"
-        }`}
-        style={{
-          transform: `translate(${mousePosition.x - 30}px, ${
-            mousePosition.y - 30
-          }px)`,
-        }}
-      >
-        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-lg"></div>
-      </div>
-
-      {/* Secondary trailing effect */}
-      <div
-        className={`fixed top-0 left-0 pointer-events-none z-30 transition-all duration-1000 ease-out ${
-          isVisible ? "opacity-40" : "opacity-0"
-        }`}
-        style={{
-          transform: `translate(${mousePosition.x - 40}px, ${
-            mousePosition.y - 40
-          }px)`,
-        }}
-      >
-        <div className="w-20 h-20 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 blur-xl"></div>
-      </div>
-    </>
+        />
+      ))}
+    </div>
   );
 };
 
-export default MouseEffect;
+export default MinimalisticMouseEffect;

@@ -17,8 +17,8 @@ const FormField = ({
 }) => {
   const inputClass =
     size === "small"
-      ? "w-full p-2 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none"
-      : "w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-purple-500 focus:outline-none";
+      ? "w-full p-2 pl-10 bg-white border border-gray-200 rounded-md focus:border-blue-600 focus:outline-none transition-colors duration-200"
+      : "w-full p-3 pl-10 bg-white border border-gray-200 rounded-md focus:border-blue-600 focus:outline-none transition-colors duration-200";
 
   return (
     <div className={size === "small" ? "" : "mb-4"}>

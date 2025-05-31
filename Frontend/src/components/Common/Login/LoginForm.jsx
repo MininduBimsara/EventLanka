@@ -32,13 +32,13 @@ const LoginForm = ({
   };
 
   return (
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} className="space-y-4">
       <FormField
         id="login-email"
         name="email"
         type="email"
         label="Email"
-        placeholder="Your email address"
+        placeholder="name@company.com"
         icon={Mail}
         value={formData.email}
         onChange={handleInputChange}
@@ -46,7 +46,7 @@ const LoginForm = ({
         required
       />
 
-      <div className="mb-6">
+      <div>
         <div className="flex items-center justify-between mb-2">
           <label
             className="block text-sm font-bold text-gray-700"
@@ -56,7 +56,8 @@ const LoginForm = ({
           </label>
           <button
             type="button"
-            className="text-sm text-purple-600 hover:text-purple-800"
+            className="text-sm transition-all duration-200 hover:underline"
+            style={{ color: "#1F40AF" }}
             onClick={() => navigate("/forgot-password")}
           >
             Forgot Password?
@@ -66,7 +67,7 @@ const LoginForm = ({
           id="login-password"
           name="password"
           type="password"
-          placeholder="Your password"
+          placeholder="••••••••"
           icon={Lock}
           value={formData.password}
           onChange={handleInputChange}
@@ -76,24 +77,42 @@ const LoginForm = ({
         />
       </div>
 
+      <div className="flex items-center">
+        <input
+          id="remember-me"
+          name="remember-me"
+          type="checkbox"
+          className="w-4 h-4 transition-colors duration-200 border-gray-300 rounded focus:ring-2"
+          style={{
+            accentColor: "#1F40AF",
+            "--tw-ring-color": "#1F40AF",
+          }}
+        />
+        <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">
+          Remember me
+        </label>
+      </div>
+
       <button
         type="submit"
-        className="flex items-center justify-center w-full px-4 py-3 font-bold text-white transition-all duration-300 rounded-md shadow-md bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+        className="w-full px-4 py-3 text-white font-semibold rounded-lg transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5"
+        style={{ backgroundColor: "#1F40AF" }}
+        onMouseEnter={(e) => (e.target.style.backgroundColor = "#1E3A8A")}
+        onMouseLeave={(e) => (e.target.style.backgroundColor = "#1F40AF")}
       >
-        Sign In <ArrowRight size={18} className="ml-2" />
+        LOGIN
       </button>
 
-      <div className="mt-6 text-center">
-        <p className="text-gray-600">
-          Don't have an account?{" "}
-          <button
-            type="button"
-            className="font-medium text-purple-600 hover:text-purple-800"
-            onClick={onSwitchForm}
-          >
-            Register
-          </button>
-        </p>
+      <div className="text-center">
+        <span className="text-gray-600">Do not have an account yet? </span>
+        <button
+          type="button"
+          className="font-semibold transition-all duration-200 hover:underline"
+          style={{ color: "#1F40AF" }}
+          onClick={onSwitchForm}
+        >
+          SIGN UP
+        </button>
       </div>
     </form>
   );
