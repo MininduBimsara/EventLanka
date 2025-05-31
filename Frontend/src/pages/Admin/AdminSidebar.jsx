@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
   LayoutDashboard,
   Settings,
@@ -15,10 +16,20 @@ import {
   FileText,
   Home,
 } from "lucide-react";
+import { fetchAdminProfile } from "../../Redux/Slicers/adminSlice"; // Update with correct path
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+
+  // Get admin profile data from Redux store
+  const { adminProfile, loading, error } = useSelector((state) => state.admin);
+
+  // Fetch admin profile on component mount
+  useEffect(() => {
+    dispatch(fetchAdminProfile());
+  }, [dispatch]);
 
   const menuItems = [
     {
@@ -46,16 +57,6 @@ const Sidebar = () => {
       icon: <Users className="w-5 h-5" />,
       path: "/admin/organizers",
     },
-    // {
-    //   title: "Refund Requests",
-    //   icon: <ArrowLeftRight className="w-5 h-5" />,
-    //   path: "/admin/refund-requests",
-    // },
-    // {
-    //   title: "Reports",
-    //   icon: <BarChart2 className="w-5 h-5" />,
-    //   path: "/admin/reports",
-    // },
     {
       title: "Transactions",
       icon: <ArrowLeftRight className="w-5 h-5" />,
@@ -66,7 +67,6 @@ const Sidebar = () => {
       icon: <Users className="w-5 h-5" />,
       path: "/admin/users",
     },
-    
   ];
 
   return (
@@ -109,16 +109,55 @@ const Sidebar = () => {
         </div>
       </div>
 
+      {/* Updated Admin Profile Section */}
       <div className="w-64 p-4 mt-auto border-t border-gray-700">
         <div className="flex items-center">
           <div className="w-10 h-10 mr-3 overflow-hidden bg-gray-700 rounded-full">
-            <div className="flex items-center justify-center h-full text-gray-300">
+            {adminProfile?.profileImage ? (
+              <img
+                src={adminProfile.profileImage}
+                alt="Admin Profile"
+                className="object-cover w-full h-full"
+                onError={(e) => {
+                  // Fallback to user icon if image fails to load
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "flex";
+                }}
+              />
+            ) : null}
+            <div
+              className={`flex items-center justify-center h-full text-gray-300 ${
+                adminProfile?.profileImage ? "hidden" : ""
+              }`}
+            >
               <User className="w-6 h-6" />
             </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-300">Admin User</p>
-            <p className="text-xs text-gray-500">System Administrator</p>
+          <div className="flex-1 min-w-0">
+            {loading ? (
+              <div className="animate-pulse">
+                <div className="w-20 h-4 mb-1 bg-gray-600 rounded"></div>
+                <div className="w-16 h-3 bg-gray-600 rounded"></div>
+              </div>
+            ) : error ? (
+              <div>
+                <p className="text-sm font-medium text-red-400">
+                  Error loading
+                </p>
+                <p className="text-xs text-gray-500">Admin profile</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm font-medium text-gray-300 truncate">
+                  {adminProfile?.name || adminProfile?.username || "Admin User"}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {adminProfile?.role ||
+                    adminProfile?.email ||
+                    "System Administrator"}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

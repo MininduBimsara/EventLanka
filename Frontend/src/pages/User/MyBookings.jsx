@@ -1,4 +1,4 @@
-// MyBookings.jsx
+// MyBookings.jsx - Updated to allow downloads only for completed orders
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../../Context/ThemeContext";
@@ -7,7 +7,7 @@ import {
   cancelOrder,
   generateTicketQRCode,
   downloadTicketPDF,
-} from "../../Redux/Slicers/orderSlice"; // Import the new thunks
+} from "../../Redux/Slicers/orderSlice";
 import {
   FaDownload,
   FaTimes,
@@ -19,11 +19,10 @@ import {
   FaCheck,
   FaMoon,
   FaSun,
-  FaQrcode, // Added QR code icon
+  FaQrcode,
 } from "react-icons/fa";
 import UserNavbar from "../../components/User/UserNavbar";
-import Modal from "../../components/User/Modal"; // Assume you have a Modal component
-
+import Modal from "../../components/User/Modal";
 
 const MyBookings = () => {
   const { darkMode, toggleTheme } = useTheme();
@@ -114,8 +113,12 @@ const MyBookings = () => {
     setOpenActionMenu(null);
   };
 
-  // Download ticket
-  const handleDownloadTicket = (ticketId) => {
+  // Download ticket - only for completed orders
+  const handleDownloadTicket = (ticketId, orderStatus) => {
+    if (orderStatus.toLowerCase() !== "completed") {
+      alert("Tickets can only be downloaded for completed orders.");
+      return;
+    }
     dispatch(downloadTicketPDF(ticketId));
     setOpenActionMenu(null);
   };
@@ -141,6 +144,11 @@ const MyBookings = () => {
     } else {
       setOpenActionMenu(id);
     }
+  };
+
+  // Check if download is allowed for the order
+  const isDownloadAllowed = (orderStatus) => {
+    return orderStatus.toLowerCase() === "completed";
   };
 
   // Theme-based classes
@@ -338,17 +346,31 @@ const MyBookings = () => {
                                           <FaQrcode className="mr-3 text-blue-500" />
                                           Show QR Code
                                         </button>
-                                        <button
-                                          onClick={() =>
-                                            handleDownloadTicket(
-                                              booking.tickets[0]._id
-                                            )
-                                          }
-                                          className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
-                                        >
-                                          <FaDownload className="mr-3 text-blue-500" />
-                                          Download Ticket
-                                        </button>
+
+                                        {/* Download button - only show for completed orders */}
+                                        {isDownloadAllowed(booking.status) ? (
+                                          <button
+                                            onClick={() =>
+                                              handleDownloadTicket(
+                                                booking.tickets[0]._id,
+                                                booking.status
+                                              )
+                                            }
+                                            className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                          >
+                                            <FaDownload className="mr-3 text-blue-500" />
+                                            Download Ticket
+                                          </button>
+                                        ) : (
+                                          <button
+                                            disabled
+                                            className="flex items-center w-full px-4 py-2 text-sm text-gray-400 cursor-not-allowed"
+                                            title="Tickets can only be downloaded for completed orders"
+                                          >
+                                            <FaDownload className="mr-3 text-gray-400" />
+                                            Download Ticket
+                                          </button>
+                                        )}
                                       </>
                                     )}
                                   {booking.status === "Pending" && (
@@ -425,14 +447,29 @@ const MyBookings = () => {
                                 >
                                   <FaQrcode className="mr-1.5" /> QR Code
                                 </button>
-                                <button
-                                  onClick={() =>
-                                    handleDownloadTicket(booking.tickets[0]._id)
-                                  }
-                                  className="flex items-center px-4 py-2 text-sm text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
-                                >
-                                  <FaDownload className="mr-1.5" /> Ticket
-                                </button>
+
+                                {/* Download button - only show for completed orders */}
+                                {isDownloadAllowed(booking.status) ? (
+                                  <button
+                                    onClick={() =>
+                                      handleDownloadTicket(
+                                        booking.tickets[0]._id,
+                                        booking.status
+                                      )
+                                    }
+                                    className="flex items-center px-4 py-2 text-sm text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
+                                  >
+                                    <FaDownload className="mr-1.5" /> Ticket
+                                  </button>
+                                ) : (
+                                  <button
+                                    disabled
+                                    className="flex items-center px-4 py-2 text-sm text-gray-400 bg-gray-300 rounded-md cursor-not-allowed"
+                                    title="Tickets can only be downloaded for completed orders"
+                                  >
+                                    <FaDownload className="mr-1.5" /> Ticket
+                                  </button>
+                                )}
                               </>
                             )}
                         </div>
@@ -515,12 +552,41 @@ const MyBookings = () => {
                     Close
                   </button>
                   {selectedTicket && (
-                    <button
-                      onClick={() => handleDownloadTicket(selectedTicket._id)}
-                      className="flex items-center px-4 py-2 text-sm text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
-                    >
-                      <FaDownload className="mr-1.5" /> Download PDF
-                    </button>
+                    <>
+                      {/* Get the booking status for the modal download button */}
+                      {(() => {
+                        const booking = filteredBookings.find(
+                          (b) =>
+                            b.tickets &&
+                            b.tickets.some((t) => t._id === selectedTicket._id)
+                        );
+                        const bookingStatus = booking
+                          ? booking.status
+                          : "Pending";
+
+                        return isDownloadAllowed(bookingStatus) ? (
+                          <button
+                            onClick={() =>
+                              handleDownloadTicket(
+                                selectedTicket._id,
+                                bookingStatus
+                              )
+                            }
+                            className="flex items-center px-4 py-2 text-sm text-white transition bg-blue-600 rounded-md hover:bg-blue-700"
+                          >
+                            <FaDownload className="mr-1.5" /> Download PDF
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="flex items-center px-4 py-2 text-sm text-gray-400 bg-gray-300 rounded-md cursor-not-allowed"
+                            title="Tickets can only be downloaded for completed orders"
+                          >
+                            <FaDownload className="mr-1.5" /> Download PDF
+                          </button>
+                        );
+                      })()}
+                    </>
                   )}
                 </div>
               </>
