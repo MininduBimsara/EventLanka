@@ -48,7 +48,35 @@ const MyBookings = () => {
 
   // Format the orders data
   const formatOrders = (orders) => {
-    return orders.map((order) => {
+    // First sort the orders by creation date (latest first)
+    const sortedOrders = [...orders].sort((a, b) => {
+      // Try to sort by order creation date first
+      const dateA = new Date(a.createdAt || a.created_at || a.order_date);
+      const dateB = new Date(b.createdAt || b.created_at || b.order_date);
+
+      // If creation dates are available, sort by them
+      if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+        return dateB - dateA; // Latest first
+      }
+
+      // Fallback: sort by event date if creation date is not available
+      const firstTicketA =
+        a.tickets && a.tickets.length > 0 ? a.tickets[0] : null;
+      const firstTicketB =
+        b.tickets && b.tickets.length > 0 ? b.tickets[0] : null;
+      const eventDateA =
+        firstTicketA && firstTicketA.event_id
+          ? new Date(firstTicketA.event_id.date)
+          : new Date(0);
+      const eventDateB =
+        firstTicketB && firstTicketB.event_id
+          ? new Date(firstTicketB.event_id.date)
+          : new Date(0);
+
+      return eventDateB - eventDateA; // Latest first
+    });
+
+    return sortedOrders.map((order) => {
       const firstTicket =
         order.tickets && order.tickets.length > 0 ? order.tickets[0] : null;
       const eventData =
