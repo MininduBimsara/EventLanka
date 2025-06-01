@@ -1,16 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/events"; // Events API URL
+import { eventsApiService } from "./api/eventsApi";
 
 // Async thunk for fetching all events
 export const fetchEvents = createAsyncThunk(
   "events/fetchEvents",
   async (_, { rejectWithValue }) => {
     try {
-      // Include withCredentials to send cookies with request
-      const response = await axios.get(API_URL, { withCredentials: true });
-      return response.data;
+      return await eventsApiService.fetchEvents();
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch events"
@@ -19,58 +15,25 @@ export const fetchEvents = createAsyncThunk(
   }
 );
 
-
 // Async thunk for fetching all events without permission
 export const fetchAllEvents = createAsyncThunk(
   "events/fetchAllEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        "http://localhost:5000/api/events/public/all",
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Ensure the response is an array
-      const events = Array.isArray(response.data) ? response.data : [];
-
-      // Ensure banner paths are properly formatted
-      return events.map((event) => ({
-        ...event,
-        // Make sure banner path is consistently formatted
-        banner: event.banner || null,
-      }));
+      return await eventsApiService.fetchAllEvents();
     } catch (error) {
       console.error("Fetch all events error:", error);
       return rejectWithValue("Failed to fetch events");
     }
   }
 );
+
 // Async thunk for creating a new event
 export const createEvent = createAsyncThunk(
   "events/createEvent",
   async (eventData, { rejectWithValue }) => {
     try {
-      let response;
-
-      // Check if eventData is FormData (for file uploads) or regular object
-      if (eventData instanceof FormData) {
-        response = await axios.post(API_URL, eventData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true, // Include cookies for auth
-        });
-      } else {
-        response = await axios.post(API_URL, eventData, {
-          withCredentials: true, // Include cookies for auth
-        });
-      }
-
-      return response.data;
+      return await eventsApiService.createEvent(eventData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create event"
@@ -84,22 +47,7 @@ export const updateEvent = createAsyncThunk(
   "events/updateEvent",
   async ({ eventId, eventData }, { rejectWithValue }) => {
     try {
-      let response;
-
-      if (eventData instanceof FormData) {
-        response = await axios.put(`${API_URL}/${eventId}`, eventData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true, // Include cookies for auth
-        });
-      } else {
-        response = await axios.put(`${API_URL}/${eventId}`, eventData, {
-          withCredentials: true, // Include cookies for auth
-        });
-      }
-
-      return response.data;
+      return await eventsApiService.updateEvent(eventId, eventData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update event"
@@ -113,10 +61,7 @@ export const deleteEvent = createAsyncThunk(
   "events/deleteEvent",
   async (eventId, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_URL}/${eventId}`, {
-        withCredentials: true, // Include cookies for auth
-      });
-      return eventId; // Return the ID to remove it from state
+      return await eventsApiService.deleteEvent(eventId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete event"
@@ -125,26 +70,18 @@ export const deleteEvent = createAsyncThunk(
   }
 );
 
-// In EventSlice.jsx, modify the fetchEventById thunk
+// Async thunk for fetching event by ID
 export const fetchEventById = createAsyncThunk(
   "events/fetchEventById",
   async (eventId, { rejectWithValue }) => {
     try {
-      
-      const response = await axios.get(`${API_URL}/${eventId}`, {
-        withCredentials: true,
-      });
-
-      // Check if booking is available
-      if (!response.data.bookingAvailable) {
-        return rejectWithValue("Booking is not available for this event");
-      }
-
-      return response.data;
+      return await eventsApiService.fetchEventById(eventId);
     } catch (error) {
       console.error("API error:", error);
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch event details"
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch event details"
       );
     }
   }

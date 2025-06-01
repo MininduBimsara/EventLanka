@@ -1,6 +1,6 @@
 // src/redux/userSlice.jsx
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { userApi } from "../api/userApi"; // Import the API layer
+import { userApi } from "../../Api/User/userApi"; // Import the API layer
 
 // Helper function to safely get user ID
 export const getUserId = (state) => {

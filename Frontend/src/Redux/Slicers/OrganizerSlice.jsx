@@ -1,31 +1,19 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-import { getUserId } from "./userSlice";
-
-// Base URL for organizer API endpoints
-const ORGANIZER_API_URL = "http://localhost:5000/api/organizer";
-
-// Set default axios config
-axios.defaults.withCredentials = true;
+import {
+  eventApi,
+  attendeeApi,
+  qrCodeApi,
+  discountApi,
+  salesApi,
+  organizerProfileApi,
+} from "../../Api/Organizer/organizerApi";
 
 // ===== EVENT THUNKS =====
 export const createEvent = createAsyncThunk(
   "organizer/createEvent",
   async (eventData, { rejectWithValue }) => {
     try {
-      // Set the correct content type for FormData (multipart/form-data)
-      const config = {
-        headers: {},
-        withCredentials: true, // Include cookies with the request
-      };
-
-      const response = await axios.post(
-        `${ORGANIZER_API_URL}/events`,
-        eventData,
-        config
-      );
-
-      return response.data;
+      return await eventApi.create(eventData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create event"
@@ -38,25 +26,10 @@ export const updateEvent = createAsyncThunk(
   "organizer/updateEvent",
   async ({ id, eventData }, { rejectWithValue }) => {
     try {
-      // Log what we're sending (for debugging)
       console.log("Updating event with ID:", id);
-
-      // Ensure proper headers for FormData with file uploads
-      const config = {
-        headers: {
-          // Don't set Content-Type manually when sending FormData!
-          // axios will set it automatically with the proper boundary
-        },
-      };
-
-      const response = await axios.put(
-        `${ORGANIZER_API_URL}/events/${id}`,
-        eventData,
-        config
-      );
-
-      console.log("Update response:", response.data);
-      return response.data;
+      const response = await eventApi.update(id, eventData);
+      console.log("Update response:", response);
+      return response;
     } catch (error) {
       console.error(
         "Error updating event:",
@@ -73,8 +46,7 @@ export const getOrganizerEvents = createAsyncThunk(
   "organizer/getEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${ORGANIZER_API_URL}/events`);
-      return response.data;
+      return await eventApi.getAll();
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch events"
@@ -87,16 +59,7 @@ export const getOrganizerEventById = createAsyncThunk(
   "organizer/getEventById",
   async (eventId, { rejectWithValue }) => {
     try {
-      const config = {
-        headers: {},
-        withCredentials: true, // Include cookies with the request
-      };
-
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/events/${eventId}`,
-        config
-      );
-      return response.data;
+      return await eventApi.getById(eventId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch event details"
@@ -109,12 +72,7 @@ export const deleteOrganizerEvent = createAsyncThunk(
   "organizer/deleteEvent",
   async (eventId, { rejectWithValue }) => {
     try {
-      const config = {
-        headers: {},
-        withCredentials: true, // Include cookies with the request
-      };
-      await axios.delete(`${ORGANIZER_API_URL}/events/${eventId}`, config);
-      return eventId;
+      return await eventApi.delete(eventId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete event"
@@ -124,17 +82,11 @@ export const deleteOrganizerEvent = createAsyncThunk(
 );
 
 // ===== ATTENDEE THUNKS =====
-/**
- * Fetch all attendees for a specific event
- */
 export const getEventAttendees = createAsyncThunk(
   "organizer/getEventAttendees",
   async (eventId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/events/${eventId}/attendees`
-      );
-      return response.data;
+      return await attendeeApi.getEventAttendees(eventId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch attendees"
@@ -143,21 +95,11 @@ export const getEventAttendees = createAsyncThunk(
   }
 );
 
-/**
- * Mark attendance for an attendee
- */
 export const markAttendance = createAsyncThunk(
   "organizer/markAttendance",
   async ({ attendeeId, attendanceData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${ORGANIZER_API_URL}/attendees/${attendeeId}/attendance`,
-        attendanceData,
-        {
-          withCredentials: true, // Including credentials if you need them
-        }
-      );
-      return response.data.ticket; // Return the updated ticket object
+      return await attendeeApi.markAttendance(attendeeId, attendanceData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to mark attendance"
@@ -166,17 +108,11 @@ export const markAttendance = createAsyncThunk(
   }
 );
 
-/**
- * Resend confirmation email to an attendee
- */
 export const resendConfirmation = createAsyncThunk(
   "organizer/resendConfirmation",
   async (ticketId, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${ORGANIZER_API_URL}/attendees/${ticketId}/resend-confirmation`
-      );
-      return { ticketId, ...response.data };
+      return await attendeeApi.resendConfirmation(ticketId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to resend confirmation"
@@ -185,45 +121,11 @@ export const resendConfirmation = createAsyncThunk(
   }
 );
 
-/**
- * Export attendee list as CSV or PDF
- */
 export const exportAttendeeList = createAsyncThunk(
   "organizer/exportAttendeeList",
   async ({ eventId, format }, { rejectWithValue }) => {
     try {
-      if (format === "pdf") {
-        // For PDFs, use window.open approach instead of Axios for streaming
-        window.open(
-          `${ORGANIZER_API_URL}/events/${eventId}/attendees/export/${format}`,
-          "_blank"
-        );
-        return { eventId, format, success: true };
-      } else {
-        // For CSV and other formats, continue using Axios
-        const response = await axios.get(
-          `${ORGANIZER_API_URL}/events/${eventId}/attendees/export/${format}`,
-          { responseType: "blob" }
-        );
-
-        // Create a URL for the blob
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-
-        // Create a link and click it to trigger download
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `attendees-${eventId}.${format}`);
-        document.body.appendChild(link);
-        link.click();
-
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        }, 100);
-
-        return { eventId, format, success: true };
-      }
+      return await attendeeApi.exportAttendeeList(eventId, format);
     } catch (error) {
       console.error("Export error:", error);
       return rejectWithValue(
@@ -234,17 +136,12 @@ export const exportAttendeeList = createAsyncThunk(
   }
 );
 
-/**
- * Generate QR code for an attendee ticket
- */
+// ===== QR CODE THUNKS =====
 export const generateQRCode = createAsyncThunk(
   "organizer/generateQRCode",
   async (ticketId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/tickets/${ticketId}/qrcode`
-      );
-      return response.data;
+      return await qrCodeApi.generate(ticketId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to generate QR code"
@@ -253,18 +150,11 @@ export const generateQRCode = createAsyncThunk(
   }
 );
 
-/**
- * Validate QR code for check-in
- */
 export const validateQRCode = createAsyncThunk(
   "organizer/validateQRCode",
   async (qrData, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${ORGANIZER_API_URL}/tickets/validate-qrcode`,
-        { qrData }
-      );
-      return response.data;
+      return await qrCodeApi.validate(qrData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to validate QR code"
@@ -278,16 +168,7 @@ export const createDiscount = createAsyncThunk(
   "organizer/createDiscount",
   async (discountData, { rejectWithValue }) => {
     try {
-      const config = {
-        headers: {},
-        withCredentials: true, // Include cookies with the request
-      };
-      const response = await axios.post(
-        `${ORGANIZER_API_URL}/discounts`,
-        discountData,
-        config
-      );
-      return response.data;
+      return await discountApi.create(discountData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create discount"
@@ -300,16 +181,7 @@ export const updateDiscount = createAsyncThunk(
   "organizer/updateDiscount",
   async ({ discountId, discountData }, { rejectWithValue }) => {
     try {
-      const config = {
-        headers: {},
-        withCredentials: true, // Include cookies with the request
-      };
-      const response = await axios.put(
-        `${ORGANIZER_API_URL}/discounts/${discountId}`,
-        discountData,
-        config
-      );
-      return response.data;
+      return await discountApi.update(discountId, discountData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update discount"
@@ -322,15 +194,7 @@ export const deleteDiscount = createAsyncThunk(
   "organizer/deleteDiscount",
   async (discountId, { rejectWithValue }) => {
     try {
-      const config = {
-        headers: {},
-        withCredentials: true, // Include cookies with the request
-      };
-      await axios.delete(
-        `${ORGANIZER_API_URL}/discounts/${discountId}`,
-        config
-      );
-      return discountId;
+      return await discountApi.delete(discountId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete discount"
@@ -343,16 +207,7 @@ export const getEventDiscounts = createAsyncThunk(
   "organizer/getEventDiscounts",
   async (eventId, { rejectWithValue }) => {
     try {
-      const config = {
-        headers: {},
-        withCredentials: true, // Include cookies with the request
-      };
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/events/${eventId}/discounts`,
-        config
-      );
-
-      return { eventId, discounts: response.data };
+      return await discountApi.getEventDiscounts(eventId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch discounts"
@@ -365,11 +220,7 @@ export const validateDiscountCode = createAsyncThunk(
   "organizer/validateDiscountCode",
   async (codeData, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${ORGANIZER_API_URL}/discounts/validate`,
-        codeData
-      );
-      return response.data;
+      return await discountApi.validateCode(codeData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Invalid discount code"
@@ -383,10 +234,7 @@ export const getEventSales = createAsyncThunk(
   "organizer/getEventSales",
   async (eventId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${ORGANIZER_API_URL}/sales/event/${eventId}`
-      );
-      return response.data;
+      return await salesApi.getEventSales(eventId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch sales data"
@@ -399,10 +247,7 @@ export const getSalesByPeriod = createAsyncThunk(
   "organizer/getSalesByPeriod",
   async (periodData, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${ORGANIZER_API_URL}/sales/period`, {
-        params: periodData,
-      });
-      return response.data;
+      return await salesApi.getSalesByPeriod(periodData);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch period sales data"
@@ -415,8 +260,7 @@ export const getSalesAnalytics = createAsyncThunk(
   "organizer/getSalesAnalytics",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${ORGANIZER_API_URL}/sales/analytics`);
-      return response.data;
+      return await salesApi.getSalesAnalytics();
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch sales analytics"
@@ -426,13 +270,11 @@ export const getSalesAnalytics = createAsyncThunk(
 );
 
 // ===== ORGANIZER PROFILE THUNKS =====
-// Function to get the current organizer profile
 export const fetchOrganizerProfile = createAsyncThunk(
   "organizer/fetchOrganizerProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${ORGANIZER_API_URL}/profile`);
-      return response.data;
+      return await organizerProfileApi.fetch();
     } catch (error) {
       if (error.response?.status === 401) {
         return rejectWithValue("401 Unauthorized: Please log in again");
@@ -444,48 +286,18 @@ export const fetchOrganizerProfile = createAsyncThunk(
   }
 );
 
-// Async thunk for updating organizer profile
 export const updateOrganizerProfile = createAsyncThunk(
   "organizer/updateOrganizerProfile",
-  async (organizerData, { getState, rejectWithValue }) => {
+  async (organizerData, { rejectWithValue }) => {
     try {
-      let response;
-
-      // If there's a new file, build FormData
-      if (organizerData.profileImage instanceof File) {
-        const formData = new FormData();
-        Object.entries(organizerData).forEach(([key, val]) => {
-          // Handle arrays specially (like categories)
-          if (Array.isArray(val)) {
-            formData.append(key, JSON.stringify(val));
-          } else {
-            // Append everything else, including the file
-            formData.append(key, val);
-          }
-        });
-
-        response = await axios.put(`${ORGANIZER_API_URL}/profile`, formData, {
-          withCredentials: true,
-        });
-      } else {
-        // JSON payload for non-file updates
-        response = await axios.put(
-          `${ORGANIZER_API_URL}/profile`,
-          organizerData,
-          {
-            withCredentials: true,
-          }
-        );
-      }
-
-      return response.data.organizer; // Based on your backend response structure
-    } catch (err) {
-      if (err.response?.status === 401) {
+      return await organizerProfileApi.update(organizerData);
+    } catch (error) {
+      if (error.response?.status === 401) {
         return rejectWithValue("401 Unauthorized: Please log in again");
       }
       return rejectWithValue(
-        err.response?.data?.message ||
-          `Update failed: ${err.message} (${err.response?.status})`
+        error.response?.data?.message ||
+          `Update failed: ${error.message} (${error.response?.status})`
       );
     }
   }
@@ -495,12 +307,7 @@ export const updateOrganizerSettings = createAsyncThunk(
   "organizer/updateOrganizerSettings",
   async (settingsData, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${ORGANIZER_API_URL}/settings`,
-        settingsData,
-        { withCredentials: true }
-      );
-      return response.data.user;
+      return await organizerProfileApi.updateSettings(settingsData);
     } catch (error) {
       if (error.response?.status === 401) {
         return rejectWithValue("401 Unauthorized: Please log in again");
@@ -516,8 +323,7 @@ export const getOrganizerDashboard = createAsyncThunk(
   "organizer/getDashboard",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${ORGANIZER_API_URL}/dashboard`);
-      return response.data;
+      return await organizerProfileApi.getDashboard();
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch dashboard data"
@@ -526,17 +332,11 @@ export const getOrganizerDashboard = createAsyncThunk(
   }
 );
 
-// Async thunk for updating organizer password
 export const updateOrganizerPassword = createAsyncThunk(
   "organizer/updateOrganizerPassword",
   async (passwordData, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${ORGANIZER_API_URL}/password`,
-        passwordData,
-        { withCredentials: true }
-      );
-      return response.data;
+      return await organizerProfileApi.updatePassword(passwordData);
     } catch (error) {
       if (error.response?.status === 401) {
         return rejectWithValue("401 Unauthorized: Please log in again");
@@ -547,7 +347,6 @@ export const updateOrganizerPassword = createAsyncThunk(
     }
   }
 );
-
 // Initial state for the organizer slice
 const initialState = {
   // Event states

@@ -1,16 +1,12 @@
-// PasswordResetSlice.jsx
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/password-reset"; // Events API URL
+import { passwordResetApiService } from "./api/passwordResetApi";
 
 // Async thunk for requesting password reset
 export const forgotPassword = createAsyncThunk(
   "passwordReset/forgotPassword",
   async (email, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/forgot-password`, { email });
-      return response.data;
+      return await passwordResetApiService.forgotPassword(email);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message ||
@@ -25,10 +21,7 @@ export const verifyResetToken = createAsyncThunk(
   "passwordReset/verifyResetToken",
   async (token, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/reset-password/${token}`
-      );
-      return response.data;
+      return await passwordResetApiService.verifyResetToken(token);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Invalid or expired reset token."
@@ -40,15 +33,9 @@ export const verifyResetToken = createAsyncThunk(
 // Async thunk for resetting password
 export const resetPassword = createAsyncThunk(
   "passwordReset/resetPassword",
-  async ({ token, password }, { rejectWithValue, dispatch }) => {
+  async ({ token, password }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/reset-password/${token}`, {
-        password,
-      });
-
-      // If we have a token in the response, we can update user state here
-      // or handle that in the component using the response
-      return response.data;
+      return await passwordResetApiService.resetPassword(token, password);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message ||

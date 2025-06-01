@@ -1,40 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-// Base URL for Google auth API endpoints
-const AUTH_API_URL = `http://localhost:5000/api/googleauth`;
-
-// Configure axios to include credentials
-axios.defaults.withCredentials = true;
+import { googleAuthApiService } from "./api/googleAuthApi";
 
 // Async thunk for Google authentication
 export const googleAuth = createAsyncThunk(
   "googleAuth/authenticate",
   async (tokenCredential, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${AUTH_API_URL}/google`,
-        { token: tokenCredential },
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-            // "Access-Control-Allow-Origin": "*",
-          },
-        }
-      );
-
-      // Store the auth token in localStorage
-      if (response.data.token) {
-        localStorage.setItem("authToken", response.data.token);
-
-        // Set the token as default header for future requests
-        axios.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${response.data.token}`;
-      }
-
-      return response.data;
+      return await googleAuthApiService.authenticate(tokenCredential);
     } catch (error) {
       console.error("Google auth error:", error);
       return rejectWithValue(
@@ -49,25 +21,8 @@ export const checkGoogleAuthStatus = createAsyncThunk(
   "googleAuth/checkStatus",
   async (_, { rejectWithValue }) => {
     try {
-      // First try to get the token from localStorage
-      const token = localStorage.getItem("authToken");
-
-      if (!token) {
-        return null; // No token found
-      }
-
-      // Set token in headers
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      // Check user status from the backend
-      const response = await axios.get(`${AUTH_API_URL}/user`);
-
-      return response.data;
+      return await googleAuthApiService.checkAuthStatus();
     } catch (error) {
-      // Clear invalid token
-      localStorage.removeItem("authToken");
-      delete axios.defaults.headers.common["Authorization"];
-
       return rejectWithValue(
         error.response?.data?.message || "Failed to check authentication status"
       );
@@ -80,19 +35,8 @@ export const googleLogout = createAsyncThunk(
   "googleAuth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      // Make a request to the logout endpoint
-      await axios.get(`${AUTH_API_URL}/logout`, { withCredentials: true });
-
-      // Remove the token from localStorage and headers
-      localStorage.removeItem("authToken");
-      delete axios.defaults.headers.common["Authorization"];
-
-      return null;
+      return await googleAuthApiService.logout();
     } catch (error) {
-      // Even if the server-side logout fails, clear local storage and headers
-      localStorage.removeItem("authToken");
-      delete axios.defaults.headers.common["Authorization"];
-      
       return rejectWithValue(
         error.response?.data?.message || "Failed to logout"
       );
@@ -125,8 +69,7 @@ const googleAuthSlice = createSlice({
     clearGoogleUser: (state) => {
       state.user = null;
       state.isAuthenticated = false;
-      localStorage.removeItem("authToken");
-      delete axios.defaults.headers.common["Authorization"];
+      googleAuthApiService.clearLocalAuth();
     },
   },
   extraReducers: (builder) => {
