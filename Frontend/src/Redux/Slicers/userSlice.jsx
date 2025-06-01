@@ -1,110 +1,22 @@
-// src/redux/userSlice.jsx
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { userApi } from "../../Api/User/userApi"; // Import the API layer
+import { createSlice } from "@reduxjs/toolkit";
+import {
+  fetchUserProfile,
+  updateUserProfile,
+  updateProfilePhoto,
+  fetchUserById,
+  deleteUserAccount,
+} from "../thunks/userThunks";
 
-// Helper function to safely get user ID
-export const getUserId = (state) => {
-  const { user } = state;
-
-  // Check multiple possible locations for the user ID
-  return (
-    user?.userInfo?._id ||
-    user?.userInfo?.id ||
-    user?.user?._id ||
-    user?.user?.id ||
-    null // Return null if no ID is found
-  );
+const initialState = {
+  userInfo: null,
+  loading: false,
+  error: null,
+  successMessage: null,
 };
-
-// Thunk to fetch the current user profile
-export const fetchUserProfile = createAsyncThunk(
-  "user/fetchUserProfile",
-  async (_, { rejectWithValue }) => {
-    try {
-      const userData = await userApi.fetchCurrentUserProfile();
-      return userData;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-// Thunk for updating user profile
-export const updateUserProfile = createAsyncThunk(
-  "profile/updateUserProfile",
-  async (userData, { getState, rejectWithValue }) => {
-    try {
-      const userId = getUserId(getState());
-      if (!userId) {
-        return rejectWithValue("User ID not found. Please log in again.");
-      }
-
-      const updatedUser = await userApi.updateProfile(userId, userData);
-      return updatedUser;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-// Thunk for updating profile photo
-export const updateProfilePhoto = createAsyncThunk(
-  "user/updateProfilePhoto",
-  async (photoData, { getState, rejectWithValue }) => {
-    try {
-      const userId = getUserId(getState());
-
-      if (!userId) {
-        return rejectWithValue("User ID not found. Please log in again.");
-      }
-
-      const result = await userApi.updateProfilePhoto(userId, photoData);
-      return result;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-// Additional thunk for fetching user by ID (useful for admin features)
-export const fetchUserById = createAsyncThunk(
-  "user/fetchUserById",
-  async (userId, { rejectWithValue }) => {
-    try {
-      const userData = await userApi.fetchUserById(userId);
-      return userData;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-// Additional thunk for deleting user account
-export const deleteUserAccount = createAsyncThunk(
-  "user/deleteAccount",
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const userId = getUserId(getState());
-      if (!userId) {
-        return rejectWithValue("User ID not found. Please log in again.");
-      }
-
-      const result = await userApi.deleteAccount(userId);
-      return result;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
 
 const userSlice = createSlice({
   name: "user",
-  initialState: {
-    userInfo: null,
-    loading: false,
-    error: null,
-    successMessage: null,
-  },
+  initialState,
   reducers: {
     clearUserError: (state) => {
       state.error = null;
@@ -178,7 +90,6 @@ const userSlice = createSlice({
       })
       .addCase(fetchUserById.fulfilled, (state, action) => {
         state.loading = false;
-        // This could store in a different field if needed
         state.userInfo = action.payload;
       })
       .addCase(fetchUserById.rejected, (state, action) => {

@@ -1,69 +1,5 @@
-// src/redux/AdminAnalyticsSlice.js
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { adminAnalyticsApi } from "../../Api/Admin/adminAnalyticsAPI"; // Import the API layer
-
-// Keep track of the last request to avoid duplicates
-let lastRequest = null;
-
-// Create async thunk for fetching analytics data with duplicate request prevention
-export const fetchAnalyticsData = createAsyncThunk(
-  "analytics/fetchData",
-  async (filters, { rejectWithValue }) => {
-    try {
-      const { dateRange } = filters || {};
-      const params = {};
-
-      // Add date range parameters if they exist
-      if (dateRange?.start) params.startDate = dateRange.start;
-      if (dateRange?.end) params.endDate = dateRange.end;
-
-      // Create a request signature to check for duplicates
-      const requestSignature = JSON.stringify(params);
-
-      // Check if this is the same as the last request - if so, skip it
-      if (requestSignature === lastRequest) {
-        return null; // Return null to skip processing in the reducer
-      }
-
-      // Update last request signature
-      lastRequest = requestSignature;
-
-      // Use the separated API layer
-      const data = await adminAnalyticsApi.fetchAnalytics(filters);
-      return data;
-    } catch (error) {
-      console.error("Error in fetchAnalyticsData:", error);
-      return rejectWithValue(error.message);
-    }
-  },
-  {
-    // Condition function to prevent unnecessary API calls
-    condition: (filters, { getState }) => {
-      const state = getState();
-
-      // Check if we're currently loading data
-      if (state.analytics.loading) {
-        return false;
-      }
-
-      return true;
-    },
-  }
-);
-
-// You can add more async thunks for other admin operations
-export const fetchUsersData = createAsyncThunk(
-  "analytics/fetchUsers",
-  async (filters, { rejectWithValue }) => {
-    try {
-      const data = await adminAnalyticsApi.fetchUsers(filters);
-      return data;
-    } catch (error) {
-      console.error("Error in fetchUsersData:", error);
-      return rejectWithValue(error.message);
-    }
-  }
-);
+import { createSlice } from "@reduxjs/toolkit";
+import { fetchAnalyticsData, fetchUsersData } from "../thunks/analyticsThunks";
 
 // Define initial state with sample data
 const initialState = {
@@ -121,10 +57,9 @@ const initialState = {
       end: new Date().toISOString().split("T")[0],
     },
   },
-  lastFetched: null, // Track when data was last fetched
+  lastFetched: null,
 };
 
-// Create the slice
 const analyticsSlice = createSlice({
   name: "analytics",
   initialState,
@@ -157,7 +92,6 @@ const analyticsSlice = createSlice({
 
         // Check if action.payload has valid data
         if (action.payload) {
-          // Only update fields that have data, keep sample data for empty fields
           Object.keys(action.payload).forEach((key) => {
             if (
               action.payload[key] &&
@@ -182,7 +116,6 @@ const analyticsSlice = createSlice({
       })
       .addCase(fetchUsersData.fulfilled, (state, action) => {
         state.loading = false;
-        // Handle users data update
         if (action.payload) {
           state.data.usersData = action.payload;
         }
@@ -194,7 +127,6 @@ const analyticsSlice = createSlice({
   },
 });
 
-// Export actions and reducer
 export const { setDateRange, resetFilters, clearError } =
   analyticsSlice.actions;
 export default analyticsSlice.reducer;

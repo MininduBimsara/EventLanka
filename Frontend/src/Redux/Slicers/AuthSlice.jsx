@@ -1,58 +1,10 @@
-// src/redux/AuthSlice.jsx
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { authApi } from "../../Api/Common/authApi"; // Import the API layer
-
-// Thunk for user login
-export const loginUser = createAsyncThunk(
-  "user/login",
-  async (credentials, thunkAPI) => {
-    try {
-      const user = await authApi.login(credentials);
-      return user;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
-// Thunk for user registration
-export const registerUser = createAsyncThunk(
-  "user/register",
-  async (userData, thunkAPI) => {
-    try {
-      const user = await authApi.register(userData);
-      return user;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
-// Thunk for user logout
-export const logoutUser = createAsyncThunk(
-  "user/logout",
-  async (_, { rejectWithValue }) => {
-    try {
-      const result = await authApi.logout();
-      return result;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-// Thunk to verify authentication status
-export const verifyAuth = createAsyncThunk(
-  "user/verifyAuth",
-  async (_, { rejectWithValue }) => {
-    try {
-      const user = await authApi.verifyAuth();
-      return user;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
+import { createSlice } from "@reduxjs/toolkit";
+import {
+  loginUser,
+  registerUser,
+  logoutUser,
+  verifyAuth,
+} from "../thunks/authThunks";
 
 const initialState = {
   user: null,
@@ -61,16 +13,16 @@ const initialState = {
   error: null,
 };
 
-const userSlice = createSlice({
-  name: "user",
+const authSlice = createSlice({
+  name: "auth",
   initialState,
   reducers: {
     // Clear errors
-    clearErrors(state) {
+    clearErrors: (state) => {
       state.error = null;
     },
     // Manual logout (for cases where API call isn't needed)
-    clearUserData(state) {
+    clearUserData: (state) => {
       state.user = null;
       state.isAuthenticated = false;
       state.error = null;
@@ -111,14 +63,12 @@ const userSlice = createSlice({
         state.loading = true;
       })
       .addCase(logoutUser.fulfilled, (state) => {
-        // Clear auth data
         state.user = null;
         state.isAuthenticated = false;
         state.loading = false;
         state.error = null;
       })
       .addCase(logoutUser.rejected, (state, action) => {
-        // Set a specific error for logout failures
         state.loading = false;
         state.error = action.payload || "Logout failed. Please try again.";
       })
@@ -136,10 +86,10 @@ const userSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
-        state.error = null; // Don't show error on verification fail
+        state.error = null;
       });
   },
 });
 
-export const { clearErrors, clearUserData } = userSlice.actions;
-export default userSlice.reducer;
+export const { clearErrors, clearUserData } = authSlice.actions;
+export default authSlice.reducer;
