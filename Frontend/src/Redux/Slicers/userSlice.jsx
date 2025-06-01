@@ -1,10 +1,6 @@
+// src/redux/userSlice.jsx
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/users"; // Base API URL
-
-// Set default axios config
-axios.defaults.withCredentials = true;
+import { userApi } from "../api/userApi"; // Import the API layer
 
 // Helper function to safely get user ID
 export const getUserId = (state) => {
@@ -20,28 +16,20 @@ export const getUserId = (state) => {
   );
 };
 
-// Function to get the current user profile
+// Thunk to fetch the current user profile
 export const fetchUserProfile = createAsyncThunk(
   "user/fetchUserProfile",
   async (_, { rejectWithValue }) => {
     try {
-      // First try to get the user's details from the server
-      // This assumes you have an endpoint that returns the current user's data
-      const response = await axios.get(`${API_URL}/current`, {
-        withCredentials: true,
-      });
-      return response.data;
+      const userData = await userApi.fetchCurrentUserProfile();
+      return userData;
     } catch (error) {
-      console.error("Error fetching user profile:", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch user profile"
-      );
+      return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk for updating user profile
-
+// Thunk for updating user profile
 export const updateUserProfile = createAsyncThunk(
   "profile/updateUserProfile",
   async (userData, { getState, rejectWithValue }) => {
@@ -51,38 +39,15 @@ export const updateUserProfile = createAsyncThunk(
         return rejectWithValue("User ID not found. Please log in again.");
       }
 
-      let response;
-      // if there’s a new file, build FormData
-      if (userData.profileImage instanceof File) {
-        const formData = new FormData();
-        Object.entries(userData).forEach(([key, val]) => {
-          // append everything, including the file
-          formData.append(key, val);
-        });
-        // **DON’T** set Content‑Type here—axios will do it for us
-        response = await axios.put(`${API_URL}/${userId}`, formData, {
-          withCredentials: true,
-        });
-      } else {
-        // JSON payload for non‑file updates
-        response = await axios.put(`${API_URL}/${userId}`, userData, {
-          withCredentials: true,
-        });
-      }
-
-      return response.data;
-    } catch (err) {
-      if (err.response?.status === 401) {
-        return rejectWithValue("401 Unauthorized: Please log in again");
-      }
-      return rejectWithValue(
-        err.response?.data?.message ||
-          `Update failed: ${err.message} (${err.response?.status})`
-      );
+      const updatedUser = await userApi.updateProfile(userId, userData);
+      return updatedUser;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
   }
 );
 
+// Thunk for updating profile photo
 export const updateProfilePhoto = createAsyncThunk(
   "user/updateProfilePhoto",
   async (photoData, { getState, rejectWithValue }) => {
@@ -93,23 +58,41 @@ export const updateProfilePhoto = createAsyncThunk(
         return rejectWithValue("User ID not found. Please log in again.");
       }
 
-      const formData = new FormData();
-      formData.append("profileImage", photoData);
-
-      const response = await axios.put(`${API_URL}/${userId}/photo`, formData, {
-        // headers: {
-        //   "Content-Type": "multipart/form-data",
-        // },
-        withCredentials: true,
-      });
-      return response.data;
+      const result = await userApi.updateProfilePhoto(userId, photoData);
+      return result;
     } catch (error) {
-      if (error.response && error.response.status === 401) {
-        return rejectWithValue("401 Unauthorized: Please log in again");
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Additional thunk for fetching user by ID (useful for admin features)
+export const fetchUserById = createAsyncThunk(
+  "user/fetchUserById",
+  async (userId, { rejectWithValue }) => {
+    try {
+      const userData = await userApi.fetchUserById(userId);
+      return userData;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Additional thunk for deleting user account
+export const deleteUserAccount = createAsyncThunk(
+  "user/deleteAccount",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const userId = getUserId(getState());
+      if (!userId) {
+        return rejectWithValue("User ID not found. Please log in again.");
       }
-      return rejectWithValue(
-        error.response?.data?.message || "Photo update failed"
-      );
+
+      const result = await userApi.deleteAccount(userId);
+      return result;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -127,6 +110,14 @@ const userSlice = createSlice({
       state.error = null;
     },
     clearSuccessMessage: (state) => {
+      state.successMessage = null;
+    },
+    setUserInfo: (state, action) => {
+      state.userInfo = action.payload;
+    },
+    clearUserInfo: (state) => {
+      state.userInfo = null;
+      state.error = null;
       state.successMessage = null;
     },
   },
@@ -179,10 +170,43 @@ const userSlice = createSlice({
       .addCase(updateProfilePhoto.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Fetch user by ID
+      .addCase(fetchUserById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserById.fulfilled, (state, action) => {
+        state.loading = false;
+        // This could store in a different field if needed
+        state.userInfo = action.payload;
+      })
+      .addCase(fetchUserById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Delete user account
+      .addCase(deleteUserAccount.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteUserAccount.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userInfo = null;
+        state.successMessage = "Account deleted successfully";
+      })
+      .addCase(deleteUserAccount.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearUserError, clearSuccessMessage } = userSlice.actions;
+export const {
+  clearUserError,
+  clearSuccessMessage,
+  setUserInfo,
+  clearUserInfo,
+} = userSlice.actions;
 
 export default userSlice.reducer;

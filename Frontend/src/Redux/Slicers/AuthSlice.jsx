@@ -1,105 +1,55 @@
+// src/redux/AuthSlice.jsx
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/auth"; // Adjust the base URL if needed
-
-// Set axios to always send credentials
-axios.defaults.withCredentials = true;
+import { authApi } from "../api/authApi"; // Import the API layer
 
 // Thunk for user login
 export const loginUser = createAsyncThunk(
   "user/login",
   async (credentials, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_URL}/login`, {
-        email: credentials.email,
-        password: credentials.password,
-      });
-
-      // The cookie is now set by the backend, we just need the user data
-      return response.data.user;
+      const user = await authApi.login(credentials);
+      return user;
     } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Login failed"
-      );
+      return thunkAPI.rejectWithValue(error.message);
     }
   }
 );
 
-// Updated thunk for user registration to handle FormData with file upload
+// Thunk for user registration
 export const registerUser = createAsyncThunk(
   "user/register",
   async (userData, thunkAPI) => {
     try {
-      // Check if userData is FormData (for file uploads) or regular object
-      let response;
-
-      if (userData instanceof FormData) {
-        // If FormData is provided (with file upload)
-        response = await axios.post(`${API_URL}/register`, userData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-      } else {
-        // For backward compatibility or when no file is uploaded
-        response = await axios.post(`${API_URL}/register`, {
-          username: userData.username,
-          email: userData.email,
-          password: userData.password,
-          role: userData.role || "user", // Default to 'user' if not provided
-        });
-      }
-
-      // The cookie is now set by the backend, we just need the user data
-      return response.data.user;
+      const user = await authApi.register(userData);
+      return user;
     } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Registration failed"
-      );
+      return thunkAPI.rejectWithValue(error.message);
     }
   }
 );
 
+// Thunk for user logout
 export const logoutUser = createAsyncThunk(
   "user/logout",
   async (_, { rejectWithValue }) => {
     try {
-      // Call the logout API endpoint to clear the cookie
-      await axios.post(`${API_URL}/logout`);
-
-      return { success: true };
+      const result = await authApi.logout();
+      return result;
     } catch (error) {
-      console.error("Logout error:", error);
-      return rejectWithValue("Logout failed");
+      return rejectWithValue(error.message);
     }
   }
 );
 
-// Thunk to verify authentication status using your verify endpoint.
+// Thunk to verify authentication status
 export const verifyAuth = createAsyncThunk(
   "user/verifyAuth",
   async (_, { rejectWithValue }) => {
     try {
-      // Log to verify credentials are being sent
-      // console.log(
-      //   "Verifying auth with credentials:",
-      //   axios.defaults.withCredentials
-      // );
-
-      const response = await axios.get(`${API_URL}/verify`, {
-        withCredentials: true, // Explicitly include credentials for this request
-      });
-
-      // Expecting response.data.user to be valid if authenticated
-      if (response.data.user) {
-        return response.data.user;
-      } else {
-        return rejectWithValue("No user authenticated");
-      }
+      const user = await authApi.verifyAuth();
+      return user;
     } catch (error) {
-      console.error("Verification error:", error);
-      return rejectWithValue(error.response?.data?.message || error.message);
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -117,6 +67,12 @@ const userSlice = createSlice({
   reducers: {
     // Clear errors
     clearErrors(state) {
+      state.error = null;
+    },
+    // Manual logout (for cases where API call isn't needed)
+    clearUserData(state) {
+      state.user = null;
+      state.isAuthenticated = false;
       state.error = null;
     },
   },
@@ -150,7 +106,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Add cases for logout thunk
+      // Handle logout
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
       })
@@ -159,13 +115,14 @@ const userSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.loading = false;
+        state.error = null;
       })
-      .addCase(logoutUser.rejected, (state) => {
+      .addCase(logoutUser.rejected, (state, action) => {
         // Set a specific error for logout failures
         state.loading = false;
-        state.error = "Logout failed. Please try again.";
+        state.error = action.payload || "Logout failed. Please try again.";
       })
-      // Verify Authentication
+      // Handle auth verification
       .addCase(verifyAuth.pending, (state) => {
         state.loading = true;
       })
@@ -184,5 +141,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { clearErrors } = userSlice.actions;
+export const { clearErrors, clearUserData } = userSlice.actions;
 export default userSlice.reducer;

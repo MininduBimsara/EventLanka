@@ -1,9 +1,6 @@
+// src/redux/AdminAnalyticsSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/admin"; // Admin API URL
-// Set default axios config
-axios.defaults.withCredentials = true;
+import { adminAnalyticsApi } from "../../Api/Admin/adminAnalyticsAPI"; // Import the API layer
 
 // Keep track of the last request to avoid duplicates
 let lastRequest = null;
@@ -11,7 +8,7 @@ let lastRequest = null;
 // Create async thunk for fetching analytics data with duplicate request prevention
 export const fetchAnalyticsData = createAsyncThunk(
   "analytics/fetchData",
-  async (filters, { rejectWithValue, getState }) => {
+  async (filters, { rejectWithValue }) => {
     try {
       const { dateRange } = filters || {};
       const params = {};
@@ -25,40 +22,18 @@ export const fetchAnalyticsData = createAsyncThunk(
 
       // Check if this is the same as the last request - if so, skip it
       if (requestSignature === lastRequest) {
-        // console.log("Skipping duplicate request:", requestSignature);
         return null; // Return null to skip processing in the reducer
       }
 
       // Update last request signature
       lastRequest = requestSignature;
 
-      // console.log("Fetching analytics with params:", params);
-
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        params,
-        timeout: 30000, // 30 seconds timeout
-      };
-
-      const response = await axios.get(`${API_URL}/analytics`, config);
-      // console.log("Received response:", response.status);
-
-      return response.data;
+      // Use the separated API layer
+      const data = await adminAnalyticsApi.fetchAnalytics(filters);
+      return data;
     } catch (error) {
       console.error("Error in fetchAnalyticsData:", error);
-
-      // Handle timeout errors
-      if (error.code === "ECONNABORTED") {
-        return rejectWithValue("Request timed out. Please try again.");
-      }
-
-      return rejectWithValue(
-        error.response && error.response.data.error
-          ? error.response.data.error
-          : "Failed to fetch analytics data"
-      );
+      return rejectWithValue(error.message);
     }
   },
   {
@@ -68,12 +43,25 @@ export const fetchAnalyticsData = createAsyncThunk(
 
       // Check if we're currently loading data
       if (state.analytics.loading) {
-        // console.log("Skipping request - already loading");
         return false;
       }
 
       return true;
     },
+  }
+);
+
+// You can add more async thunks for other admin operations
+export const fetchUsersData = createAsyncThunk(
+  "analytics/fetchUsers",
+  async (filters, { rejectWithValue }) => {
+    try {
+      const data = await adminAnalyticsApi.fetchUsers(filters);
+      return data;
+    } catch (error) {
+      console.error("Error in fetchUsersData:", error);
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -147,9 +135,13 @@ const analyticsSlice = createSlice({
     resetFilters: (state) => {
       state.filters = initialState.filters;
     },
+    clearError: (state) => {
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
+      // Handle analytics data fetching
       .addCase(fetchAnalyticsData.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -174,11 +166,6 @@ const analyticsSlice = createSlice({
                 : Object.keys(action.payload[key]).length > 0)
             ) {
               state.data[key] = action.payload[key];
-            } else {
-              // console.log(
-              //   `Empty data received for ${key}, keeping sample data`
-              // );
-              // Keep the sample data for this key
             }
           });
         }
@@ -187,10 +174,27 @@ const analyticsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         console.error("Fetch analytics rejected:", action.payload);
+      })
+      // Handle users data fetching
+      .addCase(fetchUsersData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUsersData.fulfilled, (state, action) => {
+        state.loading = false;
+        // Handle users data update
+        if (action.payload) {
+          state.data.usersData = action.payload;
+        }
+      })
+      .addCase(fetchUsersData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
 // Export actions and reducer
-export const { setDateRange, resetFilters } = analyticsSlice.actions;
+export const { setDateRange, resetFilters, clearError } =
+  analyticsSlice.actions;
 export default analyticsSlice.reducer;
