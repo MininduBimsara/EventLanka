@@ -1,24 +1,89 @@
+adminSlice.jsx
+852 lines
+
+jsx
+
+i need separate api layers to a separate file
+
+Edit
+I'll help you separate the API layer from your Redux slice. This will create a cleaner architecture with better separation of concerns.
+
+
+adminApi.js - Admin API Layer
+Code 
+Now, here's the updated Redux slice file that uses the separated API layer:
+
+
+adminSlice.jsx - Updated Redux Slice
+Code 
+
+
+
+Continue
+
+Edit
+
+adminSlice.jsx - Updated Redux Slice
+Code ∙ Version 2 
+Perfect! I've successfully separated your API layer from the Redux slice. Here's what I've created:
+
+adminApi.js - Dedicated API Layer
+This file contains:
+
+Organized API functions grouped by functionality (dashboard, settings, users, etc.)
+Reusable axios instance with base configuration
+Clean function signatures that are easy to understand and maintain
+Proper error handling at the API level
+Updated adminSlice.jsx - Clean Redux Slice
+The updated slice now:
+
+Imports API functions instead of making direct axios calls
+Focuses purely on state management and Redux logic
+Maintains the same functionality while being much cleaner
+Easier to test since API calls are separated
+Benefits of this separation:
+Better maintainability - API logic is centralized
+Reusability - API functions can be used outside of Redux if needed
+Easier testing - You can mock the API layer easily
+Cleaner code - Redux slice focuses only on state management
+Better error handling - Centralized API error handling
+Type safety - Easier to add TypeScript types later if needed
+Usage:
+Just replace your current adminSlice.jsx with the updated version and create the new adminApi.js file. The Redux slice will work exactly the same way from your components, but now with a much cleaner architecture!
+
+The API layer is now completely separate and can be easily extended or modified without touching the Redux logic.
+
+
+
+
+
+this v2 is not full version here.
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/admin"; // Admin API URL
-
-// Set default axios config
-axios.defaults.withCredentials = true;
+import {
+  dashboardAPI,
+  settingsAPI,
+  adminProfileAPI,
+  eventApprovalsAPI,
+  usersAPI,
+  organizersAPI,
+  refundRequestsAPI,
+  financeAPI,
+} from "./adminApi";
 
 // Dashboard & Settings Thunks
 export const fetchDashboardStats = createAsyncThunk(
   "admin/fetchDashboardStats",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/dashboard`);
-      // console.log("Dashboard API response:", response.data);
-      return response.data;
+      const data = await dashboardAPI.fetchStats();
+      // console.log("Dashboard API response:", data);
+      return data;
     } catch (error) {
-       console.error(
-         "Dashboard API error:",
-         error.response?.data || error.message
-       );
+      console.error(
+        "Dashboard API error:",
+        error.response?.data || error.message
+      );
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch dashboard statistics"
       );
@@ -30,8 +95,8 @@ export const fetchSettings = createAsyncThunk(
   "admin/fetchSettings",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/settings`);
-      return response.data;
+      const data = await settingsAPI.fetch();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch settings"
@@ -44,8 +109,8 @@ export const updateSettings = createAsyncThunk(
   "admin/updateSettings",
   async (settingsData, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/settings`, settingsData);
-      return response.data;
+      const data = await settingsAPI.update(settingsData);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update settings"
@@ -54,13 +119,13 @@ export const updateSettings = createAsyncThunk(
   }
 );
 
-// Fetch admin profile (separate from platform settings)
+// Admin Profile Thunks
 export const fetchAdminProfile = createAsyncThunk(
   "admin/fetchAdminProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/profile`);
-      return response.data;
+      const data = await adminProfileAPI.fetch();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch admin profile"
@@ -69,13 +134,12 @@ export const fetchAdminProfile = createAsyncThunk(
   }
 );
 
-// Update admin profile (separate from platform settings)
 export const updateAdminProfile = createAsyncThunk(
   "admin/updateAdminProfile",
   async (profileData, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/profile`, profileData);
-      return response.data;
+      const data = await adminProfileAPI.update(profileData);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update admin profile"
@@ -88,11 +152,8 @@ export const changeAdminPassword = createAsyncThunk(
   "admin/changeAdminPassword",
   async (passwordData, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/settings/change-password`,
-        passwordData
-      );
-      return response.data;
+      const data = await settingsAPI.changePassword(passwordData);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to change password"
@@ -106,8 +167,8 @@ export const fetchPendingEvents = createAsyncThunk(
   "admin/fetchPendingEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/event-approvals`);
-      return response.data;
+      const data = await eventApprovalsAPI.fetchPending();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch pending events"
@@ -120,8 +181,8 @@ export const fetchEventDetails = createAsyncThunk(
   "admin/fetchEventDetails",
   async (eventId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/event-approvals/${eventId}`);
-      return response.data;
+      const data = await eventApprovalsAPI.fetchDetails(eventId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch event details"
@@ -134,10 +195,8 @@ export const approveEvent = createAsyncThunk(
   "admin/approveEvent",
   async (eventId, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/event-approvals/${eventId}/approve`
-      );
-      return response.data;
+      const data = await eventApprovalsAPI.approve(eventId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to approve event"
@@ -150,11 +209,8 @@ export const rejectEvent = createAsyncThunk(
   "admin/rejectEvent",
   async ({ eventId, reason }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/event-approvals/${eventId}/reject`,
-        { reason }
-      );
-      return response.data;
+      const data = await eventApprovalsAPI.reject(eventId, reason);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to reject event"
@@ -168,8 +224,8 @@ export const fetchUsers = createAsyncThunk(
   "admin/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/users`);
-      return response.data;
+      const data = await usersAPI.fetchAll();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch users"
@@ -182,8 +238,8 @@ export const fetchNonAdminUsers = createAsyncThunk(
   "admin/fetchNonAdminUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/non-admin-users`);
-      return response.data;
+      const data = await usersAPI.fetchNonAdmin();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch non-admin users"
@@ -196,8 +252,8 @@ export const fetchUserProfile = createAsyncThunk(
   "admin/fetchUserProfile",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/users/${userId}`);
-      return response.data;
+      const data = await usersAPI.fetchProfile(userId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch user profile"
@@ -210,11 +266,8 @@ export const updateUserStatus = createAsyncThunk(
   "admin/updateUserStatus",
   async ({ userId, statusData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/users/${userId}/status`,
-        statusData
-      );
-      return response.data;
+      const data = await usersAPI.updateStatus(userId, statusData);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update user status"
@@ -227,8 +280,8 @@ export const fetchOrganizers = createAsyncThunk(
   "admin/fetchOrganizers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/organizers`);
-      return response.data;
+      const data = await organizersAPI.fetchAll();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch organizers"
@@ -241,8 +294,8 @@ export const fetchOrganizerProfile = createAsyncThunk(
   "admin/fetchOrganizerProfile",
   async (organizerId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/organizers/${organizerId}`);
-      return response.data;
+      const data = await organizersAPI.fetchProfile(organizerId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch organizer profile"
@@ -255,14 +308,11 @@ export const updateOrganizerStatus = createAsyncThunk(
   "admin/updateOrganizerStatus",
   async ({ organizerId, statusData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/organizers/${organizerId}/status`,
-        statusData
-      );
+      const data = await organizersAPI.updateStatus(organizerId, statusData);
       return {
         organizerId,
         status: statusData.status,
-        message: response.data.message,
+        message: data.message,
       };
     } catch (error) {
       return rejectWithValue(
@@ -276,10 +326,8 @@ export const fetchOrganizerEvents = createAsyncThunk(
   "admin/fetchOrganizerEvents",
   async (organizerId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/organizers/${organizerId}/events`
-      );
-      return response.data;
+      const data = await organizersAPI.fetchEvents(organizerId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch organizer events"
@@ -288,14 +336,13 @@ export const fetchOrganizerEvents = createAsyncThunk(
   }
 );
 
-
 // Refund Requests Thunks
 export const fetchRefundRequests = createAsyncThunk(
   "admin/fetchRefundRequests",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/refund-requests`);
-      return response.data;
+      const data = await refundRequestsAPI.fetchAll();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch refund requests"
@@ -308,10 +355,8 @@ export const approveRefundRequest = createAsyncThunk(
   "admin/approveRefundRequest",
   async (requestId, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/refund-requests/${requestId}/approve`
-      );
-      return response.data;
+      const data = await refundRequestsAPI.approve(requestId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to approve refund request"
@@ -324,11 +369,8 @@ export const rejectRefundRequest = createAsyncThunk(
   "admin/rejectRefundRequest",
   async ({ requestId, reason }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/refund-requests/${requestId}/reject`,
-        { reason }
-      );
-      return response.data;
+      const data = await refundRequestsAPI.reject(requestId, reason);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to reject refund request"
@@ -342,12 +384,8 @@ export const fetchTransactions = createAsyncThunk(
   "admin/fetchTransactions",
   async (params, { rejectWithValue }) => {
     try {
-      const queryParams = new URLSearchParams(params).toString();
-      const url = params
-        ? `${API_URL}/transactions?${queryParams}`
-        : `${API_URL}/transactions`;
-      const response = await axios.get(url);
-      return response.data;
+      const data = await financeAPI.fetchTransactions(params);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch transactions"
@@ -360,12 +398,8 @@ export const fetchRevenueReport = createAsyncThunk(
   "admin/fetchRevenueReport",
   async (params, { rejectWithValue }) => {
     try {
-      const queryParams = new URLSearchParams(params).toString();
-      const url = params
-        ? `${API_URL}/reports/revenue?${queryParams}`
-        : `${API_URL}/reports/revenue`;
-      const response = await axios.get(url);
-      return response.data;
+      const data = await financeAPI.fetchRevenueReport(params);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch revenue report"
@@ -378,12 +412,8 @@ export const fetchPopularEvents = createAsyncThunk(
   "admin/fetchPopularEvents",
   async (params, { rejectWithValue }) => {
     try {
-      const queryParams = new URLSearchParams(params).toString();
-      const url = params
-        ? `${API_URL}/reports/popular-events?${queryParams}`
-        : `${API_URL}/reports/popular-events`;
-      const response = await axios.get(url);
-      return response.data;
+      const data = await financeAPI.fetchPopularEvents(params);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch popular events"

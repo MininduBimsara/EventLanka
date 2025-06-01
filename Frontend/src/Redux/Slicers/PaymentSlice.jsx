@@ -1,20 +1,12 @@
+// slices/paymentSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-// Base URL for payment API endpoints
-const PAYMENT_API_URL = "http://localhost:5000/api/payments";
-
-// Set default axios config
-axios.defaults.withCredentials = true;
+import PaymentAPI from "../api/paymentApi";
 
 // Async thunk for creating a payment intent (now preparing PayPal payment)
-// In PaymentSlice.jsx
 export const createPaymentIntent = createAsyncThunk(
   "payments/createIntent",
   async (orderId, { rejectWithValue }) => {
     try {
-      // console.log("Creating PayPal order for orderId:", orderId);
-
       // Get the pending order from localStorage to include the amount
       let amount = 0;
       const storedOrder = localStorage.getItem("pendingOrder");
@@ -22,23 +14,15 @@ export const createPaymentIntent = createAsyncThunk(
         try {
           const parsedOrder = JSON.parse(storedOrder);
           amount = parsedOrder.totalAmount;
-          // console.log("Using amount from stored order:", amount);
         } catch (error) {
           console.error("Error parsing stored order:", error);
         }
       }
 
-      const response = await axios.post(
-        `${PAYMENT_API_URL}/create-paypal-order`,
-        { orderId, amount } // Include amount in request
-      );
-      // console.log("PayPal order creation response:", response.data);
-      return response.data;
+      const data = await PaymentAPI.createPayPalOrder(orderId, amount);
+      return data;
     } catch (error) {
-      console.error(
-        "PayPal order creation error:",
-        error.response?.data || error
-      );
+      console.error("PayPal order creation error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to prepare payment"
       );
@@ -51,20 +35,10 @@ export const capturePayPalOrder = createAsyncThunk(
   "payments/capturePayPal",
   async ({ orderId, paypalOrderId }, { rejectWithValue }) => {
     try {
-      // console.log("Capturing PayPal order:", { orderId, paypalOrderId });
-      
-      const response = await axios.post(
-        `${PAYMENT_API_URL}/capture-paypal-order`,
-        { orderId, paypalOrderId }
-      );
-      
-      // console.log("PayPal capture response:", response.data);
-      return response.data;
+      const data = await PaymentAPI.capturePayPalOrder(orderId, paypalOrderId);
+      return data;
     } catch (error) {
-      console.error(
-        "PayPal capture error:",
-        error.response?.data || error
-      );
+      console.error("PayPal capture error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to capture PayPal payment"
       );
@@ -72,17 +46,13 @@ export const capturePayPalOrder = createAsyncThunk(
   }
 );
 
-
 // Async thunk for processing a payment
 export const processPayment = createAsyncThunk(
   "payments/process",
   async (paymentData, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${PAYMENT_API_URL}/process`,
-        paymentData
-      );
-      return response.data;
+      const data = await PaymentAPI.processPayment(paymentData);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Payment processing failed"
@@ -96,17 +66,10 @@ export const confirmPayment = createAsyncThunk(
   "payments/confirm",
   async ({ paymentIntentId, orderId }, { rejectWithValue }) => {
     try {
-      // console.log("Confirming payment:", { paymentIntentId, orderId });
-      const response = await axios.post(`${PAYMENT_API_URL}/confirm`, {
-        paypalOrderId: paymentIntentId,
-        orderId,
-      });
-      return response.data;
+      const data = await PaymentAPI.confirmPayment(paymentIntentId, orderId);
+      return data;
     } catch (error) {
-      console.error(
-        "Payment confirmation error:",
-        error.response?.data || error
-      );
+      console.error("Payment confirmation error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Payment confirmation failed"
       );
@@ -119,8 +82,8 @@ export const fetchPaymentHistory = createAsyncThunk(
   "payments/fetchHistory",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${PAYMENT_API_URL}/history`);
-      return response.data;
+      const data = await PaymentAPI.fetchPaymentHistory();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch payment history"
@@ -134,9 +97,8 @@ export const downloadReceipt = createAsyncThunk(
   "payments/downloadReceipt",
   async (transactionId, { rejectWithValue }) => {
     try {
-      // Use window.open approach instead of the blob method
-      window.open(`${PAYMENT_API_URL}/receipt/${transactionId}`, "_blank");
-      return { success: true, transactionId };
+      const result = await PaymentAPI.downloadReceipt(transactionId);
+      return result;
     } catch (error) {
       console.error("Receipt download error:", error);
       return rejectWithValue(
@@ -151,22 +113,19 @@ export const checkPaymentStatus = createAsyncThunk(
   "payments/checkStatus",
   async ({ paymentIntentId, orderId }, { rejectWithValue }) => {
     try {
-      // console.log("Checking payment status:", { paymentIntentId, orderId });
-      const response = await axios.get(
-        `${PAYMENT_API_URL}/status/${paymentIntentId}?orderId=${orderId}`,
-        { timeout: 10000 } // 10 second timeout
+      const data = await PaymentAPI.checkPaymentStatus(
+        paymentIntentId,
+        orderId
       );
-      return response.data;
+      return data;
     } catch (error) {
-      console.error("Payment status check error:", error.response?.data || error);
+      console.error("Payment status check error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to check payment status"
       );
     }
   }
 );
-
-
 
 // Initial state for the payments slice
 const initialState = {
@@ -181,6 +140,7 @@ const initialState = {
   success: false,
   message: "",
   downloading: false,
+  statusChecking: false,
 };
 
 // Create the payments slice
@@ -241,7 +201,7 @@ const paymentSlice = createSlice({
             (payment) => payment._id === action.payload._id
           )
         ) {
-          state.paymentHistory.unshift(action.payload); // Add to beginning of array
+          state.paymentHistory.unshift(action.payload);
         }
         state.success = true;
         state.message = "Payment processed successfully";
@@ -265,7 +225,7 @@ const paymentSlice = createSlice({
             (payment) => payment._id === action.payload._id
           )
         ) {
-          state.paymentHistory.unshift(action.payload); // Add to beginning of array
+          state.paymentHistory.unshift(action.payload);
         }
         state.success = true;
         state.message = "Payment confirmed successfully";
