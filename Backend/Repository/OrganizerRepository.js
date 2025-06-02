@@ -79,6 +79,4 @@ class OrganizerRepository {
   }
 }
 
-module.exports = {
-  OrganizerRepository: new OrganizerRepository(),
-};
+module.exports = new OrganizerRepository();

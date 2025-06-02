@@ -118,6 +118,4 @@ class AdminRepository {
   }
 }
 
-module.exports = {
-  AdminRepository: new AdminRepository(),
-};
+module.exports = new AdminRepository();

@@ -1,80 +1,21 @@
-const Payment = require("../../models/Payment");
-const Event = require("../../models/Event");
-const User = require("../../models/User");
+// Replace the imports at the top of analyticsService.js with:
+const PaymentRepository = require("../repositories/PaymentRepository");
+const EventRepository = require("../repositories/EventRepository");
+const UserRepository = require("../repositories/UserRepository");
 
 class AnalyticsService {
-  /**
-   * Get comprehensive analytics data
-   * @param {Object} dateRange - Date range object with startDate and endDate
-   * @returns {Object} Complete analytics data
-   */
-  async getAnalyticsData(dateRange = {}) {
-    try {
-      const { startDate, endDate } = dateRange;
-
-      // Set default date range (last 12 months)
-      const start = startDate
-        ? new Date(startDate)
-        : new Date(new Date().setFullYear(new Date().getFullYear() - 1));
-      const end = endDate ? new Date(endDate) : new Date();
-
-      // Get all analytics data in parallel
-      const [
-        revenueData,
-        categoryData,
-        bestSellingEvents,
-        topOrganizers,
-        userGrowthData,
-        statistics,
-      ] = await Promise.all([
-        this.getRevenueData(start, end),
-        this.getCategoryData(),
-        this.getBestSellingEvents(),
-        this.getTopOrganizers(),
-        this.getUserGrowthData(start, end),
-        this.getPlatformStatistics(),
-      ]);
-
-      return {
-        revenueData,
-        categoryData,
-        bestSellingEvents,
-        topOrganizers,
-        userGrowthData,
-        statistics,
-      };
-    } catch (error) {
-      throw new Error(`Failed to get analytics data: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get revenue data with monthly breakdown
-   * @param {Date} startDate - Start date
-   * @param {Date} endDate - End date
-   * @returns {Array} Revenue data by month
-   */
+  // Update the getRevenueData method:
   async getRevenueData(startDate, endDate) {
     try {
-      const revenueResults = await Payment.aggregate([
-        {
-          $match: {
-            payment_status: "completed",
-            createdAt: { $gte: startDate, $lte: endDate },
-          },
-        },
-        {
-          $group: {
-            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-            revenue: { $sum: "$amount" },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]);
+      const revenueResults = await PaymentRepository.getRevenueByDateRange(
+        startDate,
+        endDate,
+        "month"
+      );
 
       if (revenueResults && revenueResults.length > 0) {
         return revenueResults.map((item) => {
-          const date = new Date(item._id + "-01");
+          const date = new Date(`${item._id.year}-${item._id.period}-01`);
           return {
             month: date.toLocaleString("default", { month: "short" }),
             revenue: item.revenue,
@@ -90,24 +31,29 @@ class AnalyticsService {
     }
   }
 
-  /**
-   * Get events categorized by type
-   * @returns {Array} Category distribution data
-   */
+  // Update the getCategoryData method:
   async getCategoryData() {
     try {
-      const categoryResults = await Event.aggregate([
-        { $match: { event_status: "approved" } },
-        { $group: { _id: "$category", count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-        { $limit: 5 },
-      ]);
+      const approvedEvents = await EventRepository.findAll(
+        { event_status: "approved" },
+        { sort: { category: 1 } }
+      );
 
-      if (categoryResults && categoryResults.length > 0) {
-        return categoryResults.map((item) => ({
-          name: item._id || "Uncategorized",
-          value: item.count,
-        }));
+      if (approvedEvents && approvedEvents.length > 0) {
+        // Group by category
+        const categoryMap = {};
+        approvedEvents.forEach((event) => {
+          const category = event.category || "Uncategorized";
+          categoryMap[category] = (categoryMap[category] || 0) + 1;
+        });
+
+        // Convert to array and sort by count
+        const categoryResults = Object.entries(categoryMap)
+          .map(([name, count]) => ({ name, value: count }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 5);
+
+        return categoryResults;
       }
 
       // Return sample data if no results found
@@ -118,46 +64,36 @@ class AnalyticsService {
     }
   }
 
-  /**
-   * Get best selling events based on ticket sales
-   * @returns {Array} Best selling events with sales and revenue data
-   */
+  // Update the getBestSellingEvents method:
   async getBestSellingEvents() {
     try {
-      const eventsResults = await Payment.aggregate([
-        { $match: { payment_status: "completed" } },
-        {
-          $group: {
-            _id: "$event_id",
-            sales: { $sum: 1 },
-            revenue: { $sum: "$amount" },
-          },
-        },
-        { $sort: { sales: -1 } },
-        { $limit: 5 },
-      ]);
+      // Get all completed payments with event details
+      const completedPayments = await PaymentRepository.findCompleted({
+        populate: { event: "title" },
+        sort: { createdAt: -1 },
+      });
 
-      if (eventsResults && eventsResults.length > 0) {
-        const bestSellingEvents = await Promise.all(
-          eventsResults.map(async (event) => {
-            try {
-              const eventDetails = await Event.findById(event._id);
-              return {
-                id: event._id,
-                name: eventDetails ? eventDetails.title : "Unknown Event",
-                sales: event.sales,
-                revenue: event.revenue,
-              };
-            } catch (err) {
-              return {
-                id: event._id,
-                name: "Unknown Event",
-                sales: event.sales,
-                revenue: event.revenue,
-              };
-            }
-          })
-        );
+      if (completedPayments && completedPayments.length > 0) {
+        // Group by event and calculate sales/revenue
+        const eventMap = {};
+        completedPayments.forEach((payment) => {
+          const eventId = payment.event_id.toString();
+          if (!eventMap[eventId]) {
+            eventMap[eventId] = {
+              id: eventId,
+              name: payment.event_id.title || "Unknown Event",
+              sales: 0,
+              revenue: 0,
+            };
+          }
+          eventMap[eventId].sales += 1;
+          eventMap[eventId].revenue += payment.amount;
+        });
+
+        // Convert to array and sort by sales
+        const bestSellingEvents = Object.values(eventMap)
+          .sort((a, b) => b.sales - a.sales)
+          .slice(0, 5);
 
         return bestSellingEvents;
       }
@@ -170,70 +106,59 @@ class AnalyticsService {
     }
   }
 
-  /**
-   * Get top performing organizers
-   * @returns {Array} Top organizers with event count and revenue
-   */
+  // Update the getTopOrganizers method:
   async getTopOrganizers() {
     try {
-      const organizersResults = await Event.aggregate([
-        { $match: { event_status: "approved" } },
-        {
-          $group: {
-            _id: "$organizer_id",
-            eventCount: { $sum: 1 },
-          },
-        },
-        { $sort: { eventCount: -1 } },
-        { $limit: 5 },
-      ]);
+      const approvedEvents = await EventRepository.findAll(
+        { event_status: "approved" },
+        { populate: "organizer_id" }
+      );
 
-      if (organizersResults && organizersResults.length > 0) {
-        const topOrganizers = await Promise.all(
-          organizersResults.map(async (org) => {
-            try {
-              const user = await User.findById(org._id);
+      if (approvedEvents && approvedEvents.length > 0) {
+        // Group by organizer
+        const organizerMap = {};
 
-              // Get events by this organizer
-              const events = await Event.find({ organizer_id: org._id });
-              const eventIds = events.map((e) => e._id);
+        for (const event of approvedEvents) {
+          const organizerId = event.organizer_id.toString();
 
-              // Calculate total revenue for these events
-              const revenueData = await Payment.aggregate([
-                {
-                  $match: {
-                    event_id: { $in: eventIds },
-                    payment_status: "completed",
-                  },
-                },
-                {
-                  $group: {
-                    _id: null,
-                    totalRevenue: { $sum: "$amount" },
-                  },
-                },
-              ]);
+          if (!organizerMap[organizerId]) {
+            // Get user details
+            const user = await UserRepository.findById(organizerId);
+            organizerMap[organizerId] = {
+              id: organizerId,
+              name: user
+                ? `${user.firstName} ${user.lastName}`
+                : "Unknown Organizer",
+              eventCount: 0,
+              totalRevenue: 0,
+              eventIds: [],
+            };
+          }
 
-              const totalRevenue = revenueData[0]?.totalRevenue || 0;
+          organizerMap[organizerId].eventCount += 1;
+          organizerMap[organizerId].eventIds.push(event._id);
+        }
 
-              return {
-                id: org._id,
-                name: user
-                  ? `${user.firstName} ${user.lastName}`
-                  : "Unknown Organizer",
-                eventCount: org.eventCount,
-                totalRevenue,
-              };
-            } catch (err) {
-              return {
-                id: org._id,
-                name: "Unknown Organizer",
-                eventCount: org.eventCount,
-                totalRevenue: 0,
-              };
-            }
-          })
-        );
+        // Calculate revenue for each organizer
+        for (const organizer of Object.values(organizerMap)) {
+          const payments = await PaymentRepository.findAll({
+            event_id: { $in: organizer.eventIds },
+            payment_status: "completed",
+          });
+
+          organizer.totalRevenue = payments.reduce(
+            (sum, payment) => sum + payment.amount,
+            0
+          );
+
+          // Remove eventIds from final result
+          delete organizer.eventIds;
+        }
+
+        // Sort by event count and return top 5
+        const topOrganizers = Object.values(organizerMap)
+          .sort((a, b) => b.eventCount - a.eventCount)
+          .slice(0, 5);
 
         return topOrganizers;
       }
@@ -246,37 +171,30 @@ class AnalyticsService {
     }
   }
 
-  /**
-   * Get user growth data over time
-   * @param {Date} startDate - Start date
-   * @param {Date} endDate - End date
-   * @returns {Array} User growth data by month
-   */
+  // Update the getUserGrowthData method:
   async getUserGrowthData(startDate, endDate) {
     try {
-      const userResults = await User.aggregate([
+      const users = await UserRepository.findAll(
         {
-          $match: {
-            createdAt: { $gte: startDate, $lte: endDate },
-          },
+          createdAt: { $gte: startDate, $lte: endDate },
         },
-        {
-          $group: {
-            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-            users: { $sum: 1 },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]);
+        { sort: { createdAt: 1 } }
+      );
 
-      if (userResults && userResults.length > 0) {
-        return userResults.map((item) => {
-          const date = new Date(item._id + "-01");
-          return {
-            month: date.toLocaleString("default", { month: "short" }),
-            users: item.users,
-          };
+      if (users && users.length > 0) {
+        // Group by month
+        const monthlyGrowth = {};
+        users.forEach((user) => {
+          const month = new Date(user.createdAt).toLocaleString("default", {
+            month: "short",
+          });
+          monthlyGrowth[month] = (monthlyGrowth[month] || 0) + 1;
         });
+
+        return Object.entries(monthlyGrowth).map(([month, users]) => ({
+          month,
+          users,
+        }));
       }
 
       // Return sample data if no results found
@@ -287,15 +205,12 @@ class AnalyticsService {
     }
   }
 
-  /**
-   * Get overall platform statistics
-   * @returns {Object} Platform statistics
-   */
+  // Update the getPlatformStatistics method:
   async getPlatformStatistics() {
     try {
       const [totalUsers, activeUsers] = await Promise.all([
-        User.countDocuments(),
-        User.countDocuments({
+        UserRepository.count(),
+        UserRepository.count({
           lastLogin: {
             $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
           },
@@ -318,94 +233,20 @@ class AnalyticsService {
     }
   }
 
-  /**
-   * Get revenue analytics for a specific period
-   * @param {string} period - Time period ('week', 'month', 'year')
-   * @returns {Object} Revenue analytics for the period
-   */
+  // Update the getRevenueBuckets method:
   async getRevenueBuckets(period = "month") {
     try {
-      let groupFormat;
-      switch (period) {
-        case "week":
-          groupFormat = "%Y-%U"; // Year-Week
-          break;
-        case "year":
-          groupFormat = "%Y"; // Year
-          break;
-        default:
-          groupFormat = "%Y-%m"; // Year-Month
-      }
+      const now = new Date();
+      const lastYear = new Date(now.setFullYear(now.getFullYear() - 1));
 
-      const results = await Payment.aggregate([
-        { $match: { payment_status: "completed" } },
-        {
-          $group: {
-            _id: { $dateToString: { format: groupFormat, date: "$createdAt" } },
-            revenue: { $sum: "$amount" },
-            transactions: { $sum: 1 },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]);
-
-      return results;
+      return await PaymentRepository.getRevenueByDateRange(
+        lastYear,
+        new Date(),
+        period
+      );
     } catch (error) {
       throw new Error(`Failed to get revenue buckets: ${error.message}`);
     }
-  }
-
-  // Sample data methods for fallback
-  getSampleRevenueData() {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-    return months.map((month) => ({
-      month,
-      revenue: Math.floor(Math.random() * 10000) + 5000,
-    }));
-  }
-
-  getSampleCategoryData() {
-    return [
-      { name: "Music", value: 35 },
-      { name: "Sports", value: 25 },
-      { name: "Business", value: 20 },
-      { name: "Food", value: 15 },
-      { name: "Art", value: 10 },
-    ];
-  }
-
-  getSampleBestSellingEvents() {
-    return [
-      {
-        id: "1",
-        name: "Annual Music Festival",
-        sales: 230,
-        revenue: 12500,
-      },
-      { id: "2", name: "Tech Conference 2025", sales: 180, revenue: 9000 },
-      { id: "3", name: "City Marathon", sales: 150, revenue: 7500 },
-    ];
-  }
-
-  getSampleTopOrganizers() {
-    return [
-      {
-        id: "1",
-        name: "Sarah Johnson",
-        eventCount: 12,
-        totalRevenue: 68000,
-      },
-      { id: "2", name: "Michael Chen", eventCount: 8, totalRevenue: 42000 },
-      { id: "3", name: "David Miller", eventCount: 6, totalRevenue: 31000 },
-    ];
-  }
-
-  getSampleUserGrowthData() {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-    return months.map((month) => ({
-      month,
-      users: Math.floor(Math.random() * 500) + 100,
-    }));
   }
 }
 

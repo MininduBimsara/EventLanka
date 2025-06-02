@@ -1,7 +1,7 @@
-const User = require("../../models/User");
-const Organizer = require("../../models/Organizer");
-const Event = require("../../models/Event");
-const Ticket = require("../../models/Ticket");
+const UserRepository = require("../repositories/UserRepository");
+const { OrganizerRepository } = require("../repositories/OrganizerRepository");
+const EventRepository = require("../repositories/EventRepository");
+const TicketRepository = require("../repositories/TicketRepository");
 const bcrypt = require("bcryptjs");
 
 class OrganizerService {
@@ -11,19 +11,20 @@ class OrganizerService {
    * @returns {Object} Combined organizer and user data
    */
   async getOrganizerProfile(userId) {
-    const organizer = await Organizer.findOne({
-      user: userId,
-    }).populate("user", "-password");
+    const organizer = await OrganizerRepository.findByUserId(userId);
 
     if (!organizer) {
       throw new Error("Organizer not found");
     }
 
+    // Get user data separately
+    const user = await UserRepository.findById(userId);
+
     // Combine user and organizer data
     return {
-      ...organizer.user._doc,
+      ...user._doc,
       ...organizer._doc,
-      id: organizer.user._id,
+      id: user._id,
     };
   }
 
@@ -56,7 +57,7 @@ class OrganizerService {
 
     // Update User document if needed
     if (Object.keys(userUpdates).length > 0) {
-      await User.findByIdAndUpdate(userId, userUpdates);
+      await UserRepository.updateById(userId, userUpdates);
     }
 
     // Extract organizer-specific fields
@@ -79,31 +80,28 @@ class OrganizerService {
     });
 
     // Find and update or create organizer profile
-    let organizer = await Organizer.findOne({ user: userId });
+    let organizer = await OrganizerRepository.findByUserId(userId);
 
     if (organizer) {
       // Update existing organizer document
-      organizer = await Organizer.findOneAndUpdate(
-        { user: userId },
-        organizerUpdates,
-        { new: true }
-      ).populate("user", "-password");
+      organizer = await OrganizerRepository.updateByUserId(
+        userId,
+        organizerUpdates
+      );
     } else {
       // Create new organizer document if doesn't exist
       organizerUpdates.user = userId;
-      organizer = new Organizer(organizerUpdates);
-      await organizer.save();
-      organizer = await Organizer.findOne({ user: userId }).populate(
-        "user",
-        "-password"
-      );
+      organizer = await OrganizerRepository.create(organizerUpdates);
     }
+
+    // Get updated user data
+    const user = await UserRepository.findById(userId);
 
     // Combine user and organizer data
     return {
-      ...organizer.user._doc,
+      ...user._doc,
       ...organizer._doc,
-      id: organizer.user._id,
+      id: user._id,
     };
   }
 
@@ -121,16 +119,12 @@ class OrganizerService {
       defaultEventSettings,
     } = settingsData;
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        notificationPreferences,
-        paymentDetails,
-        displayName,
-        defaultEventSettings,
-      },
-      { new: true }
-    ).select("-password");
+    const updatedUser = await UserRepository.updateById(userId, {
+      notificationPreferences,
+      paymentDetails,
+      displayName,
+      defaultEventSettings,
+    });
 
     if (!updatedUser) {
       throw new Error("User not found");
@@ -146,13 +140,13 @@ class OrganizerService {
    */
   async getDashboardData(userId) {
     // Get organizer's events
-    const events = await Event.find({ organizer_id: userId });
+    const events = await EventRepository.findByOrganizerId(userId);
 
     // Get event IDs
     const eventIds = events.map((event) => event._id);
 
     // Get tickets sold for these events
-    const tickets = await Ticket.find({
+    const tickets = await TicketRepository.findAll({
       event_id: { $in: eventIds },
       payment_status: "paid",
     });
@@ -173,11 +167,14 @@ class OrganizerService {
       .slice(0, 5); // Get top 5
 
     // Get recent ticket sales
-    const recentSales = await Ticket.find({ event_id: { $in: eventIds } })
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate("event_id", "title")
-      .populate("user_id", "username email");
+    const recentSales = await TicketRepository.findAll(
+      { event_id: { $in: eventIds } },
+      {
+        sort: { createdAt: -1 },
+        limit: 10,
+        populate: { event: true, user: true },
+      }
+    );
 
     // Calculate sales by event
     const salesByEvent = this._calculateSalesByEvent(tickets, events);
@@ -221,7 +218,7 @@ class OrganizerService {
     }
 
     // Find user
-    const user = await User.findById(userId);
+    const user = await UserRepository.findById(userId);
 
     if (!user) {
       throw new Error("User not found");
@@ -236,9 +233,9 @@ class OrganizerService {
 
     // Hash new password and update
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await user.save();
+    await UserRepository.updateById(userId, { password: hashedPassword });
   }
 
   /**
@@ -246,7 +243,9 @@ class OrganizerService {
    * @returns {Array} Array of organizer data
    */
   async getAllOrganizers() {
-    const organizers = await Organizer.find().populate("user", "-password");
+    const organizers = await OrganizerRepository.findPublic({
+      populate: "user",
+    });
 
     return organizers.map((organizer) => ({
       ...organizer.user._doc,
