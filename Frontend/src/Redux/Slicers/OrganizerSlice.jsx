@@ -35,7 +35,7 @@ import {
   updateOrganizerSettings,
   getOrganizerDashboard,
   updateOrganizerPassword,
-} from "./organizerThunks";
+} from "../Thunks/organizerThunk";
 
 // Initial state for the organizer slice
 const initialState = {

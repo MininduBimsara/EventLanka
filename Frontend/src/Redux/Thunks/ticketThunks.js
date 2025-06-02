@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import TicketAPI from "../api/ticketApi";
+import TicketAPI from "../../Api/Common/ticketApi";
 
 // Async thunk for buying a ticket
 export const buyTicket = createAsyncThunk(

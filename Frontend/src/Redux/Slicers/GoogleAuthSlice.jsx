@@ -4,7 +4,7 @@ import {
   googleAuth,
   checkGoogleAuthStatus,
   googleLogout,
-} from "./googleAuthThunks";
+} from "../Thunks/googleAuththunks";
 
 // Initial state for the Google Auth slice
 const initialState = {

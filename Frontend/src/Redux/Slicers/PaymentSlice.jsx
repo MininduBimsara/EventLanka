@@ -8,7 +8,7 @@ import {
   fetchPaymentHistory,
   downloadReceipt,
   checkPaymentStatus,
-} from "../thunks/paymentThunks";
+} from "../Thunks/paymentThunks";
 
 // Initial state for the payments slice
 const initialState = {

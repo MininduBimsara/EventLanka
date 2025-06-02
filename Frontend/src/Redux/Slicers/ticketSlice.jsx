@@ -9,7 +9,7 @@ import {
   updateTicket,
   getTicketStats,
   validateTicket,
-} from "./ticketThunks";
+} from "../Thunks/ticketThunks";
 
 // Initial state for tickets slice
 const initialState = {

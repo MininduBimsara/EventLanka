@@ -4,7 +4,7 @@ import {
   registerUser,
   logoutUser,
   verifyAuth,
-} from "../thunks/authThunks";
+} from "../Thunks/authThunks";
 
 const initialState = {
   user: null,

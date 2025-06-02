@@ -15,7 +15,7 @@ import {
   exportOrders,
   generateTicketQRCode,
   downloadTicketPDF,
-} from "../thunks/orderThunks";
+} from "../Thunks/orderThunks";
 
 // Initial state for orders slice
 const initialState = {

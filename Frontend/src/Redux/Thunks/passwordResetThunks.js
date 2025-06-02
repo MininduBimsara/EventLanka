@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { passwordResetApiService } from "../api/passwordResetApi";
+import { passwordResetApiService } from "../../Api/Common/passwordResetApi";
 
 // Async thunk for requesting password reset
 export const forgotPassword = createAsyncThunk(

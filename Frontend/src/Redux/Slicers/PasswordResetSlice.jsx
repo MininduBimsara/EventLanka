@@ -3,7 +3,7 @@ import {
   forgotPassword,
   verifyResetToken,
   resetPassword,
-} from "./passwordResetThunks";
+} from "../Thunks/passwordResetThunks";
 
 const initialState = {
   loading: false,

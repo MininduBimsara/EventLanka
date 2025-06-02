@@ -1,7 +1,7 @@
 // thunks/orderThunks.js
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import OrderAPI from "../api/orderApi";
+import OrderAPI from "../../Api/Common/orderApi";
 
 // Async thunk for creating a new order
 export const createOrder = createAsyncThunk(

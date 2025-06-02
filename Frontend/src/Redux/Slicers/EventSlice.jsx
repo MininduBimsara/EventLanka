@@ -6,7 +6,7 @@ import {
   updateEvent,
   deleteEvent,
   fetchEventById,
-} from "./eventThunks";
+} from "../Thunks/eventThunk";
 
 // Initial state for events slice
 const initialState = {

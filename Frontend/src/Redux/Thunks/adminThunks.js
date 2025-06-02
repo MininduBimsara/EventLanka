@@ -8,7 +8,7 @@ import {
   organizersAPI,
   refundRequestsAPI,
   financeAPI,
-} from "./adminApi";
+} from "../../Api/Admin/adminApi";
 
 // Dashboard & Settings Thunks
 export const fetchDashboardStats = createAsyncThunk(

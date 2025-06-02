@@ -5,7 +5,7 @@ import {
   updateProfilePhoto,
   fetchUserById,
   deleteUserAccount,
-} from "../thunks/userThunks";
+} from "../Thunks/userThunks";
 
 const initialState = {
   userInfo: null,

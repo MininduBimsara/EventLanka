@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchAnalyticsData, fetchUsersData } from "../thunks/analyticsThunks";
+import { fetchAnalyticsData, fetchUsersData } from "../Thunks/adminAnalyticsThunks";
 
 // Define initial state with sample data
 const initialState = {

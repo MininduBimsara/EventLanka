@@ -8,7 +8,7 @@ import {
   resetPasswordChangeSuccess,
 } from "../../Redux/Slicers/adminSlice";
 import { toast } from "react-toastify";
-import { inputValidation } from "../../utils/inputValidation"; // Import the validation utilities
+import { inputValidation } from "../../Utils/Admin/adminValidation"; // Import the validation utilities
 
 const AdminSettings = () => {
   const dispatch = useDispatch();

@@ -1,6 +1,6 @@
 // thunks/paymentThunks.js
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import PaymentAPI from "../api/paymentApi";
+import PaymentAPI from "../../Api/Common/paymentApi";
 
 // Async thunk for creating a payment intent (now preparing PayPal payment)
 export const createPaymentIntent = createAsyncThunk(

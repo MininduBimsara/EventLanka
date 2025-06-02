@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { eventsApiService } from "../api/eventsApi";
+import { eventsApiService } from "../../Api/Common/eventsApi ";
 
 // Async thunk for fetching all events
 export const fetchEvents = createAsyncThunk(

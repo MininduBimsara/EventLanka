@@ -30,7 +30,7 @@ import {
   fetchTransactions,
   fetchRevenueReport,
   fetchPopularEvents,
-} from "./adminThunks";
+} from "../Thunks/adminThunks";
 
 // Initial state
 const initialState = {

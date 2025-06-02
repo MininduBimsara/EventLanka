@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { googleAuthApiService } from "../api/googleAuthApi";
+import { googleAuthApiService } from "../../Api/Common/googleAuthApiService";
 
 // Async thunk for Google authentication
 export const googleAuth = createAsyncThunk(
