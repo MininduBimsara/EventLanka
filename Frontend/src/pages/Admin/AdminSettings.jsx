@@ -8,6 +8,7 @@ import {
   resetPasswordChangeSuccess,
 } from "../../Redux/Slicers/adminSlice";
 import { toast } from "react-toastify";
+import { inputValidation } from "../../utils/inputValidation"; // Import the validation utilities
 
 const AdminSettings = () => {
   const dispatch = useDispatch();
@@ -47,12 +48,15 @@ const AdminSettings = () => {
     },
   });
 
-  // Password state (kept separate from settings as it's handled differently)
+  // Password state
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Validation errors state
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Fetch admin profile on component mount
   useEffect(() => {
@@ -62,10 +66,15 @@ const AdminSettings = () => {
   // Update local state when profile data is loaded from backend
   useEffect(() => {
     if (profileData) {
-      setAdminProfile({
-        phone: profileData.phone || "",
-        position: profileData.position || "System Administrator",
-        department: profileData.department || "IT",
+      // Sanitize all incoming data from backend
+      const sanitizedProfile = {
+        phone: inputValidation.sanitizeInput(profileData.phone || ""),
+        position: inputValidation.sanitizeInput(
+          profileData.position || "System Administrator"
+        ),
+        department: inputValidation.sanitizeInput(
+          profileData.department || "IT"
+        ),
         permissions: profileData.permissions || {
           manageUsers: true,
           manageEvents: true,
@@ -73,14 +82,16 @@ const AdminSettings = () => {
           manageRefunds: true,
           managePlatformSettings: true,
         },
-        twoFactorEnabled: profileData.twoFactorEnabled || false,
+        twoFactorEnabled: Boolean(profileData.twoFactorEnabled),
         emailNotifications: profileData.emailNotifications || {
           newUsers: true,
           newEvents: true,
           refundRequests: true,
           systemAlerts: true,
         },
-      });
+      };
+
+      setAdminProfile(sanitizedProfile);
     }
   }, [profileData]);
 
@@ -110,57 +121,193 @@ const AdminSettings = () => {
     }
   }, [error]);
 
-  // Handle input changes for admin profile
+  // Clear validation error for a specific field
+  const clearValidationError = (fieldName) => {
+    if (validationErrors[fieldName]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
+  };
+
+  // Handle input changes for admin profile with validation
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let validationResult = {
+      isValid: true,
+      value: type === "checkbox" ? checked : value,
+    };
 
+    // Validate based on field type
+    if (type !== "checkbox") {
+      switch (name) {
+        case "phone":
+          validationResult = inputValidation.validatePhone(value);
+          break;
+        case "position":
+          validationResult = inputValidation.validateTextField(
+            value,
+            "Position",
+            50
+          );
+          break;
+        case "department":
+          validationResult = inputValidation.validateTextField(
+            value,
+            "Department",
+            50
+          );
+          break;
+        default:
+          validationResult = {
+            isValid: true,
+            value: inputValidation.sanitizeInput(value),
+          };
+      }
+    }
+
+    // Update validation errors
+    if (!validationResult.isValid) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [name]: validationResult.error,
+      }));
+      return; // Don't update state if validation fails
+    } else {
+      clearValidationError(name);
+    }
+
+    // Update state
     if (name.includes(".")) {
       const [category, field] = name.split(".");
       setAdminProfile({
         ...adminProfile,
         [category]: {
           ...adminProfile[category],
-          [field]: type === "checkbox" ? checked : value,
+          [field]: validationResult.value,
         },
       });
     } else {
       setAdminProfile({
         ...adminProfile,
-        [name]: type === "checkbox" ? checked : value,
+        [name]: validationResult.value,
       });
     }
   };
 
-  // Handle password field changes
+  // Handle password field changes with validation
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
+
+    // Clear previous validation errors for this field
+    clearValidationError(name);
+
     setPasswordData({
       ...passwordData,
       [name]: value,
     });
   };
 
+  // Validate entire profile before submission
+  const validateProfile = () => {
+    const errors = {};
+
+    // Validate phone
+    const phoneValidation = inputValidation.validatePhone(adminProfile.phone);
+    if (!phoneValidation.isValid) {
+      errors.phone = phoneValidation.error;
+    }
+
+    // Validate position
+    const positionValidation = inputValidation.validateTextField(
+      adminProfile.position,
+      "Position"
+    );
+    if (!positionValidation.isValid) {
+      errors.position = positionValidation.error;
+    }
+
+    // Validate department
+    const departmentValidation = inputValidation.validateTextField(
+      adminProfile.department,
+      "Department"
+    );
+    if (!departmentValidation.isValid) {
+      errors.department = departmentValidation.error;
+    }
+
+    return errors;
+  };
+
   // Handle admin profile submission
   const handleProfileSubmit = (e) => {
     e.preventDefault();
-    console.log("Submitting profile data:", adminProfile);
-    dispatch(updateAdminProfile(adminProfile));
+
+    // Validate all fields
+    const errors = validateProfile();
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error("Please fix validation errors before submitting");
+      return;
+    }
+
+    // Sanitize and validate permissions and notifications
+    const permissionsValidation = inputValidation.validatePermissions(
+      adminProfile.permissions
+    );
+    const notificationsValidation = inputValidation.validateEmailNotifications(
+      adminProfile.emailNotifications
+    );
+
+    const sanitizedProfile = {
+      ...adminProfile,
+      phone: inputValidation.sanitizeInput(adminProfile.phone),
+      position: inputValidation.sanitizeInput(adminProfile.position),
+      department: inputValidation.sanitizeInput(adminProfile.department),
+      permissions: permissionsValidation.value,
+      emailNotifications: notificationsValidation.value,
+      twoFactorEnabled: Boolean(adminProfile.twoFactorEnabled),
+    };
+
+    console.log("Submitting sanitized profile data:", sanitizedProfile);
+    dispatch(updateAdminProfile(sanitizedProfile));
   };
 
-  // Handle password change submission
+  // Handle password change submission with validation
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
 
-    // Validate passwords
+    const errors = {};
+
+    // Validate old password (basic check)
+    if (!passwordData.oldPassword) {
+      errors.oldPassword = "Current password is required";
+    }
+
+    // Validate new password
+    const newPasswordValidation = inputValidation.validatePassword(
+      passwordData.newPassword
+    );
+    if (!newPasswordValidation.isValid) {
+      errors.newPassword = newPasswordValidation.error;
+    }
+
+    // Validate password confirmation
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("New passwords don't match");
+      errors.confirmPassword = "New passwords don't match";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      Object.values(errors).forEach((error) => toast.error(error));
       return;
     }
 
-    if (passwordData.newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters long");
-      return;
-    }
+    // Clear validation errors
+    setValidationErrors({});
 
     // Send password change request
     dispatch(
@@ -168,6 +315,17 @@ const AdminSettings = () => {
         oldPassword: passwordData.oldPassword,
         newPassword: passwordData.newPassword,
       })
+    );
+  };
+
+  // Render input field with validation error
+  const renderInputField = (props) => {
+    const { name, error, ...inputProps } = props;
+    return (
+      <div className="flex flex-col">
+        <input {...inputProps} />
+        {error && <span className="mt-1 text-sm text-red-600">{error}</span>}
+      </div>
     );
   };
 
