@@ -1,5 +1,6 @@
-const Order = require("../../models/Order");
-const Ticket = require("../../models/Ticket");
+// Import repositories
+const OrderRepository = require("../repositories/OrderRepository");
+const TicketRepository = require("../repositories/TicketRepository");
 
 /**
  * Create a new order
@@ -28,11 +29,11 @@ const createOrder = async (orderData, user) => {
   // Generate a unique order number
   const orderNumber = generateOrderNumber();
 
-  // Create tickets first
+  // Create tickets first using repository
   const ticketIds = await createTickets(tickets, user._id, event_id);
 
-  // Create the order with ticket IDs
-  const order = await Order.create({
+  // Create the order with ticket IDs using repository
+  const orderCreateData = {
     order_number: orderNumber,
     user_id: user._id,
     tickets: ticketIds,
@@ -42,7 +43,9 @@ const createOrder = async (orderData, user) => {
     payment_method: payment_method,
     payment_status: "pending",
     status: "pending",
-  });
+  };
+
+  const order = await OrderRepository.create(orderCreateData);
 
   return order;
 };
@@ -63,21 +66,16 @@ const generateOrderNumber = () => {
  * @returns {Array} Created ticket IDs
  */
 const createTickets = async (tickets, userId, eventId) => {
-  const ticketIds = [];
+  const ticketsData = tickets.map((ticketData) => ({
+    user_id: userId,
+    event_id: eventId,
+    ticket_type: ticketData.ticket_type,
+    quantity: ticketData.quantity,
+    payment_status: "pending",
+  }));
 
-  for (const ticketData of tickets) {
-    const ticket = await Ticket.create({
-      user_id: userId,
-      event_id: eventId,
-      ticket_type: ticketData.ticket_type,
-      quantity: ticketData.quantity,
-      payment_status: "pending",
-    });
-
-    ticketIds.push(ticket._id);
-  }
-
-  return ticketIds;
+  const createdTickets = await TicketRepository.createMany(ticketsData);
+  return createdTickets.map((ticket) => ticket._id);
 };
 
 /**
@@ -101,30 +99,35 @@ const updateOrder = async (orderId, updateData, user) => {
     status,
   } = updateData;
 
-  const order = await Order.findById(orderId);
+  const order = await OrderRepository.findById(orderId);
 
   if (!order || order.user_id.toString() !== user._id.toString()) {
     throw new Error("Order not found or unauthorized");
   }
 
-  // Update fields if provided
+  // Prepare update data
+  const orderUpdateData = {};
+
   if (tickets) {
-    order.tickets = tickets;
-    await Ticket.updateMany(
-      { _id: { $in: tickets } },
-      { payment_status: "pending" }
-    );
+    orderUpdateData.tickets = tickets;
+    // Update associated tickets
+    await TicketRepository.updatePaymentStatusByIds(tickets, "pending");
   }
 
-  if (totalAmount !== undefined) order.total_amount = totalAmount;
-  if (discountId !== undefined) order.discount_id = discountId;
-  if (discountAmount !== undefined) order.discount_amount = discountAmount;
-  if (paymentMethod !== undefined) order.payment_method = paymentMethod;
-  if (status !== undefined) order.status = status;
+  if (totalAmount !== undefined) orderUpdateData.total_amount = totalAmount;
+  if (discountId !== undefined) orderUpdateData.discount_id = discountId;
+  if (discountAmount !== undefined)
+    orderUpdateData.discount_amount = discountAmount;
+  if (paymentMethod !== undefined)
+    orderUpdateData.payment_method = paymentMethod;
+  if (status !== undefined) orderUpdateData.status = status;
 
-  await order.save();
+  const updatedOrder = await OrderRepository.updateById(
+    orderId,
+    orderUpdateData
+  );
 
-  return order;
+  return updatedOrder;
 };
 
 /**
@@ -137,15 +140,10 @@ const getOrders = async (user) => {
     throw new Error("You must be logged in to view orders.");
   }
 
-  return await Order.find({ user_id: user._id })
-    .populate({
-      path: "tickets",
-      populate: {
-        path: "event_id",
-        model: "Event",
-      },
-    })
-    .populate("discount_id");
+  return await OrderRepository.findByUserId(user._id, {
+    tickets: true,
+    discount: true,
+  });
 };
 
 /**
@@ -159,15 +157,10 @@ const getOrderById = async (orderId, user) => {
     throw new Error("You must be logged in to view this order.");
   }
 
-  const order = await Order.findById(orderId)
-    .populate({
-      path: "tickets",
-      populate: {
-        path: "event_id",
-        model: "Event",
-      },
-    })
-    .populate("discount_id");
+  const order = await OrderRepository.findById(orderId, {
+    tickets: true,
+    discount: true,
+  });
 
   if (!order || order.user_id.toString() !== user._id.toString()) {
     throw new Error("Order not found or unauthorized");
@@ -187,7 +180,7 @@ const cancelOrder = async (orderId, user) => {
     throw new Error("You must be logged in to cancel an order.");
   }
 
-  const order = await Order.findById(orderId);
+  const order = await OrderRepository.findById(orderId);
 
   if (!order || order.user_id.toString() !== user._id.toString()) {
     throw new Error("Order not found or unauthorized");
@@ -200,17 +193,16 @@ const cancelOrder = async (orderId, user) => {
     );
   }
 
-  // Update the order status
-  order.status = "cancelled";
-  await order.save();
-
-  // Update associated tickets
-  await Ticket.updateMany(
-    { _id: { $in: order.tickets } },
-    { payment_status: "refunded" }
+  // Update the order status using repository
+  const cancelledOrder = await OrderRepository.updateStatus(
+    orderId,
+    "cancelled"
   );
 
-  return order;
+  // Update associated tickets using repository
+  await TicketRepository.updatePaymentStatusByIds(order.tickets, "refunded");
+
+  return cancelledOrder;
 };
 
 /**
@@ -224,7 +216,7 @@ const deleteOrder = async (orderId, user) => {
     throw new Error("You must be logged in to delete an order.");
   }
 
-  const order = await Order.findById(orderId);
+  const order = await OrderRepository.findById(orderId);
 
   if (!order || order.user_id.toString() !== user._id.toString()) {
     throw new Error("Order not found or unauthorized");
@@ -237,18 +229,121 @@ const deleteOrder = async (orderId, user) => {
     );
   }
 
-  // Delete the order
-  await order.deleteOne();
+  // Delete the order using repository
+  await OrderRepository.deleteById(orderId);
 
-  // Update associated tickets
-  await Ticket.updateMany(
-    { _id: { $in: order.tickets } },
-    { payment_status: "available" }
-  );
+  // Update associated tickets to make them available again
+  await TicketRepository.updatePaymentStatusByIds(order.tickets, "available");
 
   return true;
 };
 
+/**
+ * Get order statistics for admin/analytics
+ * @param {Object} filter - Optional filter criteria
+ * @returns {Object} Order statistics
+ */
+const getOrderStatistics = async (filter = {}) => {
+  return await OrderRepository.getStatistics(filter);
+};
+
+/**
+ * Get orders by status
+ * @param {String} status - Order status
+ * @param {Object} options - Query options
+ * @returns {Array} Orders with specified status
+ */
+const getOrdersByStatus = async (status, options = {}) => {
+  return await OrderRepository.findByStatus(status, options);
+};
+
+/**
+ * Get orders by payment status
+ * @param {String} paymentStatus - Payment status
+ * @param {Object} options - Query options
+ * @returns {Array} Orders with specified payment status
+ */
+const getOrdersByPaymentStatus = async (paymentStatus, options = {}) => {
+  return await OrderRepository.findByPaymentStatus(paymentStatus, options);
+};
+
+/**
+ * Update order payment status
+ * @param {String} orderId - Order ID
+ * @param {String} paymentStatus - New payment status
+ * @param {Object} user - Current user (optional for admin operations)
+ * @returns {Object} Updated order
+ */
+const updateOrderPaymentStatus = async (
+  orderId,
+  paymentStatus,
+  user = null
+) => {
+  // If user is provided, check authorization
+  if (user) {
+    const order = await OrderRepository.findById(orderId);
+    if (!order || order.user_id.toString() !== user._id.toString()) {
+      throw new Error("Order not found or unauthorized");
+    }
+  }
+
+  const updatedOrder = await OrderRepository.updatePaymentStatus(
+    orderId,
+    paymentStatus
+  );
+
+  // Update associated tickets if payment is successful
+  if (paymentStatus === "paid") {
+    const order = await OrderRepository.findById(orderId);
+    await TicketRepository.updatePaymentStatusByIds(order.tickets, "paid");
+    // Also update order status to completed
+    await OrderRepository.updateStatus(orderId, "completed");
+  }
+
+  return updatedOrder;
+};
+
+/**
+ * Get orders within a date range
+ * @param {Date} startDate - Start date
+ * @param {Date} endDate - End date
+ * @param {Object} options - Query options
+ * @returns {Array} Orders within date range
+ */
+const getOrdersByDateRange = async (startDate, endDate, options = {}) => {
+  return await OrderRepository.findByDateRange(startDate, endDate, options);
+};
+
+/**
+ * Get user's orders for a specific event
+ * @param {String} userId - User ID
+ * @param {String} eventId - Event ID
+ * @param {Object} options - Query options
+ * @returns {Array} User's orders for the event
+ */
+const getUserOrdersForEvent = async (userId, eventId, options = {}) => {
+  return await OrderRepository.findByUserAndEvent(userId, eventId, options);
+};
+
+/**
+ * Check if order exists
+ * @param {String} orderId - Order ID
+ * @returns {Boolean} True if order exists
+ */
+const orderExists = async (orderId) => {
+  return await OrderRepository.exists(orderId);
+};
+
+/**
+ * Count orders with optional filter
+ * @param {Object} filter - MongoDB filter object
+ * @returns {Number} Count of orders
+ */
+const countOrders = async (filter = {}) => {
+  return await OrderRepository.count(filter);
+};
+
+// Export all functions
 module.exports = {
   createOrder,
   updateOrder,
@@ -256,4 +351,14 @@ module.exports = {
   getOrderById,
   cancelOrder,
   deleteOrder,
+  getOrderStatistics,
+  getOrdersByStatus,
+  getOrdersByPaymentStatus,
+  updateOrderPaymentStatus,
+  getOrdersByDateRange,
+  getUserOrdersForEvent,
+  orderExists,
+  countOrders,
+  generateOrderNumber,
+  createTickets,
 };

@@ -332,6 +332,40 @@ class TicketRepository {
     const ticket = await Ticket.findById(ticketId).select("_id");
     return !!ticket;
   }
+
+  /**
+   * Find ticket with populated data
+   * @param {String} ticketId - Ticket ID
+   * @param {String} userFields - User fields to populate
+   * @param {String} eventFields - Event fields to populate
+   * @returns {Object|null} Ticket document or null
+   */
+  async findByIdWithPopulation(ticketId, userFields = "", eventFields = "") {
+    let query = Ticket.findById(ticketId);
+
+    if (userFields) {
+      query = query.populate("user_id", userFields);
+    }
+    if (eventFields) {
+      query = query.populate("event_id", eventFields);
+    }
+
+    return await query;
+  }
+
+  /**
+   * Update QR code for ticket
+   * @param {String} ticketId - Ticket ID
+   * @param {String} qrCode - QR code data
+   * @returns {Object|null} Updated ticket document
+   */
+  async updateQRCode(ticketId, qrCode) {
+    return await Ticket.findByIdAndUpdate(
+      ticketId,
+      { qr_code: qrCode },
+      { new: true }
+    );
+  }
 }
 
 module.exports = new TicketRepository();

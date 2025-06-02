@@ -1,6 +1,8 @@
-const Event = require("../../models/Event");
 const fs = require("fs");
 const path = require("path");
+
+// Import repositories
+const EventRepository = require("../../Repository/EventRepository");
 
 /**
  * Create a new event
@@ -32,7 +34,7 @@ const createEvent = async (eventData, user, bannerImageFilename = null) => {
   const parsedTicketTypes =
     typeof ticket_types === "string" ? JSON.parse(ticket_types) : ticket_types;
 
-  const newEvent = new Event({
+  const newEventData = {
     organizer_id: user.id,
     title,
     description,
@@ -43,9 +45,9 @@ const createEvent = async (eventData, user, bannerImageFilename = null) => {
     ticket_types: parsedTicketTypes,
     banner: bannerImageFilename,
     event_status: "pending",
-  });
+  };
 
-  await newEvent.save();
+  const newEvent = await EventRepository.create(newEventData);
 
   return {
     ...newEvent._doc,
@@ -58,7 +60,7 @@ const createEvent = async (eventData, user, bannerImageFilename = null) => {
  * @returns {Array} List of public events
  */
 const getPublicEvents = async () => {
-  const events = await Event.find({ event_status: "approved" }).lean();
+  const events = await EventRepository.findApproved({ lean: true });
 
   return events.map((event) => ({
     ...event,
@@ -75,11 +77,11 @@ const getEvents = async (user) => {
   let events;
 
   if (user && user.role === "admin") {
-    events = await Event.find(); // Admin sees all events
+    events = await EventRepository.findAll(); // Admin sees all events
   } else if (user && user.role === "organizer") {
-    events = await Event.find({ organizer_id: user.id }); // Organizer sees their own
+    events = await EventRepository.findByOrganizerId(user.id); // Organizer sees their own
   } else {
-    events = await Event.find({ event_status: "approved" }); // Regular users see only approved events
+    events = await EventRepository.findApproved(); // Regular users see only approved events
   }
 
   return events.map((event) => ({
@@ -102,7 +104,7 @@ const updateEvent = async (
   user,
   bannerImageFilename = null
 ) => {
-  const event = await Event.findById(eventId);
+  const event = await EventRepository.findById(eventId);
 
   if (!event) {
     throw new Error("Event not found");
@@ -135,10 +137,10 @@ const updateEvent = async (
 
   eventUpdateData.updatedAt = Date.now();
 
-  const updatedEvent = await Event.findByIdAndUpdate(eventId, eventUpdateData, {
-    new: true,
-    runValidators: true,
-  });
+  const updatedEvent = await EventRepository.updateById(
+    eventId,
+    eventUpdateData
+  );
 
   return {
     ...updatedEvent._doc,
@@ -152,7 +154,7 @@ const updateEvent = async (
  * @param {Object} user - Current user
  */
 const deleteEvent = async (eventId, user) => {
-  const event = await Event.findById(eventId);
+  const event = await EventRepository.findById(eventId);
 
   if (!event) {
     throw new Error("Event not found");
@@ -174,7 +176,7 @@ const deleteEvent = async (eventId, user) => {
     }
   }
 
-  await event.deleteOne();
+  await EventRepository.deleteById(eventId);
   return { message: "Event deleted successfully!" };
 };
 
@@ -183,7 +185,7 @@ const deleteEvent = async (eventId, user) => {
  * @returns {Array} List of pending events
  */
 const getPendingEvents = async () => {
-  return await Event.find({ event_status: "pending" });
+  return await EventRepository.findPending();
 };
 
 /**
@@ -193,7 +195,7 @@ const getPendingEvents = async () => {
  * @returns {Object} Event data
  */
 const getEventById = async (eventId, user = null) => {
-  const event = await Event.findById(eventId);
+  const event = await EventRepository.findById(eventId);
 
   if (!event) {
     throw new Error("Event not found");
@@ -230,16 +232,85 @@ const getEventById = async (eventId, user = null) => {
  * @param {String} status - New status ('approved' or 'rejected')
  */
 const updateEventStatus = async (eventId, status) => {
-  const event = await Event.findById(eventId);
+  const event = await EventRepository.findById(eventId);
 
   if (!event) {
     throw new Error("Event not found");
   }
 
-  event.event_status = status;
-  await event.save();
+  await EventRepository.updateStatus(eventId, status);
 
   return { message: `Event ${status} successfully!` };
+};
+
+/**
+ * Search events
+ * @param {String} searchQuery - Search query
+ * @param {Object} filters - Additional filters
+ * @param {Object} user - Current user (optional)
+ * @returns {Array} List of matching events
+ */
+const searchEvents = async (searchQuery, filters = {}, user = null) => {
+  let events;
+
+  if (searchQuery) {
+    events = await EventRepository.search(searchQuery);
+  } else {
+    events = await EventRepository.findAll(filters);
+  }
+
+  // Filter based on user role
+  if (!user || (user.role !== "admin" && user.role !== "organizer")) {
+    events = events.filter((event) => event.event_status === "approved");
+  } else if (user.role === "organizer") {
+    events = events.filter(
+      (event) =>
+        event.organizer_id.toString() === user.id ||
+        event.event_status === "approved"
+    );
+  }
+
+  return events.map((event) => ({
+    ...event._doc,
+    banner: event.banner ? `/event-images/${event.banner}` : null,
+  }));
+};
+
+/**
+ * Get upcoming events
+ * @param {Number} limit - Number of events to return
+ * @returns {Array} List of upcoming events
+ */
+const getUpcomingEvents = async (limit = 10) => {
+  const events = await EventRepository.findUpcoming({ limit });
+
+  return events.map((event) => ({
+    ...event._doc,
+    banner: event.banner ? `/event-images/${event.banner}` : null,
+  }));
+};
+
+/**
+ * Get events by category
+ * @param {String} category - Event category
+ * @param {Object} options - Query options
+ * @returns {Array} List of events in category
+ */
+const getEventsByCategory = async (category, options = {}) => {
+  const events = await EventRepository.findByCategory(category, {
+    ...options,
+    lean: true,
+  });
+
+  // Filter only approved events for public access
+  const approvedEvents = events.filter(
+    (event) => event.event_status === "approved"
+  );
+
+  return approvedEvents.map((event) => ({
+    ...event,
+    banner: event.banner ? `/event-images/${event.banner}` : null,
+  }));
 };
 
 module.exports = {
@@ -251,4 +322,7 @@ module.exports = {
   getPendingEvents,
   getEventById,
   updateEventStatus,
+  searchEvents,
+  getUpcomingEvents,
+  getEventsByCategory,
 };

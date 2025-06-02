@@ -1,8 +1,10 @@
-const User = require("../../models/User");
-const Organizer = require("../../models/Organizer");
-const Admin = require("../../models/Admin");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
+// Import repositories
+const UserRepository = require("../../Repository/UserRepository");
+const AdminRepository = require("../../Repository/AdminRepository");
+const OrganizerRepository  = require("../../Repository/OrganizerRepository");
 
 /**
  * Register a new user
@@ -17,23 +19,23 @@ const registerUser = async (userData, profileImageFilename = null) => {
     throw new Error("All fields are required");
   }
 
-  // Check if user already exists
-  let user = await User.findOne({ email });
-  if (user) throw new Error("User already exists");
+  // Check if user already exists using repository
+  const existingUser = await UserRepository.findByEmail(email);
+  if (existingUser) {
+    throw new Error("User already exists");
+  }
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Create new user
-  user = new User({
+  // Create new user using repository
+  const user = await UserRepository.create({
     username,
     email,
     password: hashedPassword,
     role,
     profileImage: profileImageFilename,
   });
-
-  await user.save();
 
   // Create organizer profile if role is organizer
   if (role === "organizer") {
@@ -59,7 +61,7 @@ const registerUser = async (userData, profileImageFilename = null) => {
  * @param {String} userId - User ID
  */
 const createOrganizerProfile = async (userId) => {
-  const organizer = new Organizer({
+  const organizerData = {
     user: userId,
     phone: "",
     bio: "",
@@ -69,17 +71,17 @@ const createOrganizerProfile = async (userId) => {
     linkedin: "",
     categories: [],
     isPublic: true,
-  });
-  await organizer.save();
-};
+  };
 
+  await OrganizerRepository.create(organizerData);
+};
 
 /**
  * Create a default admin profile for a new admin user
  * @param {String} userId - User ID
  */
 const createAdminProfile = async (userId) => {
-  const admin = new Admin({
+  const adminData = {
     user: userId,
     phone: "",
     position: "System Administrator",
@@ -98,10 +100,10 @@ const createAdminProfile = async (userId) => {
       refundRequests: true,
       systemAlerts: true,
     },
-  });
-  await admin.save();
-};
+  };
 
+  await AdminRepository.create(adminData);
+};
 
 /**
  * Authenticate a user
@@ -114,13 +116,17 @@ const loginUser = async (email, password) => {
     throw new Error("Email and password are required");
   }
 
-  // Find user
-  const user = await User.findOne({ email });
-  if (!user) throw new Error("Invalid credentials");
+  // Find user using repository
+  const user = await UserRepository.findByEmail(email);
+  if (!user) {
+    throw new Error("Invalid credentials");
+  }
 
   // Check password
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error("Invalid credentials");
+  if (!isMatch) {
+    throw new Error("Invalid credentials");
+  }
 
   // Generate JWT token
   const token = generateToken(user._id, user.role);
@@ -171,10 +177,55 @@ const getUserData = (user) => {
   return formatUserResponse(user);
 };
 
+/**
+ * Update user profile
+ * @param {String} userId - User ID
+ * @param {Object} updateData - Data to update
+ * @returns {Object} Updated user data
+ */
+const updateUserProfile = async (userId, updateData) => {
+  const updatedUser = await UserRepository.updateById(userId, updateData);
+  if (!updatedUser) {
+    throw new Error("User not found");
+  }
+
+  return formatUserResponse(updatedUser);
+};
+
+/**
+ * Change user password
+ * @param {String} userId - User ID
+ * @param {String} currentPassword - Current password
+ * @param {String} newPassword - New password
+ * @returns {Object} Success message
+ */
+const changePassword = async (userId, currentPassword, newPassword) => {
+  const user = await UserRepository.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Verify current password
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    throw new Error("Current password is incorrect");
+  }
+
+  // Hash new password
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update password using repository
+  await UserRepository.updatePassword(userId, hashedNewPassword);
+
+  return { message: "Password changed successfully" };
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserData,
   generateToken,
   formatUserResponse,
+  updateUserProfile,
+  changePassword,
 };
