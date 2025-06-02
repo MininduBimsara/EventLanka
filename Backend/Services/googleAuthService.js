@@ -1,6 +1,6 @@
 // Backend: googleAuthService.js
 const { OAuth2Client } = require("google-auth-library");
-const User = require("../models/User");
+const AuthRepository = require("../Repository/AuthRepository");
 const jwt = require("jsonwebtoken");
 
 // Initialize Google OAuth client
@@ -20,26 +20,28 @@ const verifyGoogleToken = async (token) => {
     // Extract user details from payload
     const { sub: googleId, name, email, picture } = payload;
 
-    // Find or create the user
-    let user = await User.findOne({ googleId });
+    // Find or create the user using repository
+    let user = await AuthRepository.findByGoogleId(googleId);
 
     if (!user) {
       // Create new user if not found
-      user = new User({
+      const googleUserData = {
         name,
         email,
         username: email.split("@")[0],
         googleId,
         emailVerified: true,
         profileImage: picture || null,
-      });
-      await user.save();
+      };
+      user = await AuthRepository.createGoogleUser(googleUserData);
     } else {
       // Update existing user info if needed
-      user.name = name;
-      user.email = email;
-      user.profileImage = picture || user.profileImage;
-      await user.save();
+      const updateData = {
+        name,
+        email,
+        profileImage: picture || user.profileImage,
+      };
+      user = await AuthRepository.updateGoogleUser(user._id, updateData);
     }
 
     // Generate JWT token

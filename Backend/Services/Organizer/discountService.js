@@ -1,5 +1,5 @@
-const EventRepository = require("../repositories/EventRepository");
-const DiscountRepository = require("../repositories/DiscountRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const DiscountRepository = require("../../Repository/DiscountRepository");
 const mongoose = require("mongoose");
 
 class DiscountService {

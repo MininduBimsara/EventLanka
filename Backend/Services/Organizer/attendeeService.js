@@ -1,5 +1,5 @@
-const EventRepository = require("../repositories/EventRepository");
-const TicketRepository = require("../repositories/TicketRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const TicketRepository = require("../../Repository/TicketRepository");
 const { Parser } = require("json2csv");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");

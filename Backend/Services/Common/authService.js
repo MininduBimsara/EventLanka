@@ -3,8 +3,9 @@ const jwt = require("jsonwebtoken");
 
 // Import repositories
 const UserRepository = require("../../Repository/UserRepository");
+const AuthRepository = require("../../Repository/AuthRepository");
 const AdminRepository = require("../../Repository/AdminRepository");
-const OrganizerRepository  = require("../../Repository/OrganizerRepository");
+const OrganizerRepository = require("../../Repository/OrganizerRepository");
 
 /**
  * Register a new user
@@ -138,6 +139,34 @@ const loginUser = async (email, password) => {
 };
 
 /**
+ * Change user password
+ * @param {String} userId - User ID
+ * @param {String} currentPassword - Current password
+ * @param {String} newPassword - New password
+ * @returns {Object} Success message
+ */
+const changePassword = async (userId, currentPassword, newPassword) => {
+  const user = await UserRepository.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Verify current password
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    throw new Error("Current password is incorrect");
+  }
+
+  // Hash new password
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update password using AuthRepository instead of UserRepository
+  await AuthRepository.updatePassword(userId, hashedNewPassword);
+
+  return { message: "Password changed successfully" };
+};
+
+/**
  * Generate JWT token
  * @param {String} userId - User ID
  * @param {String} role - User role
@@ -190,34 +219,6 @@ const updateUserProfile = async (userId, updateData) => {
   }
 
   return formatUserResponse(updatedUser);
-};
-
-/**
- * Change user password
- * @param {String} userId - User ID
- * @param {String} currentPassword - Current password
- * @param {String} newPassword - New password
- * @returns {Object} Success message
- */
-const changePassword = async (userId, currentPassword, newPassword) => {
-  const user = await UserRepository.findById(userId);
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  // Verify current password
-  const isMatch = await bcrypt.compare(currentPassword, user.password);
-  if (!isMatch) {
-    throw new Error("Current password is incorrect");
-  }
-
-  // Hash new password
-  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-  // Update password using repository
-  await UserRepository.updatePassword(userId, hashedNewPassword);
-
-  return { message: "Password changed successfully" };
 };
 
 module.exports = {

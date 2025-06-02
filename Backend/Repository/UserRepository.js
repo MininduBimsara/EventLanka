@@ -97,67 +97,6 @@ class UserRepository {
   async findByRole(role) {
     return await User.find({ role });
   }
-
-  /**
-   * Update user password
-   * @param {String} userId - User ID
-   * @param {String} hashedPassword - New hashed password
-   * @returns {Object|null} Updated user document
-   */
-  async updatePassword(userId, hashedPassword) {
-    return await User.findByIdAndUpdate(
-      userId,
-      { password: hashedPassword },
-      { new: true }
-    );
-  }
-
-  /**
-   * Find user with reset token
-   * @param {String} token - Hashed reset token
-   * @returns {Object|null} User document or null
-   */
-  async findByResetToken(token) {
-    return await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() },
-    });
-  }
-
-  /**
-   * Update user reset token
-   * @param {String} userId - User ID
-   * @param {String} token - Hashed token
-   * @param {Date} expiry - Token expiry date
-   * @returns {Object|null} Updated user document
-   */
-  async updateResetToken(userId, token, expiry) {
-    return await User.findByIdAndUpdate(
-      userId,
-      {
-        resetPasswordToken: token,
-        resetPasswordExpires: expiry,
-      },
-      { new: true }
-    );
-  }
-
-  /**
-   * Clear reset token
-   * @param {String} userId - User ID
-   * @returns {Object|null} Updated user document
-   */
-  async clearResetToken(userId) {
-    return await User.findByIdAndUpdate(
-      userId,
-      {
-        resetPasswordToken: undefined,
-        resetPasswordExpires: undefined,
-      },
-      { new: true }
-    );
-  }
 }
-
 
 module.exports = new UserRepository();
