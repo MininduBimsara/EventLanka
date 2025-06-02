@@ -200,6 +200,31 @@ class EventRepository {
     };
     return await this.findAll(filter, options);
   }
+
+  /**
+   * Find events by multiple IDs
+   * @param {Array} eventIds - Array of event IDs
+   * @returns {Array} Array of event documents
+   */
+  async findByIds(eventIds) {
+    return await Event.find({ _id: { $in: eventIds } });
+  }
+
+  /**
+   * Find event with specific population
+   * @param {String} eventId - Event ID
+   * @param {String} populateFields - Fields to populate
+   * @returns {Object|null} Event document or null
+   */
+  async findByIdWithPopulation(eventId, populateFields = "") {
+    let query = Event.findById(eventId);
+
+    if (populateFields) {
+      query = query.populate(populateFields);
+    }
+
+    return await query;
+  }
 }
 
 module.exports = new EventRepository();

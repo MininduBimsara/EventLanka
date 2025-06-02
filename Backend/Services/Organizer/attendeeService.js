@@ -1,5 +1,5 @@
-const Ticket = require("../../models/Ticket");
-const Event = require("../../models/Event");
+const EventRepository = require("../repositories/EventRepository");
+const TicketRepository = require("../repositories/TicketRepository");
 const { Parser } = require("json2csv");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
@@ -15,7 +15,7 @@ class AttendeeService {
    */
   async getAttendeesByEvent(eventId, userId, userRole) {
     // Check if event exists and user is authorized
-    const event = await Event.findById(eventId);
+    const event = await EventRepository.findById(eventId);
     if (!event) {
       throw new Error("Event not found");
     }
@@ -24,9 +24,11 @@ class AttendeeService {
       throw new Error("Unauthorized to access attendee list");
     }
 
-    const tickets = await Ticket.find({ event_id: eventId })
-      .populate("user_id", "username email")
-      .select("user_id ticket_type quantity attendance_status check_in_time");
+    const tickets = await TicketRepository.findByEventWithPopulation(
+      eventId,
+      "username email",
+      "user_id ticket_type quantity attendance_status check_in_time"
+    );
 
     return { event, tickets };
   }
@@ -40,24 +42,26 @@ class AttendeeService {
    * @returns {Object} - Updated ticket
    */
   async markAttendance(ticketId, status, userId, userRole) {
-    const ticket = await Ticket.findById(ticketId);
+    const ticket = await TicketRepository.findById(ticketId);
     if (!ticket) {
       throw new Error("Ticket not found");
     }
 
     // Check authorization
-    const event = await Event.findById(ticket.event_id);
+    const event = await EventRepository.findById(ticket.event_id);
     if (event.organizer_id.toString() !== userId && userRole !== "admin") {
       throw new Error("Unauthorized to mark attendance");
     }
 
     // Update ticket
-    ticket.attendance_status = status;
-    ticket.check_in_time =
-      status === "attended" ? new Date() : ticket.check_in_time;
-    await ticket.save();
+    const checkInTime = status === "attended" ? new Date() : null;
+    const updatedTicket = await TicketRepository.updateAttendanceStatus(
+      ticketId,
+      status,
+      checkInTime
+    );
 
-    return ticket;
+    return updatedTicket;
   }
 
   /**
@@ -93,11 +97,9 @@ class AttendeeService {
       userRole
     );
 
-    const fullTickets = await Ticket.find({ event_id: eventId })
-      .populate("user_id", "username email")
-      .select(
-        "user_id ticket_type quantity price attendance_status check_in_time"
-      );
+    const fullTickets = await TicketRepository.findFullDetailsByEventId(
+      eventId
+    );
 
     const attendeeData = this.formatAttendeeData(fullTickets);
 
@@ -228,9 +230,11 @@ class AttendeeService {
    * @returns {boolean} - Success status
    */
   async sendConfirmationEmail(ticketId, userId, userRole) {
-    const ticket = await Ticket.findById(ticketId)
-      .populate("user_id", "email username")
-      .populate("event_id", "title date location organizer_id");
+    const ticket = await TicketRepository.findByIdWithPopulation(
+      ticketId,
+      "email username",
+      "title date location organizer_id"
+    );
 
     if (!ticket) {
       throw new Error("Ticket not found");
@@ -301,8 +305,9 @@ class AttendeeService {
    * @returns {string} - QR code data URL
    */
   async generateTicketQRCode(ticketId, userId, userRole) {
-    const ticket = await Ticket.findById(ticketId).populate(
-      "event_id",
+    const ticket = await TicketRepository.findByIdWithPopulation(
+      ticketId,
+      "",
       "title organizer_id"
     );
 
@@ -363,9 +368,11 @@ class AttendeeService {
       throw new Error("Invalid QR code format");
     }
 
-    const ticket = await Ticket.findById(ticketId)
-      .populate("event_id", "title organizer_id date")
-      .populate("user_id", "username email");
+    const ticket = await TicketRepository.findByIdWithPopulation(
+      ticketId,
+      "username email",
+      "title organizer_id date"
+    );
 
     if (!ticket) {
       throw new Error("Ticket not found");
@@ -394,9 +401,11 @@ class AttendeeService {
     }
 
     // Mark as attended
-    ticket.attendance_status = "attended";
-    ticket.check_in_time = new Date();
-    await ticket.save();
+    await TicketRepository.updateAttendanceStatus(
+      ticketId,
+      "attended",
+      new Date()
+    );
 
     return {
       id: ticket._id,

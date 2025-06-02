@@ -366,6 +366,58 @@ class TicketRepository {
       { new: true }
     );
   }
+
+  /**
+   * Find tickets by event with population
+   * @param {String} eventId - Event ID
+   * @param {String} userFields - User fields to populate
+   * @param {String} selectFields - Fields to select
+   * @returns {Array} Array of ticket documents
+   */
+  async findByEventWithPopulation(eventId, userFields = "", selectFields = "") {
+    let query = Ticket.find({ event_id: eventId });
+
+    if (userFields) {
+      query = query.populate("user_id", userFields);
+    }
+    if (selectFields) {
+      query = query.select(selectFields);
+    }
+
+    return await query;
+  }
+
+  /**
+   * Find full ticket details by event ID
+   * @param {String} eventId - Event ID
+   * @returns {Array} Array of full ticket documents
+   */
+  async findFullDetailsByEventId(eventId) {
+    return await Ticket.find({ event_id: eventId })
+      .populate("user_id", "username email")
+      .select(
+        "user_id ticket_type quantity price attendance_status check_in_time"
+      );
+  }
+
+  /**
+   * Update attendance status
+   * @param {String} ticketId - Ticket ID
+   * @param {String} status - Attendance status
+   * @param {Date} checkInTime - Check-in time (optional)
+   * @returns {Object|null} Updated ticket document
+   */
+  async updateAttendanceStatus(ticketId, status, checkInTime = null) {
+    const updateData = { attendance_status: status };
+    if (checkInTime) {
+      updateData.check_in_time = checkInTime;
+    }
+
+    return await Ticket.findByIdAndUpdate(ticketId, updateData, {
+      new: true,
+      runValidators: true,
+    });
+  }
 }
 
 module.exports = new TicketRepository();

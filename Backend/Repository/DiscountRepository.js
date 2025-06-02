@@ -96,6 +96,57 @@ class DiscountRepository {
       { new: true }
     );
   }
+
+  /**
+   * Find discounts by event ID
+   * @param {String} eventId - Event ID
+   * @returns {Array} Array of discount documents
+   */
+  async findByEventId(eventId) {
+    return await Discount.find({ applicable_events: eventId });
+  }
+
+  /**
+   * Find discount by code and event
+   * @param {String} code - Discount code
+   * @param {String} eventId - Event ID
+   * @returns {Object|null} Discount document or null
+   */
+  async findByCodeAndEvent(code, eventId) {
+    return await Discount.findOne({
+      applicable_events: eventId,
+      code: code.toUpperCase(),
+      is_active: true,
+    });
+  }
+
+  /**
+   * Check if code exists (excluding specific ID)
+   * @param {String} code - Discount code
+   * @param {String} excludeId - ID to exclude from check
+   * @returns {Boolean} True if code exists
+   */
+  async codeExists(code, excludeId = null) {
+    const query = { code: code.toUpperCase() };
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+    const existingCode = await Discount.findOne(query);
+    return !!existingCode;
+  }
+
+  /**
+   * Apply discount (increment usage count)
+   * @param {String} discountId - Discount ID
+   * @returns {Object|null} Updated discount document
+   */
+  async applyDiscount(discountId) {
+    return await Discount.findByIdAndUpdate(
+      discountId,
+      { $inc: { usage_count: 1 } },
+      { new: true }
+    );
+  }
 }
 
 module.exports = new DiscountRepository();

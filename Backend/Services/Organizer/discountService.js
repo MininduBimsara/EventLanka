@@ -1,5 +1,5 @@
-const Discount = require("../../models/Discount");
-const Event = require("../../models/Event");
+const EventRepository = require("../repositories/EventRepository");
+const DiscountRepository = require("../repositories/DiscountRepository");
 const mongoose = require("mongoose");
 
 class DiscountService {
@@ -11,7 +11,7 @@ class DiscountService {
    * @returns {Array} - Array of event objects
    */
   async validateEventAuthorization(eventIds, userId, userRole) {
-    const events = await Event.find({ _id: { $in: eventIds } });
+    const events = await EventRepository.findByIds(eventIds);
 
     if (!events || events.length === 0) {
       throw new Error("One or more events not found");
@@ -38,13 +38,7 @@ class DiscountService {
    * @returns {boolean} - Whether code exists
    */
   async isCodeExists(code, excludeId = null) {
-    const query = { code: code.toUpperCase() };
-    if (excludeId) {
-      query._id = { $ne: excludeId };
-    }
-
-    const existingCode = await Discount.findOne(query);
-    return !!existingCode;
+    return await DiscountRepository.codeExists(code, excludeId);
   }
 
   /**
@@ -78,7 +72,7 @@ class DiscountService {
     // Validate discount data
     this.validateDiscountData(discountData);
 
-    const discount = await Discount.create({
+    const discount = await DiscountRepository.create({
       applicable_events,
       code: code.toUpperCase(),
       description: description || "",
@@ -139,7 +133,7 @@ class DiscountService {
     // Validate authorization
     await this.validateEventAuthorization([eventId], userId, userRole);
 
-    const discounts = await Discount.find({ applicable_events: eventId });
+    const discounts = await DiscountRepository.findByEventId(eventId);
     return discounts;
   }
 
@@ -152,7 +146,7 @@ class DiscountService {
    * @returns {Object} - Updated discount
    */
   async updateDiscount(discountId, updates, userId, userRole) {
-    const discount = await Discount.findById(discountId);
+    const discount = await DiscountRepository.findById(discountId);
     if (!discount) {
       throw new Error("Discount code not found");
     }
@@ -174,10 +168,9 @@ class DiscountService {
     delete updates.created_by;
     delete updates.usage_count;
 
-    const updatedDiscount = await Discount.findByIdAndUpdate(
+    const updatedDiscount = await DiscountRepository.updateById(
       discountId,
-      updates,
-      { new: true, runValidators: true }
+      updates
     );
 
     return updatedDiscount;
@@ -191,7 +184,7 @@ class DiscountService {
    * @returns {boolean} - Success status
    */
   async deleteDiscount(discountId, userId, userRole) {
-    const discount = await Discount.findById(discountId);
+    const discount = await DiscountRepository.findById(discountId);
     if (!discount) {
       throw new Error("Discount code not found");
     }
@@ -203,7 +196,7 @@ class DiscountService {
       userRole
     );
 
-    await discount.deleteOne();
+    await DiscountRepository.deleteById(discountId);
     return true;
   }
 
@@ -216,16 +209,13 @@ class DiscountService {
    * @returns {Object} - Validation result with discount details
    */
   async validateDiscountForEvent(eventId, code, ticketCount, ticketType) {
-    const event = await Event.findById(eventId);
+    const event = await EventRepository.findById(eventId);
     if (!event) {
       throw new Error("Event not found");
     }
 
-    const discount = await Discount.findOne({
-      applicable_events: eventId,
-      code: code.toUpperCase(),
-      is_active: true,
-    });
+    const discount = await DiscountRepository.findByCodeAndEvent(code, eventId);
+
 
     if (!discount) {
       throw new Error("Invalid discount code");
@@ -278,10 +268,8 @@ class DiscountService {
    * @returns {Object} - Validation result with discount details
    */
   async validateDiscountCode(code, subtotal) {
-    const discount = await Discount.findOne({
-      code: code.toUpperCase(),
-      is_active: true,
-    });
+    const discount = await DiscountRepository.findByCode(code.toUpperCase());
+
 
     if (!discount) {
       throw new Error("Invalid discount code");
@@ -348,11 +336,8 @@ class DiscountService {
    * @returns {Object} - Updated discount
    */
   async applyDiscountCode(discountId) {
-    const discount = await Discount.findByIdAndUpdate(
-      discountId,
-      { $inc: { usage_count: 1 } },
-      { new: true }
-    );
+    const discount = await DiscountRepository.applyDiscount(discountId);
+
 
     if (!discount) {
       throw new Error("Discount not found");
@@ -369,7 +354,7 @@ class DiscountService {
    * @returns {Object} - Usage statistics
    */
   async getDiscountStats(discountId, userId, userRole) {
-    const discount = await Discount.findById(discountId);
+    const discount = await DiscountRepository.findById(discountId);
     if (!discount) {
       throw new Error("Discount code not found");
     }
