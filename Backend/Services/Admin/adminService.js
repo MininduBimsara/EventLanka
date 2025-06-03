@@ -1,337 +1,285 @@
-const User = require("../../models/User");
-const Admin = require("../../models/Admin");
-const Event = require("../../models/Event");
-const Payment = require("../../models/Payment");
-const RefundRequest = require("../../models/RefundRequest");
+const UserRepository = require("../../Repository/UserRepository");
+const AdminRepository = require("../../Repository/AdminRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const PaymentRepository = require("../../Repository/PaymentRepository");
+const RefundRequestRepository = require("../../Repository/RefundRequestRepository");
 const bcrypt = require("bcryptjs");
 
-class AdminService {
-  /**
-   * Get dashboard statistics
-   * @returns {Object} Dashboard statistics including users, events, revenue, etc.
-   */
-  async getDashboardStatistics() {
-    try {
-      // Run all queries in parallel for better performance
-      const [
-        totalUsers,
-        totalOrganizers,
-        totalEvents,
-        revenueData,
-        pendingEvents,
-        activeRefundRequests,
-        monthlySales,
-        newUserGrowth,
-      ] = await Promise.all([
-        User.countDocuments(),
-        User.countDocuments({ role: "organizer" }),
-        Event.countDocuments(),
-        Payment.aggregate([
-          { $match: { status: "completed" } },
-          { $group: { _id: null, total: { $sum: "$amount" } } },
-        ]),
-        Event.countDocuments({ event_status: "pending" }),
-        RefundRequest.countDocuments({ status: "pending" }),
-        Payment.aggregate([
-          { $match: { status: "completed" } },
-          {
-            $group: {
-              _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-              sales: { $sum: 1 },
-              revenue: { $sum: "$amount" },
-            },
-          },
-          { $sort: { _id: 1 } },
-        ]),
-        User.aggregate([
-          {
-            $group: {
-              _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-              count: { $sum: 1 },
-            },
-          },
-          { $sort: { _id: 1 } },
-        ]),
-      ]);
+// Dashboard statistics
+const getDashboardStatistics = async () => {
+  try {
+    const [
+      totalUsers,
+      totalOrganizers,
+      totalEvents,
+      revenueData,
+      pendingEvents,
+      activeRefundRequests,
+      monthlySales,
+      newUserGrowth,
+    ] = await Promise.all([
+      UserRepository.count(),
+      UserRepository.count({ role: "organizer" }),
+      EventRepository.count(),
+      PaymentRepository.getStatistics({ payment_status: "completed" }),
+      EventRepository.count({ event_status: "pending" }),
+      RefundRequestRepository.count({ status: "pending" }),
+      PaymentRepository.getRevenueByDateRange(
+        new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
+        new Date(),
+        "month"
+      ),
+      UserRepository.findAll(
+        {},
+        {
+          sort: { createdAt: 1 },
+          limit: 12,
+        }
+      ),
+    ]);
 
-      const totalRevenue = revenueData[0]?.total || 0;
+    const totalRevenue = revenueData.totalRevenue || 0;
 
-      return {
-        totalUsers,
-        totalOrganizers,
-        totalEvents,
-        totalRevenue,
-        pendingEvents,
-        activeRefundRequests,
-        charts: { monthlySales, newUserGrowth },
-      };
-    } catch (error) {
-      throw new Error(`Failed to get dashboard statistics: ${error.message}`);
-    }
+    // Process monthly sales data
+    const processedMonthlySales = monthlySales.map((item) => ({
+      _id: `${item._id.year}-${String(item._id.period).padStart(2, "0")}`,
+      sales: item.count,
+      revenue: item.revenue,
+    }));
+
+    // Process user growth data
+    const monthlyUserGrowth = {};
+    newUserGrowth.forEach((user) => {
+      const month = new Date(user.createdAt).toISOString().slice(0, 7);
+      monthlyUserGrowth[month] = (monthlyUserGrowth[month] || 0) + 1;
+    });
+
+    const processedUserGrowth = Object.entries(monthlyUserGrowth).map(
+      ([month, count]) => ({ _id: month, count })
+    );
+
+    return {
+      totalUsers,
+      totalOrganizers,
+      totalEvents,
+      totalRevenue,
+      pendingEvents,
+      activeRefundRequests,
+      charts: {
+        monthlySales: processedMonthlySales,
+        newUserGrowth: processedUserGrowth,
+      },
+    };
+  } catch (error) {
+    throw new Error(`Failed to get dashboard statistics: ${error.message}`);
   }
+};
 
-  /**
-   * Get platform settings
-   * @param {string} userId - Admin user ID
-   * @returns {Object} Platform settings
-   */
-  async getPlatformSettings(userId) {
-    try {
-      // Verify admin user
-      const adminUser = await User.findById(userId);
-      if (!adminUser || adminUser.role !== "admin") {
-        throw new Error("Not authorized as admin");
-      }
-
-      // Find the admin profile
-      const adminProfile = await Admin.findOne({ user: adminUser._id });
-
-      // Get global platform settings
-      // In a real app, this would come from a Settings model
-      const settings = {
-        commission: 0.1, // 10%
-        taxRate: 0.07, // 7%
-        notificationPreferences: {
-          email: adminProfile?.emailNotifications?.systemAlerts || true,
-          sms: false,
-        },
-        branding: {
-          logo: "/logo.png",
-          theme: "default",
-          primaryColor: "#3B82F6",
-          secondaryColor: "#1E40AF",
-        },
-      };
-
-      return settings;
-    } catch (error) {
-      throw new Error(`Failed to get platform settings: ${error.message}`);
+// Platform settings
+const getPlatformSettings = async (userId) => {
+  try {
+    const adminUser = await UserRepository.findById(userId);
+    if (!adminUser || adminUser.role !== "admin") {
+      throw new Error("Not authorized as admin");
     }
+    const adminProfile = await AdminRepository.findByUserId(adminUser._id);
+
+    const settings = {
+      commission: 0.1,
+      taxRate: 0.07,
+      notificationPreferences: {
+        email: adminProfile?.emailNotifications?.systemAlerts || true,
+        sms: false,
+      },
+      branding: {
+        logo: "/logo.png",
+        theme: "default",
+        primaryColor: "#3B82F6",
+        secondaryColor: "#1E40AF",
+      },
+    };
+
+    return settings;
+  } catch (error) {
+    throw new Error(`Failed to get platform settings: ${error.message}`);
   }
+};
 
-  /**
-   * Update platform settings
-   * @param {string} userId - Admin user ID
-   * @param {Object} settingsData - Settings to update
-   * @returns {Object} Updated settings
-   */
-  async updatePlatformSettings(userId, settingsData) {
-    try {
-      const { commission, taxRate, notificationPreferences, branding } =
-        settingsData;
+const updatePlatformSettings = async (userId, settingsData) => {
+  try {
+    const { commission, taxRate, notificationPreferences, branding } =
+      settingsData;
 
-      // Verify admin user
-      const adminUser = await User.findById(userId);
-      if (!adminUser || adminUser.role !== "admin") {
-        throw new Error("Not authorized as admin");
-      }
+    const adminUser = await UserRepository.findById(userId);
+    if (!adminUser || adminUser.role !== "admin") {
+      throw new Error("Not authorized as admin");
+    }
 
-      // Update admin profile notification preferences
-      const adminProfile = await Admin.findOne({ user: adminUser._id });
-      if (adminProfile && notificationPreferences) {
-        adminProfile.emailNotifications = {
+    const adminProfile = await AdminRepository.findByUserId(adminUser._id);
+    if (adminProfile && notificationPreferences) {
+      await AdminRepository.updateByUserId(adminUser._id, {
+        emailNotifications: {
           ...adminProfile.emailNotifications,
           systemAlerts: notificationPreferences.email,
+        },
+      });
+    }
+
+    const updatedSettings = {
+      commission: commission !== undefined ? commission : 0.1,
+      taxRate: taxRate !== undefined ? taxRate : 0.07,
+      notificationPreferences: notificationPreferences || {
+        email: true,
+        sms: false,
+      },
+      branding: branding || {
+        logo: "/logo.png",
+        theme: "default",
+        primaryColor: "#3B82F6",
+        secondaryColor: "#1E40AF",
+      },
+    };
+
+    return updatedSettings;
+  } catch (error) {
+    throw new Error(`Failed to update platform settings: ${error.message}`);
+  }
+};
+
+// Change admin password
+const changeAdminPassword = async (userId, oldPassword, newPassword) => {
+  try {
+    if (!oldPassword || !newPassword) {
+      throw new Error("All fields are required");
+    }
+
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    if (user.role !== "admin") {
+      throw new Error("Unauthorized: User is not an admin");
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new Error("Old password is incorrect");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await UserRepository.updateById(userId, { password: hashedPassword });
+    await AdminRepository.updateByUserId(userId, { lastLogin: Date.now() });
+
+    return { message: "Admin password changed successfully" };
+  } catch (error) {
+    throw new Error(`Failed to change admin password: ${error.message}`);
+  }
+};
+
+// Get admin profile
+const getAdminProfile = async (userId) => {
+  try {
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    if (user.role !== "admin") {
+      throw new Error("User is not an admin");
+    }
+    const adminProfile = await AdminRepository.findByUserId(userId);
+    if (!adminProfile) {
+      throw new Error("Admin profile not found");
+    }
+    return adminProfile;
+  } catch (error) {
+    throw new Error(`Failed to get admin profile: ${error.message}`);
+  }
+};
+
+// Update admin profile
+const updateAdminProfile = async (userId, profileData) => {
+  try {
+    const { phone, position, department, permissions, emailNotifications } =
+      profileData;
+
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    if (user.role !== "admin") {
+      throw new Error("User is not an admin");
+    }
+
+    let adminProfile = await AdminRepository.findByUserId(userId);
+
+    if (adminProfile) {
+      const updateData = {};
+      if (phone !== undefined) updateData.phone = phone;
+      if (position !== undefined) updateData.position = position;
+      if (department !== undefined) updateData.department = department;
+      if (permissions !== undefined) {
+        updateData.permissions = {
+          ...adminProfile.permissions,
+          ...permissions,
         };
-        await adminProfile.save();
       }
-
-      // Return updated settings (in real app, would update Settings model)
-      const updatedSettings = {
-        commission: commission !== undefined ? commission : 0.1,
-        taxRate: taxRate !== undefined ? taxRate : 0.07,
-        notificationPreferences: notificationPreferences || {
-          email: true,
-          sms: false,
+      if (emailNotifications !== undefined) {
+        updateData.emailNotifications = {
+          ...adminProfile.emailNotifications,
+          ...emailNotifications,
+        };
+      }
+      adminProfile = await AdminRepository.updateByUserId(userId, updateData);
+    } else {
+      adminProfile = await AdminRepository.create({
+        user: userId,
+        phone: phone || "",
+        position: position || "System Administrator",
+        department: department || "IT",
+        permissions: permissions || {
+          manageUsers: true,
+          manageEvents: true,
+          managePayments: true,
+          manageRefunds: true,
+          managePlatformSettings: true,
         },
-        branding: branding || {
-          logo: "/logo.png",
-          theme: "default",
-          primaryColor: "#3B82F6",
-          secondaryColor: "#1E40AF",
+        emailNotifications: emailNotifications || {
+          newUsers: true,
+          newEvents: true,
+          refundRequests: true,
+          systemAlerts: true,
         },
-      };
-
-      return updatedSettings;
-    } catch (error) {
-      throw new Error(`Failed to update platform settings: ${error.message}`);
+      });
     }
+
+    return {
+      message: "Admin profile updated successfully",
+      adminProfile,
+    };
+  } catch (error) {
+    throw new Error(`Failed to update admin profile: ${error.message}`);
   }
+};
 
-  /**
-   * Change admin password
-   * @param {string} userId - Admin user ID
-   * @param {string} oldPassword - Current password
-   * @param {string} newPassword - New password
-   */
-  async changeAdminPassword(userId, oldPassword, newPassword) {
-    try {
-      // Validate input
-      if (!oldPassword || !newPassword) {
-        throw new Error("All fields are required");
-      }
-
-      // Find the user
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      // Check if user is admin
-      if (user.role !== "admin") {
-        throw new Error("Unauthorized: User is not an admin");
-      }
-
-      // Verify old password
-      const isMatch = await bcrypt.compare(oldPassword, user.password);
-      if (!isMatch) {
-        throw new Error("Old password is incorrect");
-      }
-
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      // Update password
-      user.password = hashedPassword;
-      await user.save();
-
-      // Update last login in admin profile
-      const adminProfile = await Admin.findOne({ user: userId });
-      if (adminProfile) {
-        adminProfile.lastLogin = Date.now();
-        await adminProfile.save();
-      }
-
-      return { message: "Admin password changed successfully" };
-    } catch (error) {
-      throw new Error(`Failed to change admin password: ${error.message}`);
+// Validate admin permission
+const validateAdminPermission = async (userId, permission) => {
+  try {
+    const adminProfile = await AdminRepository.findByUserId(userId);
+    if (!adminProfile) {
+      return false;
     }
+    return adminProfile.permissions[permission] || false;
+  } catch (error) {
+    throw new Error(`Failed to validate admin permission: ${error.message}`);
   }
+};
 
-  /**
-   * Get admin profile
-   * @param {string} userId - Admin user ID
-   * @returns {Object} Admin profile
-   */
-  async getAdminProfile(userId) {
-    try {
-      // Verify user exists and is admin
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      if (user.role !== "admin") {
-        throw new Error("User is not an admin");
-      }
-
-      // Find admin profile
-      const adminProfile = await Admin.findOne({ user: userId });
-      if (!adminProfile) {
-        throw new Error("Admin profile not found");
-      }
-
-      return adminProfile;
-    } catch (error) {
-      throw new Error(`Failed to get admin profile: ${error.message}`);
-    }
-  }
-
-  /**
-   * Update admin profile
-   * @param {string} userId - Admin user ID
-   * @param {Object} profileData - Profile data to update
-   * @returns {Object} Updated admin profile
-   */
-  async updateAdminProfile(userId, profileData) {
-    try {
-      const { phone, position, department, permissions, emailNotifications } =
-        profileData;
-
-      // Verify user exists and is admin
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      if (user.role !== "admin") {
-        throw new Error("User is not an admin");
-      }
-
-      // Find existing admin profile or create new one
-      let adminProfile = await Admin.findOne({ user: userId });
-
-      if (adminProfile) {
-        // Update existing profile
-        if (phone !== undefined) adminProfile.phone = phone;
-        if (position !== undefined) adminProfile.position = position;
-        if (department !== undefined) adminProfile.department = department;
-        if (permissions !== undefined) {
-          adminProfile.permissions = {
-            ...adminProfile.permissions,
-            ...permissions,
-          };
-        }
-        if (emailNotifications !== undefined) {
-          adminProfile.emailNotifications = {
-            ...adminProfile.emailNotifications,
-            ...emailNotifications,
-          };
-        }
-
-        await adminProfile.save();
-      } else {
-        // Create new admin profile
-        adminProfile = new Admin({
-          user: userId,
-          phone: phone || "",
-          position: position || "System Administrator",
-          department: department || "IT",
-          permissions: permissions || {
-            manageUsers: true,
-            manageEvents: true,
-            managePayments: true,
-            manageRefunds: true,
-            managePlatformSettings: true,
-          },
-          emailNotifications: emailNotifications || {
-            newUsers: true,
-            newEvents: true,
-            refundRequests: true,
-            systemAlerts: true,
-          },
-        });
-
-        await adminProfile.save();
-      }
-
-      return {
-        message: "Admin profile updated successfully",
-        adminProfile,
-      };
-    } catch (error) {
-      throw new Error(`Failed to update admin profile: ${error.message}`);
-    }
-  }
-
-  /**
-   * Validate admin permissions
-   * @param {string} userId - Admin user ID
-   * @param {string} permission - Permission to check
-   * @returns {boolean} Whether admin has permission
-   */
-  async validateAdminPermission(userId, permission) {
-    try {
-      const adminProfile = await Admin.findOne({ user: userId });
-      if (!adminProfile) {
-        return false;
-      }
-
-      return adminProfile.permissions[permission] || false;
-    } catch (error) {
-      throw new Error(`Failed to validate admin permission: ${error.message}`);
-    }
-  }
-}
-
-module.exports = new AdminService();
+module.exports = {
+  getDashboardStatistics,
+  getPlatformSettings,
+  updatePlatformSettings,
+  changeAdminPassword,
+  getAdminProfile,
+  updateAdminProfile,
+  validateAdminPermission,
+};

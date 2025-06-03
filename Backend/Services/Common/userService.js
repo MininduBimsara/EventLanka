@@ -1,7 +1,7 @@
-const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
-const Event = require("../../models/Event");
-const Organizer = require("../../models/Organizer");
+const UserRepository = require("../../Repository/UserRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const OrganizerRepository = require("../../Repository/OrganizerRepository");
 
 /**
  * Get a user profile by ID
@@ -9,11 +9,14 @@ const Organizer = require("../../models/Organizer");
  * @returns {Promise<Object>} - User profile
  */
 const getUserProfile = async (userId) => {
-  const user = await User.findById(userId).select("-password");
+  const user = await UserRepository.findById(userId);
   if (!user) {
     throw new Error("User not found");
   }
-  return user;
+
+  // Remove password from response
+  const { password, ...userProfile } = user.toObject();
+  return userProfile;
 };
 
 /**
@@ -64,15 +67,15 @@ const updateUserProfile = async (userId, updateData, profileImage = null) => {
     throw new Error("No fields to update");
   }
 
-  const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
-    new: true,
-  }).select("-password");
+  const updatedUser = await UserRepository.updateById(userId, updatedData);
 
   if (!updatedUser) {
     throw new Error("User not found");
   }
 
-  return updatedUser;
+  // Remove password from response
+  const { password, ...userProfile } = updatedUser.toObject();
+  return userProfile;
 };
 
 /**
@@ -81,7 +84,7 @@ const updateUserProfile = async (userId, updateData, profileImage = null) => {
  * @returns {Promise<Object>} - Success message
  */
 const deleteUserProfile = async (userId) => {
-  const deletedUser = await User.findByIdAndDelete(userId);
+  const deletedUser = await UserRepository.deleteById(userId);
   if (!deletedUser) {
     throw new Error("User not found");
   }
@@ -100,7 +103,7 @@ const updateUserStatus = async (userId, status) => {
     throw new Error("Invalid status value");
   }
 
-  const user = await User.findByIdAndUpdate(userId, { status }, { new: true });
+  const user = await UserRepository.updateById(userId, { status });
 
   if (!user) {
     throw new Error("User not found");
@@ -114,7 +117,7 @@ const updateUserStatus = async (userId, status) => {
  * @returns {Promise<Array>} - List of regular users
  */
 const getRegularUsers = async () => {
-  return await User.find({ role: "user" });
+  return await UserRepository.findByRole("user");
 };
 
 /**
@@ -122,7 +125,7 @@ const getRegularUsers = async () => {
  * @returns {Promise<Array>} - List of non-admin users
  */
 const getAllNonAdminUsers = async () => {
-  return await User.find({ role: { $ne: "admin" } });
+  return await UserRepository.findAll({ role: { $ne: "admin" } });
 };
 
 /**
@@ -130,16 +133,18 @@ const getAllNonAdminUsers = async () => {
  * @returns {Promise<Array>} - List of organizers with additional information
  */
 const getAllOrganizers = async () => {
-  // Populate the user field to get user details
-  const organizers = await Organizer.find()
-    .populate("user", "username email status createdAt")
-    .lean();
+  const organizers = await OrganizerRepository.findAll(
+    {},
+    {
+      populate: "user",
+    }
+  );
 
   // Transform the data to match what frontend expects
   const formattedOrganizers = await Promise.all(
     organizers.map(async (organizer) => {
       // Count events for this organizer
-      const eventCount = await Event.countDocuments({
+      const eventCount = await EventRepository.count({
         organizer_id: organizer.user._id,
       });
 
@@ -169,16 +174,16 @@ const getAllOrganizers = async () => {
  * @returns {Promise<Object>} - Organizer profile with details
  */
 const getOrganizerProfile = async (organizerId) => {
-  const organizer = await Organizer.findById(organizerId)
-    .populate("user", "username email status createdAt phone address city")
-    .lean();
+  const organizer = await OrganizerRepository.findById(organizerId, {
+    user: "username email status createdAt phone address city",
+  });
 
   if (!organizer) {
     throw new Error("Organizer not found");
   }
 
   // Count events for this organizer
-  const eventCount = await Event.countDocuments({
+  const eventCount = await EventRepository.count({
     organizer_id: organizer.user._id,
   });
 
@@ -207,14 +212,14 @@ const getOrganizerProfile = async (organizerId) => {
  * @returns {Promise<Object>} - Success message
  */
 const updateOrganizerStatus = async (organizerId, status) => {
-  const organizer = await Organizer.findById(organizerId);
+  const organizer = await OrganizerRepository.findById(organizerId);
 
   if (!organizer) {
     throw new Error("Organizer not found");
   }
 
   // Update the status in the User model
-  await User.findByIdAndUpdate(organizer.user, { status });
+  await UserRepository.updateById(organizer.user, { status });
 
   return { message: "Organizer status updated successfully" };
 };
@@ -226,14 +231,14 @@ const updateOrganizerStatus = async (organizerId, status) => {
  */
 const getOrganizerEvents = async (organizerId) => {
   // Find the organizer by the provided ID
-  const organizer = await Organizer.findById(organizerId);
+  const organizer = await OrganizerRepository.findById(organizerId);
 
   if (!organizer) {
     throw new Error("Organizer not found");
   }
 
   // Fetch events associated with the organizer
-  return await Event.find({ organizer_id: organizer.user._id });
+  return await EventRepository.findByOrganizerId(organizer.user._id);
 };
 
 module.exports = {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchEventById } from "../../Redux/Slicers/EventSlice";
-import { createOrder } from "../../Redux/Slicers/orderSlice"; // Import createOrder thunk
+import { fetchEventById } from "../../Redux/Thunks/eventThunk";
+import { createOrder } from "../../Redux/Thunks/orderThunks"; // Import createOrder thunk
 import OrganizerInfo from "../../components/Common/EventBooking/OrganizerInfo";
 import OrderSummary from "../../components/Common/EventBooking/OrderSummary";
 import TicketSelection from "../../components/Common/EventBooking/TicketSelection";

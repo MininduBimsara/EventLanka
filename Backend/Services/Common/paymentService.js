@@ -1,8 +1,7 @@
-// services/PaymentService.js
-const Payment = require("../../models/Payment");
-const Order = require("../../models/Order");
-const Ticket = require("../../models/Ticket");
-const Event = require("../../models/Event");
+const PaymentRepository = require("../../Repository/PaymentRepository");
+const OrderRepository = require("../../Repository/OrderRepository");
+const TicketRepository = require("../../Repository/TicketRepository");
+const EventRepository = require("../../Repository/EventRepository");
 const PDFDocument = require("pdfkit");
 const axios = require("axios");
 
@@ -67,19 +66,10 @@ class PaymentService {
         ticketGroups[key].quantity += ticket.quantity;
       }
 
-      // Update each event's ticket type availability
+      // Update each event's ticket type availability using repository
       for (const key in ticketGroups) {
         const { eventId, ticketType, quantity } = ticketGroups[key];
-
-        await Event.findOneAndUpdate(
-          {
-            _id: eventId,
-            "ticket_types.type": ticketType,
-          },
-          {
-            $inc: { "ticket_types.$.availability": -quantity },
-          }
-        );
+        await EventRepository.updateTicketTypeAvailability(eventId, ticketType, quantity);
       }
     } catch (error) {
       throw new Error("Failed to update ticket availability");
@@ -94,7 +84,7 @@ class PaymentService {
    * @throws {Error} If order not found or unauthorized
    */
   async validateOrderOwnership(orderId, userId) {
-    const order = await Order.findById(orderId).populate("tickets");
+    const order = await OrderRepository.findByIdWithPopulatedTickets(orderId);
 
     if (!order) {
       throw new Error("Order not found");
@@ -210,8 +200,8 @@ class PaymentService {
         Math.random() * 1000
       )}`;
 
-      // Create payment record
-      const payment = await Payment.create({
+      // Create payment record using repository
+      const payment = await PaymentRepository.create({
         user_id: userId,
         event_id: order.tickets[0].event_id,
         amount: order.total_amount,
@@ -285,8 +275,8 @@ class PaymentService {
       Math.random() * 1000
     )}`;
 
-    // Create payment record
-    const payment = await Payment.create({
+    // Create payment record using repository
+    const payment = await PaymentRepository.create({
       user_id: userId,
       event_id: order.tickets[0].event_id,
       amount: amount,
@@ -340,15 +330,18 @@ class PaymentService {
     paymentMethod,
     paypalOrderId = null
   ) {
-    order.payment_status = "paid";
-    order.status = "completed";
-    order.paymentMethod = paymentMethod;
-    order.payment_details = {
-      transaction_id: transactionId,
-      provider: paymentMethod === "paypal" ? "PayPal" : "Other",
-      paypal_order_id: paypalOrderId,
+    const paymentData = {
+      payment_status: "paid",
+      status: "completed",
+      paymentMethod: paymentMethod,
+      payment_details: {
+        transaction_id: transactionId,
+        provider: paymentMethod === "paypal" ? "PayPal" : "Other",
+        paypal_order_id: paypalOrderId,
+      },
     };
-    await order.save();
+
+    await OrderRepository.updatePaymentDetails(order._id, paymentData);
   }
 
   /**
@@ -356,10 +349,7 @@ class PaymentService {
    * @param {Array} ticketIds - Array of ticket IDs
    */
   async updateTicketsAfterPayment(ticketIds) {
-    await Ticket.updateMany(
-      { _id: { $in: ticketIds } },
-      { payment_status: "paid" }
-    );
+    await TicketRepository.updatePaymentStatusByIds(ticketIds, "paid");
   }
 
   /**
@@ -368,6 +358,7 @@ class PaymentService {
    */
   async updateDiscountUsage(discountId) {
     try {
+      // This would need a DiscountRepository if you have one
       const Discount = require("../models/Discount");
       await Discount.findByIdAndUpdate(discountId, {
         $inc: { usage_count: 1 },
@@ -385,14 +376,12 @@ class PaymentService {
    * @returns {Promise<Object>} Order and payment data
    */
   async confirmPayment(paypalOrderId, orderId) {
-    const order = await Order.findById(orderId);
+    const order = await OrderRepository.findById(orderId);
     if (!order) {
       throw new Error("Order not found");
     }
 
-    const payment = await Payment.findOne({
-      "payment_details.paypal_order_id": paypalOrderId,
-    });
+    const payment = await PaymentRepository.findByPayPalOrderId(paypalOrderId);
 
     if (!payment) {
       throw new Error("Payment record not found");
@@ -410,9 +399,12 @@ class PaymentService {
    * @returns {Promise<Array>} Array of payment records
    */
   async getPaymentHistory(userId) {
-    return await Payment.find({ user_id: userId })
-      .populate("event_id", "title date location")
-      .sort({ createdAt: -1 });
+    return await PaymentRepository.findByUserId(userId, {
+      populate: {
+        event: "title date location",
+      },
+      sort: { createdAt: -1 },
+    });
   }
 
   /**
@@ -427,30 +419,23 @@ class PaymentService {
       // Validate order ownership first
       const order = await this.validateOrderOwnership(orderId, userId);
 
-      // Try multiple ways to find the payment record
+      // Try multiple ways to find the payment record using repository methods
       let payment = null;
 
       // Method 1: Search by PayPal order ID
-      payment = await Payment.findOne({
-        "payment_details.paypal_order_id": paymentIntentId,
-      }).populate("event_id", "title date location");
+      payment = await PaymentRepository.findByPayPalOrderIdWithEvent(paymentIntentId);
 
       // Method 2: If not found, search by transaction ID pattern
       if (!payment) {
-        payment = await Payment.findOne({
-          transaction_id: { $regex: paymentIntentId, $options: "i" },
-        }).populate("event_id", "title date location");
+        payment = await PaymentRepository.findByTransactionIdWithEvent(paymentIntentId);
       }
 
       // Method 3: If still not found, search by user and event
       if (!payment && order) {
-        payment = await Payment.findOne({
-          user_id: userId,
-          event_id: order.tickets[0]?.event_id,
-          payment_status: "completed",
-        })
-          .populate("event_id", "title date location")
-          .sort({ createdAt: -1 }); // Get the most recent one
+        payment = await PaymentRepository.findUserRecentCompletedPayment(
+          userId,
+          order.tickets[0]?.event_id
+        );
       }
 
       if (!payment) {
@@ -485,10 +470,8 @@ class PaymentService {
    * @returns {Promise<Object>} Payment and ticket data for PDF generation
    */
   async getReceiptData(transactionId, user) {
-    // Find payment by transaction ID
-    const payment = await Payment.findOne({
-      transaction_id: transactionId,
-    }).populate("event_id", "title date location image_url");
+    // Find payment by transaction ID using repository
+    const payment = await PaymentRepository.findByTransactionIdWithPopulatedEvent(transactionId);
 
     if (!payment) {
       throw new Error("Payment not found");
@@ -499,12 +482,11 @@ class PaymentService {
       throw new Error("Not authorized to access this receipt");
     }
 
-    // Fetch related tickets
-    const tickets = await Ticket.find({
-      user_id: user._id,
-      event_id: payment.event_id._id,
-      payment_status: "paid",
-    });
+    // Fetch related tickets using repository
+    const tickets = await TicketRepository.findPaidByUserAndEvent(
+      user._id,
+      payment.event_id._id
+    );
 
     // Calculate ticket details
     let totalQuantity = 0;
@@ -524,382 +506,383 @@ class PaymentService {
     };
   }
 
-  /**
+    /**
    * Generate PDF receipt document
    * @param {Object} receiptData - Receipt data from getReceiptData
    * @returns {PDFDocument} PDF document instance
    */
-  generateReceiptPDF(receiptData) {
-    const { payment, totalQuantity, pricePerTicket, user } = receiptData;
-
-    // Create a PDF document with better page setup
-    const doc = new PDFDocument({
-      margin: 50,
-      size: "A4",
-    });
-
-    // Define colors
-    const primaryColor = "#E65100"; // deep amber
-    const secondaryColor = "#455A64"; // blue grey
-    const lightGrey = "#ECEFF1";
-    const textColor = "#263238";
-
-    // Add a subtle background pattern
-    doc.rect(0, 0, doc.page.width, doc.page.height).fill("#FAFAFA");
-
-    // Create a header bar
-    doc.rect(0, 0, doc.page.width, 120).fill(primaryColor);
-
-    // Add company logo/name in white text
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(32)
-      .font("Helvetica-Bold")
-      .text("EventLanka", 50, 50);
-
-    // Add "RECEIPT" text
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(16)
-      .font("Helvetica")
-      .text("OFFICIAL RECEIPT", 50, 85);
-
-    // Add receipt ID on the right corner
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(12)
-      .font("Helvetica")
-      .text(`Receipt #:`, doc.page.width - 250, 50, {
-        align: "right",
-        width: 120,
+    generateReceiptPDF(receiptData) {
+      const { payment, totalQuantity, pricePerTicket, user } = receiptData;
+  
+      // Create a PDF document with better page setup
+      const doc = new PDFDocument({
+        margin: 50,
+        size: "A4",
       });
-
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(12)
-      .font("Helvetica")
-      .text(`${payment.transaction_id}`, doc.page.width - 120, 50, {
-        align: "left",
-        width: 100,
-      });
-
-    // Add date and time
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(10)
-      .font("Helvetica")
-      .text(
-        `Date: ${new Date(payment.createdAt).toLocaleDateString()}`,
-        doc.page.width - 250,
-        65,
-        { align: "right", width: 120 }
-      );
-
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(10)
-      .font("Helvetica")
-      .text(
-        `Time: ${new Date(payment.createdAt).toLocaleTimeString()}`,
-        doc.page.width - 250,
-        80,
-        { align: "right", width: 120 }
-      );
-
-    // Main content starts below the header
-    const startY = 150;
-    let currentY = startY;
-
-    // Event details box
-    currentY += 10;
-    doc
-      .roundedRect(50, currentY, doc.page.width - 100, 100, 5)
-      .fillAndStroke(lightGrey, "#E0E0E0");
-
-    doc
-      .fillColor(primaryColor)
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("Event Details", 70, currentY + 15);
-
-    doc
-      .fillColor(textColor)
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .text(`${payment.event_id?.title || "Event"}`, 70, currentY + 40);
-
-    if (payment.event_id?.date) {
+  
+      // Define colors
+      const primaryColor = "#E65100"; // deep amber
+      const secondaryColor = "#455A64"; // blue grey
+      const lightGrey = "#ECEFF1";
+      const textColor = "#263238";
+  
+      // Add a subtle background pattern
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill("#FAFAFA");
+  
+      // Create a header bar
+      doc.rect(0, 0, doc.page.width, 120).fill(primaryColor);
+  
+      // Add company logo/name in white text
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(32)
+        .font("Helvetica-Bold")
+        .text("EventLanka", 50, 50);
+  
+      // Add "RECEIPT" text
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(16)
+        .font("Helvetica")
+        .text("OFFICIAL RECEIPT", 50, 85);
+  
+      // Add receipt ID on the right corner
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(12)
+        .font("Helvetica")
+        .text(`Receipt #:`, doc.page.width - 250, 50, {
+          align: "right",
+          width: 120,
+        });
+  
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(12)
+        .font("Helvetica")
+        .text(`${payment.transaction_id}`, doc.page.width - 120, 50, {
+          align: "left",
+          width: 100,
+        });
+  
+      // Add date and time
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(10)
+        .font("Helvetica")
+        .text(
+          `Date: ${new Date(payment.createdAt).toLocaleDateString()}`,
+          doc.page.width - 250,
+          65,
+          { align: "right", width: 120 }
+        );
+  
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(10)
+        .font("Helvetica")
+        .text(
+          `Time: ${new Date(payment.createdAt).toLocaleTimeString()}`,
+          doc.page.width - 250,
+          80,
+          { align: "right", width: 120 }
+        );
+  
+      // Main content starts below the header
+      const startY = 150;
+      let currentY = startY;
+  
+      // Event details box
+      currentY += 10;
+      doc
+        .roundedRect(50, currentY, doc.page.width - 100, 100, 5)
+        .fillAndStroke(lightGrey, "#E0E0E0");
+  
+      doc
+        .fillColor(primaryColor)
+        .fontSize(16)
+        .font("Helvetica-Bold")
+        .text("Event Details", 70, currentY + 15);
+  
+      doc
+        .fillColor(textColor)
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text(`${payment.event_id?.title || "Event"}`, 70, currentY + 40);
+  
+      if (payment.event_id?.date) {
+        doc
+          .fillColor(secondaryColor)
+          .fontSize(11)
+          .font("Helvetica")
+          .text(
+            `Date: ${new Date(payment.event_id.date).toLocaleDateString()}`,
+            70,
+            currentY + 60
+          );
+      }
+  
+      if (payment.event_id?.location) {
+        doc
+          .fillColor(secondaryColor)
+          .fontSize(11)
+          .font("Helvetica")
+          .text(`Location: ${payment.event_id.location}`, 70, currentY + 75);
+      }
+  
+      // Customer information
+      currentY += 120;
+      doc
+        .fillColor(primaryColor)
+        .fontSize(16)
+        .font("Helvetica-Bold")
+        .text("Customer Information", 50, currentY);
+  
+      currentY += 25;
       doc
         .fillColor(secondaryColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text(`Name: ${user.name || user.username || "Customer"}`, 50, currentY);
+  
+      currentY += 15;
+      doc
+        .fillColor(secondaryColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text(`Email: ${user.email || "N/A"}`, 50, currentY);
+  
+      // Payment information
+      doc
+        .fillColor(primaryColor)
+        .fontSize(16)
+        .font("Helvetica-Bold")
+        .text("Payment Information", 300, currentY - 40);
+  
+      let displayPaymentMethod = "N/A";
+      if (payment.payment_method) {
+        displayPaymentMethod =
+          payment.payment_method === "paypal"
+            ? "PayPal"
+            : payment.payment_method.charAt(0).toUpperCase() +
+              payment.payment_method.slice(1);
+      }
+  
+      doc
+        .fillColor(secondaryColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text(`Method: ${displayPaymentMethod}`, 300, currentY - 15);
+  
+      let displayStatus = "N/A";
+      if (payment.status) {
+        displayStatus =
+          payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+      } else if (payment.payment_status) {
+        displayStatus =
+          payment.payment_status.charAt(0).toUpperCase() +
+          payment.payment_status.slice(1);
+      }
+  
+      doc
+        .fillColor(secondaryColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text(`Status: ${displayStatus}`, 300, currentY);
+  
+      // Draw horizontal line
+      currentY += 40;
+      doc
+        .strokeColor("#E0E0E0")
+        .lineWidth(1)
+        .moveTo(50, currentY)
+        .lineTo(doc.page.width - 50, currentY)
+        .stroke();
+  
+      // Order Details
+      currentY += 30;
+      doc
+        .fillColor(primaryColor)
+        .fontSize(16)
+        .font("Helvetica-Bold")
+        .text("Order Details", 50, currentY);
+  
+      // Table header
+      currentY += 25;
+  
+      // Draw table header background
+      doc.rect(50, currentY, doc.page.width - 100, 20).fill(primaryColor);
+  
+      // Table header text
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(11)
+        .font("Helvetica-Bold")
+        .text("Description", 60, currentY + 5)
+        .text("Quantity", 250, currentY + 5)
+        .text("Price", 350, currentY + 5)
+        .text("Subtotal", 450, currentY + 5);
+  
+      currentY += 20;
+      doc
+        .rect(50, currentY, doc.page.width - 100, 25)
+        .fillAndStroke(lightGrey, "#E0E0E0");
+  
+      // Table content
+      doc
+        .fillColor(textColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text("Event Tickets", 60, currentY + 7, { width: 180 });
+  
+      doc
+        .fillColor(textColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text(`${totalQuantity}`, 270, currentY + 7, {
+          align: "right",
+          width: 30,
+        });
+  
+      doc
+        .fillColor(textColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text("LKR", 350, currentY + 7);
+  
+      doc
+        .fillColor(textColor)
         .fontSize(11)
         .font("Helvetica")
         .text(
-          `Date: ${new Date(payment.event_id.date).toLocaleDateString()}`,
-          70,
-          currentY + 60
+          pricePerTicket.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          }),
+          400,
+          currentY + 7,
+          { align: "right", width: 40 }
         );
-    }
-
-    if (payment.event_id?.location) {
+  
       doc
-        .fillColor(secondaryColor)
+        .fillColor(textColor)
         .fontSize(11)
         .font("Helvetica")
-        .text(`Location: ${payment.event_id.location}`, 70, currentY + 75);
+        .text("LKR", 450, currentY + 7);
+  
+      doc
+        .fillColor(textColor)
+        .fontSize(11)
+        .font("Helvetica")
+        .text(
+          payment.amount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          }),
+          500,
+          currentY + 7,
+          { align: "right", width: 40 }
+        );
+  
+      // Summary box
+      currentY += 40;
+      doc
+        .roundedRect(doc.page.width - 200, currentY, 150, 70, 5)
+        .fillAndStroke("#F5F5F5", "#E0E0E0");
+  
+      doc
+        .fillColor(textColor)
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text("Payment Summary", doc.page.width - 180, currentY + 10);
+  
+      // Subtotal
+      doc
+        .fillColor(secondaryColor)
+        .fontSize(10)
+        .font("Helvetica")
+        .text("Subtotal:", doc.page.width - 180, currentY + 30);
+  
+      doc
+        .fillColor(textColor)
+        .fontSize(10)
+        .font("Helvetica")
+        .text("LKR", doc.page.width - 90, currentY + 30);
+  
+      doc
+        .fillColor(textColor)
+        .fontSize(10)
+        .font("Helvetica")
+        .text(
+          payment.amount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          }),
+          doc.page.width - 50,
+          currentY + 30,
+          { align: "right" }
+        );
+  
+      // Total
+      doc
+        .fillColor(primaryColor)
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text("Total:", doc.page.width - 180, currentY + 50);
+  
+      doc
+        .fillColor(primaryColor)
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text("LKR", doc.page.width - 90, currentY + 50);
+  
+      doc
+        .fillColor(primaryColor)
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text(
+          payment.amount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          }),
+          doc.page.width - 50,
+          currentY + 50,
+          { align: "right" }
+        );
+  
+      // Footer
+      const footerY = doc.page.height - 80;
+      doc.rect(0, footerY, doc.page.width, 80).fill(primaryColor);
+  
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(11)
+        .font("Helvetica")
+        .text("Thank you for your purchase!", doc.page.width / 2, footerY + 20, {
+          align: "center",
+        });
+  
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(10)
+        .font("Helvetica")
+        .text(
+          "For any queries, please contact support@eventlanka.com",
+          doc.page.width / 2,
+          footerY + 40,
+          { align: "center" }
+        );
+  
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(8)
+        .font("Helvetica")
+        .text(
+          `Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
+          doc.page.width / 2,
+          footerY + 60,
+          { align: "center" }
+        );
+  
+      return doc;
     }
-
-    // Customer information
-    currentY += 120;
-    doc
-      .fillColor(primaryColor)
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("Customer Information", 50, currentY);
-
-    currentY += 25;
-    doc
-      .fillColor(secondaryColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text(`Name: ${user.name || user.username || "Customer"}`, 50, currentY);
-
-    currentY += 15;
-    doc
-      .fillColor(secondaryColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text(`Email: ${user.email || "N/A"}`, 50, currentY);
-
-    // Payment information
-    doc
-      .fillColor(primaryColor)
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("Payment Information", 300, currentY - 40);
-
-    let displayPaymentMethod = "N/A";
-    if (payment.payment_method) {
-      displayPaymentMethod =
-        payment.payment_method === "paypal"
-          ? "PayPal"
-          : payment.payment_method.charAt(0).toUpperCase() +
-            payment.payment_method.slice(1);
-    }
-
-    doc
-      .fillColor(secondaryColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text(`Method: ${displayPaymentMethod}`, 300, currentY - 15);
-
-    let displayStatus = "N/A";
-    if (payment.status) {
-      displayStatus =
-        payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
-    } else if (payment.payment_status) {
-      displayStatus =
-        payment.payment_status.charAt(0).toUpperCase() +
-        payment.payment_status.slice(1);
-    }
-
-    doc
-      .fillColor(secondaryColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text(`Status: ${displayStatus}`, 300, currentY);
-
-    // Draw horizontal line
-    currentY += 40;
-    doc
-      .strokeColor("#E0E0E0")
-      .lineWidth(1)
-      .moveTo(50, currentY)
-      .lineTo(doc.page.width - 50, currentY)
-      .stroke();
-
-    // Order Details
-    currentY += 30;
-    doc
-      .fillColor(primaryColor)
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("Order Details", 50, currentY);
-
-    // Table header
-    currentY += 25;
-
-    // Draw table header background
-    doc.rect(50, currentY, doc.page.width - 100, 20).fill(primaryColor);
-
-    // Table header text
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(11)
-      .font("Helvetica-Bold")
-      .text("Description", 60, currentY + 5)
-      .text("Quantity", 250, currentY + 5)
-      .text("Price", 350, currentY + 5)
-      .text("Subtotal", 450, currentY + 5);
-
-    currentY += 20;
-    doc
-      .rect(50, currentY, doc.page.width - 100, 25)
-      .fillAndStroke(lightGrey, "#E0E0E0");
-
-    // Table content
-    doc
-      .fillColor(textColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text("Event Tickets", 60, currentY + 7, { width: 180 });
-
-    doc
-      .fillColor(textColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text(`${totalQuantity}`, 270, currentY + 7, {
-        align: "right",
-        width: 30,
-      });
-
-    doc
-      .fillColor(textColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text("LKR", 350, currentY + 7);
-
-    doc
-      .fillColor(textColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text(
-        pricePerTicket.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-        }),
-        400,
-        currentY + 7,
-        { align: "right", width: 40 }
-      );
-
-    doc
-      .fillColor(textColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text("LKR", 450, currentY + 7);
-
-    doc
-      .fillColor(textColor)
-      .fontSize(11)
-      .font("Helvetica")
-      .text(
-        payment.amount.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-        }),
-        500,
-        currentY + 7,
-        { align: "right", width: 40 }
-      );
-
-    // Summary box
-    currentY += 40;
-    doc
-      .roundedRect(doc.page.width - 200, currentY, 150, 70, 5)
-      .fillAndStroke("#F5F5F5", "#E0E0E0");
-
-    doc
-      .fillColor(textColor)
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .text("Payment Summary", doc.page.width - 180, currentY + 10);
-
-    // Subtotal
-    doc
-      .fillColor(secondaryColor)
-      .fontSize(10)
-      .font("Helvetica")
-      .text("Subtotal:", doc.page.width - 180, currentY + 30);
-
-    doc
-      .fillColor(textColor)
-      .fontSize(10)
-      .font("Helvetica")
-      .text("LKR", doc.page.width - 90, currentY + 30);
-
-    doc
-      .fillColor(textColor)
-      .fontSize(10)
-      .font("Helvetica")
-      .text(
-        payment.amount.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-        }),
-        doc.page.width - 50,
-        currentY + 30,
-        { align: "right" }
-      );
-
-    // Total
-    doc
-      .fillColor(primaryColor)
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .text("Total:", doc.page.width - 180, currentY + 50);
-
-    doc
-      .fillColor(primaryColor)
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .text("LKR", doc.page.width - 90, currentY + 50);
-
-    doc
-      .fillColor(primaryColor)
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .text(
-        payment.amount.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-        }),
-        doc.page.width - 50,
-        currentY + 50,
-        { align: "right" }
-      );
-
-    // Footer
-    const footerY = doc.page.height - 80;
-    doc.rect(0, footerY, doc.page.width, 80).fill(primaryColor);
-
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(11)
-      .font("Helvetica")
-      .text("Thank you for your purchase!", doc.page.width / 2, footerY + 20, {
-        align: "center",
-      });
-
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(10)
-      .font("Helvetica")
-      .text(
-        "For any queries, please contact support@eventlanka.com",
-        doc.page.width / 2,
-        footerY + 40,
-        { align: "center" }
-      );
-
-    doc
-      .fillColor("#FFFFFF")
-      .fontSize(8)
-      .font("Helvetica")
-      .text(
-        `Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
-        doc.page.width / 2,
-        footerY + 60,
-        { align: "center" }
-      );
-
-    return doc;
-  }
 }
 
 module.exports = new PaymentService();
+

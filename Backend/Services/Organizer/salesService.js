@@ -1,6 +1,6 @@
-const Ticket = require("../../models/Ticket");
-const Event = require("../../models/Event");
-const User = require("../../models/User");
+const TicketRepository = require("../../Repository/TicketRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const UserRepository = require("../../Repository/UserRepository");
 
 class SalesService {
   /**
@@ -12,7 +12,7 @@ class SalesService {
    */
   async getSalesByEvent(eventId, userId, userRole) {
     // Check if user is authorized (event organizer or admin)
-    const event = await Event.findById(eventId);
+    const event = await EventRepository.findById(eventId);
     if (!event) {
       throw new Error("Event not found");
     }
@@ -21,8 +21,8 @@ class SalesService {
       throw new Error("Unauthorized to view sales data");
     }
 
-    // Get all tickets for the event
-    const tickets = await Ticket.find({
+    // Get all paid tickets for the event
+    const tickets = await TicketRepository.findAll({
       event_id: eventId,
       payment_status: "paid", // Only count paid tickets
     });
@@ -75,8 +75,10 @@ class SalesService {
       query.event_id = { $in: eventIds };
     }
 
-    // Get tickets in the date range
-    const tickets = await Ticket.find(query).populate("event_id", "title");
+    // Get tickets in the date range with event population
+    const tickets = await TicketRepository.findAll(query, {
+      populate: { event: true },
+    });
 
     // Calculate sales by day and by event
     const salesByDay = this._calculateSalesByDay(tickets);
@@ -111,10 +113,10 @@ class SalesService {
       query.event_id = { $in: eventIds };
     }
 
-    // Get all tickets
-    const tickets = await Ticket.find(query)
-      .populate("event_id", "title date location")
-      .populate("user_id", "email");
+    // Get all tickets with populated data
+    const tickets = await TicketRepository.findAll(query, {
+      populate: { event: true, user: true },
+    });
 
     // Calculate various analytics
     const totalRevenue = this._calculateTotalRevenue(tickets);
@@ -142,9 +144,7 @@ class SalesService {
    * @returns {Array} Array of event IDs
    */
   async _getOrganizerEventIds(userId) {
-    const organizerEvents = await Event.find({
-      organizer_id: userId,
-    }).select("_id");
+    const organizerEvents = await EventRepository.findByOrganizerId(userId);
     return organizerEvents.map((event) => event._id);
   }
 
@@ -351,3 +351,4 @@ class SalesService {
 }
 
 module.exports = new SalesService();
+ 
