@@ -1,6 +1,6 @@
-const TicketRepository = require("../repositories/TicketRepository");
-const EventRepository = require("../repositories/EventRepository");
-const UserRepository = require("../repositories/UserRepository");
+const TicketRepository = require("../../Repository/TicketRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const UserRepository = require("../../Repository/UserRepository");
 
 class SalesService {
   /**

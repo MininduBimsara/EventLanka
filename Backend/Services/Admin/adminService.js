@@ -1,8 +1,8 @@
-const UserRepository = require("../Repository/UserRepository");
-const AdminRepository = require("../Repository/AdminRepository");
-const EventRepository = require("../Repository/EventRepository");
-const PaymentRepository = require("../Repository/PaymentRepository");
-const RefundRequestRepository = require("../Repository/RefundRequestRepository");
+const UserRepository = require("../../Repository/UserRepository");
+const AdminRepository = require("../../Repository/AdminRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const PaymentRepository = require("../../Repository/PaymentRepository");
+const RefundRequestRepository = require("../../Repository/RefundRequestRepository");
 const bcrypt = require("bcryptjs");
 
 // Dashboard statistics

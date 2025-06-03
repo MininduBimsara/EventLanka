@@ -1,7 +1,7 @@
-const UserRepository = require("../repositories/UserRepository");
-const { OrganizerRepository } = require("../repositories/OrganizerRepository");
-const EventRepository = require("../repositories/EventRepository");
-const TicketRepository = require("../repositories/TicketRepository");
+const UserRepository = require("../../Repository/UserRepository");
+const OrganizerRepository = require("../../Repository/OrganizerRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const TicketRepository = require("../../Repository/TicketRepository");
 const bcrypt = require("bcryptjs");
 
 class OrganizerService {

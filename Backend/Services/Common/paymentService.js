@@ -1,7 +1,7 @@
-const PaymentRepository = require("../repositories/PaymentRepository");
-const OrderRepository = require("../repositories/OrderRepository");
-const TicketRepository = require("../repositories/TicketRepository");
-const EventRepository = require("../repositories/EventRepository");
+const PaymentRepository = require("../../Repository/PaymentRepository");
+const OrderRepository = require("../../Repository/OrderRepository");
+const TicketRepository = require("../../Repository/TicketRepository");
+const EventRepository = require("../../Repository/EventRepository");
 const PDFDocument = require("pdfkit");
 const axios = require("axios");
 

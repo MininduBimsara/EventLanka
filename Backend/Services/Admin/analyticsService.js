@@ -1,7 +1,7 @@
 // Replace the imports at the top of analyticsService.js with:
-const PaymentRepository = require("../repositories/PaymentRepository");
-const EventRepository = require("../repositories/EventRepository");
-const UserRepository = require("../repositories/UserRepository");
+const PaymentRepository = require("../../Repository/PaymentRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const UserRepository = require("../../Repository/UserRepository");
 
 class AnalyticsService {
   // Update the getRevenueData method:

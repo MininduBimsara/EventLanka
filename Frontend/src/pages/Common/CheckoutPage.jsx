@@ -4,8 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import PaymentForm from "./PaymentForm";
 import NavBar from "../../components/Common/Navbar";
-import { createOrder } from "../../Redux/Slicers/orderSlice";
-import { fetchEventById } from "../../Redux/Slicers/EventSlice";
+import { createOrder } from "../../Redux/Thunks/orderThunks";
+import { fetchEventById } from "../../Redux/Thunks/eventThunk";
 import { resetPaymentStatus } from "../../Redux/Slicers/PaymentSlice";
 
 // Set PayPal options

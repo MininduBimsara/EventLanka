@@ -1,5 +1,5 @@
 // passwordResetService.js - Refactored to use UserRepository
-const UserRepository = require("../repositories/UserRepository");
+const UserRepository = require("../../Repository/UserRepository");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");

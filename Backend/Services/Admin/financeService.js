@@ -1,6 +1,6 @@
-const RefundRequest = require("../../models/RefundRequest");
-const Payment = require("../../models/Payment");
-const Event = require("../../models/Event");
+const RefundRequestRepository = require("../../Repository/RefundRequestRepository");
+const PaymentRepository = require("../../Repository/PaymentRepository");
+const EventRepository = require("../../Repository/EventRepository");
 
 class FinanceService {
   /**
@@ -9,7 +9,16 @@ class FinanceService {
    */
   async getAllRefundRequests() {
     try {
-      const refunds = await RefundRequest.find();
+      const refunds = await RefundRequestRepository.findAll(
+        {},
+        {
+          populate: {
+            user: "username email",
+            event: "title date location",
+            ticket: "ticket_type",
+          },
+        }
+      );
       return refunds;
     } catch (error) {
       throw new Error(`Failed to fetch refund requests: ${error.message}`);
@@ -24,14 +33,10 @@ class FinanceService {
    */
   async approveRefundRequest(refundId, note = "") {
     try {
-      const refund = await RefundRequest.findByIdAndUpdate(
+      const refund = await RefundRequestRepository.updateStatus(
         refundId,
-        {
-          status: "approved",
-          note: note,
-          updatedAt: new Date(),
-        },
-        { new: true }
+        "approved",
+        note
       );
 
       if (!refund) {
@@ -52,14 +57,10 @@ class FinanceService {
    */
   async rejectRefundRequest(refundId, note = "") {
     try {
-      const refund = await RefundRequest.findByIdAndUpdate(
+      const refund = await RefundRequestRepository.updateStatus(
         refundId,
-        {
-          status: "rejected",
-          note: note,
-          updatedAt: new Date(),
-        },
-        { new: true }
+        "rejected",
+        note
       );
 
       if (!refund) {
@@ -86,13 +87,6 @@ class FinanceService {
       const { startDate, endDate, payment_method, status } = filters;
       const filter = {};
 
-      // Date range filtering
-      if (startDate || endDate) {
-        filter.createdAt = {};
-        if (startDate) filter.createdAt.$gte = new Date(startDate);
-        if (endDate) filter.createdAt.$lte = new Date(endDate);
-      }
-
       // Payment method filtering
       if (payment_method) {
         filter.payment_method = payment_method;
@@ -100,13 +94,52 @@ class FinanceService {
 
       // Status filtering
       if (status) {
-        filter.status = status;
+        filter.payment_status = status;
       }
 
-      const transactions = await Payment.find(filter)
-        .populate("user_id", "username email")
-        .populate("event_id", "title description")
-        .sort({ createdAt: -1 }); // Sort by newest first
+      let transactions;
+
+      // Date range filtering
+      if (startDate || endDate) {
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+
+        transactions = await PaymentRepository.findByDateRange(start, end, {
+          populate: {
+            user: "username email",
+            event: "title description",
+          },
+          sort: { createdAt: -1 },
+        });
+
+        // Apply additional filters if date range was used
+        if (Object.keys(filter).length > 0) {
+          transactions = transactions.filter((transaction) => {
+            let matches = true;
+            if (
+              filter.payment_method &&
+              transaction.payment_method !== filter.payment_method
+            ) {
+              matches = false;
+            }
+            if (
+              filter.payment_status &&
+              transaction.payment_status !== filter.payment_status
+            ) {
+              matches = false;
+            }
+            return matches;
+          });
+        }
+      } else {
+        transactions = await PaymentRepository.findAll(filter, {
+          populate: {
+            user: "username email",
+            event: "title description",
+          },
+          sort: { createdAt: -1 },
+        });
+      }
 
       return transactions;
     } catch (error) {
@@ -119,52 +152,55 @@ class FinanceService {
    * @param {Object} dateRange - Date range for the report
    * @param {string} dateRange.startDate - Start date
    * @param {string} dateRange.endDate - End date
-   * @returns {Promise<Array>} Revenue report data
+   * @returns {Promise<Object>} Revenue report data
    */
   async generateRevenueReport(dateRange = {}) {
     try {
       const { startDate, endDate } = dateRange;
-      const match = { status: "completed" };
 
-      // Apply date filtering if provided
+      let reportData;
       if (startDate || endDate) {
-        match.createdAt = {};
-        if (startDate) match.createdAt.$gte = new Date(startDate);
-        if (endDate) match.createdAt.$lte = new Date(endDate);
+        const start = startDate ? new Date(startDate) : new Date(0);
+        const end = endDate ? new Date(endDate) : new Date();
+        reportData = await PaymentRepository.getRevenueByDateRange(
+          start,
+          end,
+          "month"
+        );
+      } else {
+        // Get all-time revenue data
+        reportData = await PaymentRepository.getRevenueByDateRange(
+          new Date(0),
+          new Date(),
+          "month"
+        );
       }
 
-      const report = await Payment.aggregate([
-        { $match: match },
-        {
-          $group: {
-            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-            totalRevenue: { $sum: "$amount" },
-            transactionCount: { $sum: 1 },
-            averageAmount: { $avg: "$amount" },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]);
+      // Get summary statistics
+      const summaryFilter = {};
+      if (startDate || endDate) {
+        const dateFilter = {};
+        if (startDate) dateFilter.$gte = new Date(startDate);
+        if (endDate) dateFilter.$lte = new Date(endDate);
+        summaryFilter.createdAt = dateFilter;
+      }
 
-      // Calculate total summary
-      const totalSummary = await Payment.aggregate([
-        { $match: match },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: "$amount" },
-            totalTransactions: { $sum: 1 },
-            averageTransaction: { $avg: "$amount" },
-          },
-        },
-      ]);
+      const summary = await PaymentRepository.getStatistics({
+        ...summaryFilter,
+        payment_status: "completed",
+      });
 
       return {
-        monthlyData: report,
-        summary: totalSummary[0] || {
-          totalRevenue: 0,
-          totalTransactions: 0,
-          averageTransaction: 0,
+        monthlyData: reportData.map((item) => ({
+          month: `${item._id.year}-${String(item._id.period).padStart(2, "0")}`,
+          totalRevenue: item.revenue,
+          transactionCount: item.count,
+          averageAmount: item.revenue / item.count,
+        })),
+        summary: {
+          totalRevenue: summary.totalRevenue,
+          totalTransactions: summary.completedPayments,
+          averageTransaction: summary.averagePaymentAmount,
         },
       };
     } catch (error) {
@@ -173,61 +209,55 @@ class FinanceService {
   }
 
   /**
-   * Get popular events based on various criteria
+   * Get popular events based on payment data
    * @param {number} limit - Number of events to return (default: 5)
    * @returns {Promise<Array>} Array of popular events
    */
   async getPopularEvents(limit = 5) {
     try {
-      // Get events with payment counts
-      const popularEvents = await Event.aggregate([
-        { $match: { event_status: "approved" } },
-        {
-          $lookup: {
-            from: "payments",
-            localField: "_id",
-            foreignField: "event_id",
-            as: "payments",
-          },
+      // Get all completed payments grouped by event
+      const completedPayments = await PaymentRepository.findCompleted({
+        populate: {
+          event: "title description date location price event_status",
         },
-        {
-          $addFields: {
-            paymentCount: { $size: "$payments" },
-            totalRevenue: {
-              $sum: {
-                $map: {
-                  input: {
-                    $filter: {
-                      input: "$payments",
-                      cond: { $eq: ["$$this.status", "completed"] },
-                    },
-                  },
-                  as: "payment",
-                  in: "$$payment.amount",
-                },
-              },
-            },
-          },
-        },
-        {
-          $sort: { paymentCount: -1, totalRevenue: -1 },
-        },
-        {
-          $limit: limit,
-        },
-        {
-          $project: {
-            title: 1,
-            description: 1,
-            event_date: 1,
-            location: 1,
-            price: 1,
-            paymentCount: 1,
-            totalRevenue: 1,
-            event_status: 1,
-          },
-        },
-      ]);
+      });
+
+      // Group payments by event and calculate metrics
+      const eventMetrics = {};
+      completedPayments.forEach((payment) => {
+        const eventId = payment.event_id._id.toString();
+        if (!eventMetrics[eventId]) {
+          eventMetrics[eventId] = {
+            event: payment.event_id,
+            paymentCount: 0,
+            totalRevenue: 0,
+          };
+        }
+        eventMetrics[eventId].paymentCount++;
+        eventMetrics[eventId].totalRevenue += payment.amount;
+      });
+
+      // Convert to array and sort by payment count, then by revenue
+      const popularEvents = Object.values(eventMetrics)
+        .filter((metric) => metric.event.event_status === "approved")
+        .sort((a, b) => {
+          if (b.paymentCount !== a.paymentCount) {
+            return b.paymentCount - a.paymentCount;
+          }
+          return b.totalRevenue - a.totalRevenue;
+        })
+        .slice(0, limit)
+        .map((metric) => ({
+          _id: metric.event._id,
+          title: metric.event.title,
+          description: metric.event.description,
+          event_date: metric.event.date,
+          location: metric.event.location,
+          price: metric.event.price,
+          paymentCount: metric.paymentCount,
+          totalRevenue: metric.totalRevenue,
+          event_status: metric.event.event_status,
+        }));
 
       return popularEvents;
     } catch (error) {
@@ -246,62 +276,53 @@ class FinanceService {
       const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
       // Current month revenue
-      const currentMonthRevenue = await Payment.aggregate([
-        {
-          $match: {
-            status: "completed",
-            createdAt: { $gte: thisMonth },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$amount" },
-            count: { $sum: 1 },
-          },
-        },
-      ]);
+      const currentMonthPayments = await PaymentRepository.findByDateRange(
+        thisMonth,
+        today,
+        {}
+      );
+      const currentMonthCompleted = currentMonthPayments.filter(
+        (p) => p.payment_status === "completed"
+      );
 
       // Last month revenue for comparison
-      const lastMonthRevenue = await Payment.aggregate([
-        {
-          $match: {
-            status: "completed",
-            createdAt: {
-              $gte: lastMonth,
-              $lt: thisMonth,
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$amount" },
-            count: { $sum: 1 },
-          },
-        },
-      ]);
+      const lastMonthPayments = await PaymentRepository.findByDateRange(
+        lastMonth,
+        thisMonth,
+        {}
+      );
+      const lastMonthCompleted = lastMonthPayments.filter(
+        (p) => p.payment_status === "completed"
+      );
 
-      // Pending refund requests
-      const pendingRefunds = await RefundRequest.countDocuments({
-        status: "pending",
-      });
+      // Calculate revenues
+      const currentRevenue = currentMonthCompleted.reduce(
+        (sum, p) => sum + p.amount,
+        0
+      );
+      const lastRevenue = lastMonthCompleted.reduce(
+        (sum, p) => sum + p.amount,
+        0
+      );
 
-      // Active events
-      const activeEvents = await Event.countDocuments({
-        event_status: "approved",
-      });
-
-      const currentRevenue = currentMonthRevenue[0]?.total || 0;
-      const lastRevenue = lastMonthRevenue[0]?.total || 0;
       const revenueGrowth =
         lastRevenue > 0
           ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
           : 0;
 
+      // Pending refund requests
+      const pendingRefunds = await RefundRequestRepository.count({
+        status: "pending",
+      });
+
+      // Active events
+      const activeEvents = await EventRepository.count({
+        event_status: "approved",
+      });
+
       return {
         currentMonthRevenue: currentRevenue,
-        currentMonthTransactions: currentMonthRevenue[0]?.count || 0,
+        currentMonthTransactions: currentMonthCompleted.length,
         revenueGrowthPercentage: Math.round(revenueGrowth * 100) / 100,
         pendingRefunds,
         activeEvents,

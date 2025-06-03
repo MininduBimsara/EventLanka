@@ -1,8 +1,8 @@
 // ticketService.js - Refactored to use repositories
-const TicketRepository = require("../repositories/TicketRepository");
-const EventRepository = require("../repositories/EventRepository");
-const OrderRepository = require("../repositories/OrderRepository");
-const UserRepository = require("../repositories/UserRepository");
+const TicketRepository = require("../../Repository/TicketRepository");
+const EventRepository = require("../../Repository/EventRepository");
+const OrderRepository = require("../../Repository/OrderRepository");
+const UserRepository = require("../../Repository/UserRepository");
 const QRCode = require("qrcode");
 const PDFDocument = require("pdfkit");
 

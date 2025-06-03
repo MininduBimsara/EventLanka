@@ -17,11 +17,9 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { verifyAuth, logoutUser } from "../../Redux/Slicers/AuthSlice";
-import {
-  googleLogout,
-  clearGoogleUser,
-} from "../../Redux/Slicers/GoogleAuthSlice";
+import { verifyAuth, logoutUser } from "../../Redux/Thunks/authThunks";
+import { googleLogout } from "../../Redux/Thunks/googleAuththunks";
+import { clearGoogleUser } from "../../Redux/Slicers/GoogleAuthSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();

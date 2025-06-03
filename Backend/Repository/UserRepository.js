@@ -97,6 +97,65 @@ class UserRepository {
   async findByRole(role) {
     return await User.find({ role });
   }
+
+  /**
+   * Check if user exists by ID
+   * @param {String} userId - User ID
+   * @returns {Boolean} True if user exists
+   */
+  async exists(userId) {
+    const user = await User.findById(userId).select("_id");
+    return !!user;
+  }
+
+  /**
+   * Find users by multiple IDs
+   * @param {Array} userIds - Array of user IDs
+   * @returns {Array} Array of user documents
+   */
+  async findByIds(userIds) {
+    return await User.find({ _id: { $in: userIds } });
+  }
+
+  /**
+   * Find users by status
+   * @param {String} status - User status
+   * @returns {Array} Array of user documents
+   */
+  async findByStatus(status) {
+    return await User.find({ status });
+  }
+
+  /**
+   * Update user status
+   * @param {String} userId - User ID
+   * @param {String} status - New status
+   * @returns {Object|null} Updated user document
+   */
+  async updateStatus(userId, status) {
+    return await User.findByIdAndUpdate(
+      userId,
+      { status },
+      { new: true, runValidators: true }
+    );
+  }
+
+  /**
+   * Find users by date range
+   * @param {Date} startDate - Start date
+   * @param {Date} endDate - End date
+   * @param {Object} options - Query options
+   * @returns {Array} Array of user documents
+   */
+  async findByDateRange(startDate, endDate, options = {}) {
+    const filter = {
+      createdAt: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    };
+    return await this.findAll(filter, options);
+  }
 }
 
 module.exports = new UserRepository();

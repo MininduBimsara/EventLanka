@@ -1,6 +1,6 @@
 // Import repositories
-const OrderRepository = require("../repositories/OrderRepository");
-const TicketRepository = require("../repositories/TicketRepository");
+const OrderRepository = require("../../Repository/OrderRepository");
+const TicketRepository = require("../../Repository/TicketRepository");
 
 /**
  * Create a new order
