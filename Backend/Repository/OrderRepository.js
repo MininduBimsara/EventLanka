@@ -309,6 +309,40 @@ class OrderRepository {
       }
     );
   }
+
+  /**
+   * Find order by ID with populated tickets and event details
+   * @param {String} orderId - Order ID
+   * @returns {Object|null} Order document with populated tickets
+   */
+  async findByIdWithPopulatedTickets(orderId) {
+    return await Order.findById(orderId).populate({
+      path: "tickets",
+      populate: {
+        path: "event_id",
+        model: "Event",
+      },
+    });
+  }
+
+  /**
+   * Update order payment details
+   * @param {String} orderId - Order ID
+   * @param {Object} paymentData - Payment data to update
+   * @returns {Object|null} Updated order document
+   */
+  async updatePaymentDetails(orderId, paymentData) {
+    return await Order.findByIdAndUpdate(
+      orderId,
+      {
+        payment_status: paymentData.payment_status,
+        status: paymentData.status,
+        paymentMethod: paymentData.paymentMethod,
+        payment_details: paymentData.payment_details,
+      },
+      { new: true }
+    );
+  }
 }
 
 module.exports = new OrderRepository();

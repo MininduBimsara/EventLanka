@@ -410,6 +410,55 @@ class PaymentRepository {
 
     return await Payment.aggregate(pipeline);
   }
+
+  /**
+   * Find payment by PayPal order ID with populated fields
+   * @param {String} paypalOrderId - PayPal order ID
+   * @returns {Object|null} Payment document with populated event
+   */
+  async findByPayPalOrderIdWithEvent(paypalOrderId) {
+    return await Payment.findOne({
+      "payment_details.paypal_order_id": paypalOrderId,
+    }).populate("event_id", "title date location");
+  }
+
+  /**
+   * Find payment by transaction ID pattern with populated fields
+   * @param {String} transactionId - Transaction ID or pattern
+   * @returns {Object|null} Payment document with populated event
+   */
+  async findByTransactionIdWithEvent(transactionId) {
+    return await Payment.findOne({
+      transaction_id: { $regex: transactionId, $options: "i" },
+    }).populate("event_id", "title date location");
+  }
+
+  /**
+   * Find user's most recent completed payment for event
+   * @param {String} userId - User ID
+   * @param {String} eventId - Event ID
+   * @returns {Object|null} Payment document with populated event
+   */
+  async findUserRecentCompletedPayment(userId, eventId) {
+    return await Payment.findOne({
+      user_id: userId,
+      event_id: eventId,
+      payment_status: "completed",
+    })
+      .populate("event_id", "title date location")
+      .sort({ createdAt: -1 });
+  }
+
+  /**
+   * Find payment by transaction ID with populated event
+   * @param {String} transactionId - Transaction ID
+   * @returns {Object|null} Payment document with populated event
+   */
+  async findByTransactionIdWithPopulatedEvent(transactionId) {
+    return await Payment.findOne({
+      transaction_id: transactionId,
+    }).populate("event_id", "title date location image_url");
+  }
 }
 
 module.exports = new PaymentRepository();

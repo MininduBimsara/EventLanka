@@ -418,6 +418,20 @@ class TicketRepository {
       runValidators: true,
     });
   }
+
+  /**
+   * Find paid tickets by user and event
+   * @param {String} userId - User ID
+   * @param {String} eventId - Event ID
+   * @returns {Array} Array of paid ticket documents
+   */
+  async findPaidByUserAndEvent(userId, eventId) {
+    return await Ticket.find({
+      user_id: userId,
+      event_id: eventId,
+      payment_status: "paid",
+    });
+  }
 }
 
 module.exports = new TicketRepository();

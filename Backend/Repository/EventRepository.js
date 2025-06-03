@@ -225,6 +225,26 @@ class EventRepository {
 
     return await query;
   }
+
+  /**
+   * Update ticket type availability
+   * @param {String} eventId - Event ID
+   * @param {String} ticketType - Ticket type
+   * @param {Number} quantity - Quantity to decrease
+   * @returns {Object|null} Updated event document
+   */
+  async updateTicketTypeAvailability(eventId, ticketType, quantity) {
+    return await Event.findOneAndUpdate(
+      {
+        _id: eventId,
+        "ticket_types.type": ticketType,
+      },
+      {
+        $inc: { "ticket_types.$.availability": -quantity },
+      },
+      { new: true }
+    );
+  }
 }
 
 module.exports = new EventRepository();
