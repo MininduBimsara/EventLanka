@@ -459,6 +459,8 @@ class PaymentRepository {
       transaction_id: transactionId,
     }).populate("event_id", "title date location image_url");
   }
+
+  
 }
 
 module.exports = new PaymentRepository();

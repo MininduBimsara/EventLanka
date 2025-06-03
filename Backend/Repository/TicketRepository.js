@@ -432,6 +432,181 @@ class TicketRepository {
       payment_status: "paid",
     });
   }
+
+  /**
+   * Find tickets with event details (including pricing)
+   * @param {Object} filter - MongoDB filter object
+   * @param {Object} options - Query options
+   * @returns {Array} Array of ticket documents with event data
+   */
+  async findWithEventDetails(filter = {}, options = {}) {
+    let query = Ticket.find(filter).populate({
+      path: "event_id",
+      select: "title date location ticket_types category",
+    });
+
+    if (options.populate && options.populate.user) {
+      query = query.populate(
+        "user_id",
+        options.populate.userFields || "username email"
+      );
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    }
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    if (options.skip) {
+      query = query.skip(options.skip);
+    }
+
+    return await query;
+  }
+
+  /**
+   * Calculate ticket price from event data
+   * @param {String} eventId - Event ID
+   * @param {String} ticketType - Ticket type
+   * @param {Number} quantity - Quantity
+   * @returns {Promise<Number>} Total price
+   */
+  async calculateTicketPrice(eventId, ticketType, quantity) {
+    const Event = require("../../models/Event");
+    const event = await Event.findById(eventId).select("ticket_types");
+
+    if (!event) {
+      throw new Error("Event not found");
+    }
+
+    const ticketTypeData = event.ticket_types.find(
+      (t) => t.type === ticketType
+    );
+    if (!ticketTypeData) {
+      throw new Error("Ticket type not found");
+    }
+
+    return ticketTypeData.price * quantity;
+  }
+
+  /**
+   * Find tickets with calculated total values
+   * @param {Object} filter - MongoDB filter object
+   * @param {Object} options - Query options
+   * @returns {Array} Array of tickets with calculated prices
+   */
+  async findWithCalculatedPrices(filter = {}, options = {}) {
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: "events",
+          localField: "event_id",
+          foreignField: "_id",
+          as: "event",
+        },
+      },
+      { $unwind: "$event" },
+      {
+        $addFields: {
+          calculatedPrice: {
+            $multiply: [
+              "$quantity",
+              {
+                $arrayElemAt: [
+                  {
+                    $map: {
+                      input: {
+                        $filter: {
+                          input: "$event.ticket_types",
+                          cond: { $eq: ["$$this.type", "$ticket_type"] },
+                        },
+                      },
+                      as: "ticketType",
+                      in: "$$ticketType.price",
+                    },
+                  },
+                  0,
+                ],
+              },
+            ],
+          },
+        },
+      },
+    ];
+
+    if (options.sort) {
+      pipeline.push({ $sort: options.sort });
+    }
+    if (options.limit) {
+      pipeline.push({ $limit: options.limit });
+    }
+    if (options.skip) {
+      pipeline.push({ $skip: options.skip });
+    }
+
+    return await Ticket.aggregate(pipeline);
+  }
+
+  /**
+   * Get tickets with event pricing information
+   * @param {String} userId - User ID
+   * @param {Object} options - Query options
+   * @returns {Array} Array of tickets with pricing
+   */
+  async findUserTicketsWithPricing(userId, options = {}) {
+    return await this.findWithEventDetails(
+      { user_id: userId },
+      {
+        ...options,
+        populate: { user: true, userFields: "username email" },
+      }
+    );
+  }
+
+  /**
+   * Find tickets by payment status with event details
+   * @param {String} paymentStatus - Payment status
+   * @param {Object} options - Query options
+   * @returns {Array} Array of tickets with event details
+   */
+  async findByPaymentStatusWithDetails(paymentStatus, options = {}) {
+    return await this.findWithEventDetails(
+      { payment_status: paymentStatus },
+      options
+    );
+  }
+
+  /**
+   * Update ticket with calculated price
+   * @param {String} ticketId - Ticket ID
+   * @param {Object} updateData - Data to update
+   * @returns {Object|null} Updated ticket document
+   */
+  async updateWithPriceCalculation(ticketId, updateData) {
+    const ticket = await this.findById(ticketId);
+    if (!ticket) return null;
+
+    // If quantity or ticket_type is being updated, recalculate price
+    if (updateData.quantity || updateData.ticket_type) {
+      const quantity = updateData.quantity || ticket.quantity;
+      const ticketType = updateData.ticket_type || ticket.ticket_type;
+
+      try {
+        const calculatedPrice = await this.calculateTicketPrice(
+          ticket.event_id,
+          ticketType,
+          quantity
+        );
+        updateData.calculatedPrice = calculatedPrice;
+      } catch (error) {
+        console.warn("Could not calculate price:", error.message);
+      }
+    }
+
+    return await this.updateById(ticketId, updateData);
+  }
 }
 
 module.exports = new TicketRepository();

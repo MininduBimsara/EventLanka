@@ -245,6 +245,92 @@ class EventRepository {
       { new: true }
     );
   }
+
+  /**
+   * Get ticket type details including price
+   * @param {String} eventId - Event ID
+   * @param {String} ticketType - Ticket type
+   * @returns {Object|null} Ticket type details or null
+   */
+  async getTicketTypeDetails(eventId, ticketType) {
+    const event = await Event.findById(eventId).select("ticket_types");
+    if (!event) return null;
+
+    return event.ticket_types.find((t) => t.type === ticketType) || null;
+  }
+
+  /**
+   * Get all ticket types for an event
+   * @param {String} eventId - Event ID
+   * @returns {Array} Array of ticket type objects
+   */
+  async getTicketTypes(eventId) {
+    const event = await Event.findById(eventId).select("ticket_types");
+    return event ? event.ticket_types : [];
+  }
+
+  /**
+   * Update ticket type price
+   * @param {String} eventId - Event ID
+   * @param {String} ticketType - Ticket type
+   * @param {Number} newPrice - New price
+   * @returns {Object|null} Updated event document
+   */
+  async updateTicketTypePrice(eventId, ticketType, newPrice) {
+    return await Event.findOneAndUpdate(
+      {
+        _id: eventId,
+        "ticket_types.type": ticketType,
+      },
+      {
+        $set: { "ticket_types.$.price": newPrice },
+      },
+      { new: true }
+    );
+  }
+
+  /**
+   * Update multiple ticket type fields
+   * @param {String} eventId - Event ID
+   * @param {String} ticketType - Ticket type
+   * @param {Object} updates - Updates object (can include price, availability, etc.)
+   * @returns {Object|null} Updated event document
+   */
+  async updateTicketType(eventId, ticketType, updates) {
+    const setObject = {};
+    Object.keys(updates).forEach((key) => {
+      setObject[`ticket_types.$.${key}`] = updates[key];
+    });
+
+    return await Event.findOneAndUpdate(
+      {
+        _id: eventId,
+        "ticket_types.type": ticketType,
+      },
+      { $set: setObject },
+      { new: true }
+    );
+  }
+
+  /**
+   * Restore ticket availability (for cancellations/refunds)
+   * @param {String} eventId - Event ID
+   * @param {String} ticketType - Ticket type
+   * @param {Number} quantity - Quantity to restore
+   * @returns {Object|null} Updated event document
+   */
+  async restoreTicketAvailability(eventId, ticketType, quantity) {
+    return await Event.findOneAndUpdate(
+      {
+        _id: eventId,
+        "ticket_types.type": ticketType,
+      },
+      {
+        $inc: { "ticket_types.$.availability": quantity },
+      },
+      { new: true }
+    );
+  }
 }
 
 module.exports = new EventRepository();
