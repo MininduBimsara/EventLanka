@@ -62,8 +62,8 @@ class DiscountRepository {
     const now = new Date();
     return await Discount.find({
       is_active: true,
-      valid_from: { $lte: now },
-      valid_until: { $gte: now },
+      start_date: { $lte: now },
+      end_date: { $gte: now },
     });
   }
 
@@ -77,8 +77,8 @@ class DiscountRepository {
     const discount = await Discount.findOne({
       code,
       is_active: true,
-      valid_from: { $lte: now },
-      valid_until: { $gte: now },
+      start_date: { $lte: now },
+      end_date: { $gte: now },
       usage_count: { $lt: "$usage_limit" },
     });
     return !!discount;

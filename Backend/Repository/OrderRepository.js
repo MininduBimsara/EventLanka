@@ -337,7 +337,7 @@ class OrderRepository {
       {
         payment_status: paymentData.payment_status,
         status: paymentData.status,
-        paymentMethod: paymentData.paymentMethod,
+        payment_method: paymentData.paymentMethod,
         payment_details: paymentData.payment_details,
       },
       { new: true }
