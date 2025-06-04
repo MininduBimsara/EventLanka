@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { createEvent } from "../../Redux/Slicers/OrganizerSlice";
+import { createEvent } from "../../Redux/Thunks/organizerThunk";
 import {
   Calendar,
   Clock,

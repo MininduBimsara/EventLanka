@@ -230,7 +230,7 @@ class TicketRepository {
   async countSoldByEventId(eventId) {
     return await this.count({
       event_id: eventId,
-      payment_status: { $in: ["paid", "completed"] },
+      payment_status: { $in: ["paid"] },
     });
   }
 
@@ -278,11 +278,7 @@ class TicketRepository {
           totalTickets: { $sum: "$quantity" },
           soldTickets: {
             $sum: {
-              $cond: [
-                { $in: ["$payment_status", ["paid", "completed"]] },
-                "$quantity",
-                0,
-              ],
+              $cond: [{ $eq: ["$payment_status", "paid"] }, "$quantity", 0],
             },
           },
           pendingTickets: {
@@ -432,7 +428,7 @@ class TicketRepository {
   }
 
   /**
-   * Find tickets with event details (including pricing)
+   * Find tickets with event details
    * @param {Object} filter - MongoDB filter object
    * @param {Object} options - Query options
    * @returns {Array} Array of ticket documents with event data
@@ -577,33 +573,117 @@ class TicketRepository {
   }
 
   /**
-   * Update ticket with calculated price
-   * @param {String} ticketId - Ticket ID
-   * @param {Object} updateData - Data to update
-   * @returns {Object|null} Updated ticket document
+   * Get ticket revenue for an event
+   * @param {String} eventId - Event ID
+   * @returns {Promise<Number>} Total revenue from sold tickets
    */
-  async updateWithPriceCalculation(ticketId, updateData) {
-    const ticket = await this.findById(ticketId);
-    if (!ticket) return null;
+  async getEventRevenue(eventId) {
+    const pipeline = [
+      {
+        $match: {
+          event_id: eventId,
+          payment_status: "paid",
+        },
+      },
+      {
+        $lookup: {
+          from: "events",
+          localField: "event_id",
+          foreignField: "_id",
+          as: "event",
+        },
+      },
+      { $unwind: "$event" },
+      {
+        $addFields: {
+          ticketPrice: {
+            $arrayElemAt: [
+              {
+                $map: {
+                  input: {
+                    $filter: {
+                      input: "$event.ticket_types",
+                      cond: { $eq: ["$$this.type", "$ticket_type"] },
+                    },
+                  },
+                  as: "ticketType",
+                  in: "$$ticketType.price",
+                },
+              },
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: {
+            $sum: { $multiply: ["$quantity", "$ticketPrice"] },
+          },
+        },
+      },
+    ];
 
-    // If quantity or ticket_type is being updated, recalculate price
-    // if (updateData.quantity || updateData.ticket_type) {
-    //   const quantity = updateData.quantity || ticket.quantity;
-    //   const ticketType = updateData.ticket_type || ticket.ticket_type;
+    const result = await Ticket.aggregate(pipeline);
+    return result[0]?.totalRevenue || 0;
+  }
 
-    //   try {
-    //     const calculatedPrice = await this.calculateTicketPrice(
-    //       ticket.event_id,
-    //       ticketType,
-    //       quantity
-    //     );
-    //     updateData.calculatedPrice = calculatedPrice;
-    //   } catch (error) {
-    //     console.warn("Could not calculate price:", error.message);
-    //   }
-    // }
+  /**
+   * Get user's total spent on tickets
+   * @param {String} userId - User ID
+   * @returns {Promise<Number>} Total amount spent by user
+   */
+  async getUserTotalSpent(userId) {
+    const pipeline = [
+      {
+        $match: {
+          user_id: userId,
+          payment_status: "paid",
+        },
+      },
+      {
+        $lookup: {
+          from: "events",
+          localField: "event_id",
+          foreignField: "_id",
+          as: "event",
+        },
+      },
+      { $unwind: "$event" },
+      {
+        $addFields: {
+          ticketPrice: {
+            $arrayElemAt: [
+              {
+                $map: {
+                  input: {
+                    $filter: {
+                      input: "$event.ticket_types",
+                      cond: { $eq: ["$$this.type", "$ticket_type"] },
+                    },
+                  },
+                  as: "ticketType",
+                  in: "$$ticketType.price",
+                },
+              },
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalSpent: {
+            $sum: { $multiply: ["$quantity", "$ticketPrice"] },
+          },
+        },
+      },
+    ];
 
-    return await this.updateById(ticketId, updateData);
+    const result = await Ticket.aggregate(pipeline);
+    return result[0]?.totalSpent || 0;
   }
 }
 

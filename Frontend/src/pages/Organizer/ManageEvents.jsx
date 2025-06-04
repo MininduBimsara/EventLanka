@@ -7,7 +7,7 @@ import {
   deleteOrganizerEvent,
   getEventAttendees,
   clearAttendees,
-} from "../../Redux/Slicers/OrganizerSlice";
+} from "../../Redux/Thunks/organizerThunk";
 import {
   Search,
   Edit,

@@ -13,7 +13,7 @@ import {
   Settings,
   LayoutDashboard,
 } from "lucide-react";
-import { fetchOrganizerProfile } from "../../Redux/Slicers/OrganizerSlice"; // Update this path
+import { fetchOrganizerProfile } from "../../Redux/Thunks/organizerThunk"; // Update this path
 
 const Sidebar = () => {
   const navigate = useNavigate();

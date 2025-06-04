@@ -16,7 +16,7 @@ import {
 import {
   fetchOrganizerProfile,
   updateOrganizerProfile,
-} from "../../Redux/Slicers/OrganizerSlice";
+} from "../../Redux/Thunks/organizerThunk";
 import {
   validateOrganizerProfile,
   validateNewCategory,

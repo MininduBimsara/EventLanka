@@ -9,7 +9,7 @@ import {
   setOrderId,
   checkPaymentStatus,
   capturePayPalOrder, // Import the new thunk
-} from "../../Redux/Slicers/PaymentSlice";
+} from "../../Redux//Thunks/paymentThunks";
 
 const PaymentForm = ({ orderId, eventName, onSuccess, onError }) => {
   const dispatch = useDispatch();

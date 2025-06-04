@@ -15,8 +15,8 @@ import {
   updateDiscount,
   deleteDiscount,
   getEventDiscounts,
-} from "../../Redux/Slicers/OrganizerSlice"; // Adjust path as needed
-import { fetchEvents } from "../../Redux/Slicers/EventSlice"; // Import the action to fetch all events
+} from "../../Redux/Thunks/organizerThunk"; // Adjust path as needed
+import { fetchEvents } from "../../Redux/Thunks/eventThunk"; // Import the action to fetch all events
 
 
 export default function Discounts() {

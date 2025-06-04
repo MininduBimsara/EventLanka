@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Common/Navbar";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser, registerUser } from "../../Redux/Slicers/AuthSlice";
+import { loginUser, registerUser } from "../../Redux/Thunks/authThunks";
 import { useNavigate } from "react-router-dom";
-import { googleAuth } from "../../Redux/Slicers/GoogleAuthSlice";
+import { googleAuth } from "../../Redux/Thunks/googleAuththunks";
 import { validateForm } from "../../Utils/Common/loginFormValidation";
 import LeftSideArtwork from "../../components/Common/Login/LeftSideArtwork";
 import LoginForm from "../../components/Common/Login/LoginForm";

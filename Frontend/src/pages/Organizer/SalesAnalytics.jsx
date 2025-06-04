@@ -20,7 +20,7 @@ import {
   getSalesAnalytics,
   getSalesByPeriod,
   getEventSales,
-} from "../../Redux/Slicers/OrganizerSlice";
+} from "../../Redux/Thunks/organizerThunk";
 
 export default function SalesAnalytics() {
   const dispatch = useDispatch();

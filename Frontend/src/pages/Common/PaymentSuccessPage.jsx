@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   downloadReceipt,
   fetchPaymentHistory,
-} from "../../Redux/Slicers/PaymentSlice";
+} from "../../Redux/Thunks/paymentThunks";
 import NavBar from "../../components/Common/Navbar";
 import { motion } from "framer-motion";
 
