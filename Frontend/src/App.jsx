@@ -9,9 +9,9 @@ import {
 import axios from "axios";
 import { ThemeProvider } from "./Context/ThemeContext";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUserProfile } from "./Redux/Slicers/userSlice";
-import { verifyAuth } from "./Redux/Slicers/AuthSlice";
-import { checkGoogleAuthStatus } from "./Redux/Slicers/GoogleAuthSlice";
+import { fetchUserProfile } from "./Redux/Thunks/userThunks";
+import { verifyAuth } from "./Redux/Thunks/authThunks";
+import { checkGoogleAuthStatus } from "./Redux/Thunks/googleAuththunks";
 
 // Common Pages
 import NewHome from "./pages/Common/NewHome";
