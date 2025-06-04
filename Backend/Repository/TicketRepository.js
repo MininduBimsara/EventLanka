@@ -395,9 +395,7 @@ class TicketRepository {
   async findFullDetailsByEventId(eventId) {
     return await Ticket.find({ event_id: eventId })
       .populate("user_id", "username email")
-      .select(
-        "user_id ticket_type quantity price attendance_status check_in_time"
-      );
+      .select("user_id ticket_type quantity attendance_status check_in_time");
   }
 
   /**
@@ -589,21 +587,21 @@ class TicketRepository {
     if (!ticket) return null;
 
     // If quantity or ticket_type is being updated, recalculate price
-    if (updateData.quantity || updateData.ticket_type) {
-      const quantity = updateData.quantity || ticket.quantity;
-      const ticketType = updateData.ticket_type || ticket.ticket_type;
+    // if (updateData.quantity || updateData.ticket_type) {
+    //   const quantity = updateData.quantity || ticket.quantity;
+    //   const ticketType = updateData.ticket_type || ticket.ticket_type;
 
-      try {
-        const calculatedPrice = await this.calculateTicketPrice(
-          ticket.event_id,
-          ticketType,
-          quantity
-        );
-        updateData.calculatedPrice = calculatedPrice;
-      } catch (error) {
-        console.warn("Could not calculate price:", error.message);
-      }
-    }
+    //   try {
+    //     const calculatedPrice = await this.calculateTicketPrice(
+    //       ticket.event_id,
+    //       ticketType,
+    //       quantity
+    //     );
+    //     updateData.calculatedPrice = calculatedPrice;
+    //   } catch (error) {
+    //     console.warn("Could not calculate price:", error.message);
+    //   }
+    // }
 
     return await this.updateById(ticketId, updateData);
   }

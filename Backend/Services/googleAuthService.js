@@ -37,7 +37,7 @@ const verifyGoogleToken = async (token) => {
     } else {
       // Update existing user info if needed
       const updateData = {
-        name,
+        username: name || user.username,
         email,
         profileImage: picture || user.profileImage,
       };

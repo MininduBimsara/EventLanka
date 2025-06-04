@@ -75,7 +75,7 @@ class EventRepository {
    * @returns {Array} Array of approved event documents
    */
   async findApproved(options = {}) {
-    return await this.findByStatus("approved", options);
+    return await this.findAll({ event_status: "approved" }, options);
   }
 
   /**
@@ -84,7 +84,7 @@ class EventRepository {
    * @returns {Array} Array of pending event documents
    */
   async findPending(options = {}) {
-    return await this.findByStatus("pending", options);
+    return await this.findAll({ event_status: "pending" }, options);
   }
 
   /**
