@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getOrganizerDashboard } from "../../Redux/Slicers/OrganizerSlice";
+import { getOrganizerDashboard } from "../../Redux/Thunks/organizerThunk";
 import { Navigate, useNavigate } from "react-router-dom";
 import {
   LineChart,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllEvents } from "../../Redux/Slicers/EventSlice"; // Adjust path as needed
+import { fetchAllEvents } from "../../Redux/Thunks/eventThunk"; // Adjust path as needed
 import EventCard from "../../components/Common/EventBrowsing/EventCard";
 import NavBar from "../../components/Common/Navbar";
 import SearchBar from "../../components/Common/EventBrowsing/SearchBar";

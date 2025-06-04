@@ -7,7 +7,7 @@ const OrganizerRepository = require("../../Repository/OrganizerRepository");
  * Get a user profile by ID
  * @param {string} userId - User ID
  * @returns {Promise<Object>} - User profile
- */
+ */   
 const getUserProfile = async (userId) => {
   const user = await UserRepository.findById(userId);
   if (!user) {
@@ -36,10 +36,8 @@ const updateUserProfile = async (userId, updateData, profileImage = null) => {
 
   // Only add fields that are provided in the request
   const allowedFields = [
-    "name",
+    "username", // ← Use username instead
     "email",
-    "firstName",
-    "lastName",
     "phone",
     "address",
     "city",
@@ -52,9 +50,9 @@ const updateUserProfile = async (userId, updateData, profileImage = null) => {
   });
 
   // Handle username created from firstName and lastName
-  if (updateData.username) {
-    updatedData.name = updateData.username;
-  }
+  // if (updateData.username) {
+  //   updatedData.name = updateData.username;
+  // }
 
   // Only handle password if provided
   if (updateData.password) {

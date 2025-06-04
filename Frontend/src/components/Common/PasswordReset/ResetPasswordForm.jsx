@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  verifyResetToken,
-  resetPassword,
   clearPasswordResetState,
 } from "../../../Redux/Slicers/PasswordResetSlice";
+import {
+  verifyResetToken,
+  resetPassword,
+} from "../../../Redux/Thunks/passwordResetThunks";
 
 const ResetPasswordForm = () => {
   const [password, setPassword] = useState("");

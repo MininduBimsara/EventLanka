@@ -14,7 +14,7 @@ import {
   resendConfirmation,
   exportAttendeeList,
   getOrganizerEvents, // Add this function to fetch events
-} from "../../Redux/Slicers/OrganizerSlice";
+} from "../../Redux/Thunks/organizerThunk";
 
 const Attendees = () => {
   const dispatch = useDispatch();

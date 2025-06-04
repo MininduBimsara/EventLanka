@@ -1,5 +1,5 @@
 // DiscountRepository.js
-const Discount = require("../../models/Discount");
+const Discount = require("../models/Discount");
 
 /**
  * Discount Repository - Handles all database operations for Discount model

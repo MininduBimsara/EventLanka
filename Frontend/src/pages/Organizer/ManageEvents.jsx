@@ -6,6 +6,8 @@ import {
   getOrganizerEventById,
   deleteOrganizerEvent,
   getEventAttendees,
+} from "../../Redux/Thunks/organizerThunk";
+import {
   clearAttendees,
 } from "../../Redux/Slicers/OrganizerSlice";
 import {

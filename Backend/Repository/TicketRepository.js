@@ -1,4 +1,4 @@
-const Ticket = require("../../models/Ticket");
+const Ticket = require("../models/Ticket");
 
 /**
  * Ticket Repository - Handles all database operations for Ticket model
@@ -230,7 +230,7 @@ class TicketRepository {
   async countSoldByEventId(eventId) {
     return await this.count({
       event_id: eventId,
-      payment_status: { $in: ["paid", "completed"] },
+      payment_status: { $in: ["paid"] },
     });
   }
 
@@ -278,11 +278,7 @@ class TicketRepository {
           totalTickets: { $sum: "$quantity" },
           soldTickets: {
             $sum: {
-              $cond: [
-                { $in: ["$payment_status", ["paid", "completed"]] },
-                "$quantity",
-                0,
-              ],
+              $cond: [{ $eq: ["$payment_status", "paid"] }, "$quantity", 0],
             },
           },
           pendingTickets: {
@@ -395,9 +391,7 @@ class TicketRepository {
   async findFullDetailsByEventId(eventId) {
     return await Ticket.find({ event_id: eventId })
       .populate("user_id", "username email")
-      .select(
-        "user_id ticket_type quantity price attendance_status check_in_time"
-      );
+      .select("user_id ticket_type quantity attendance_status check_in_time");
   }
 
   /**
@@ -431,6 +425,265 @@ class TicketRepository {
       event_id: eventId,
       payment_status: "paid",
     });
+  }
+
+  /**
+   * Find tickets with event details
+   * @param {Object} filter - MongoDB filter object
+   * @param {Object} options - Query options
+   * @returns {Array} Array of ticket documents with event data
+   */
+  async findWithEventDetails(filter = {}, options = {}) {
+    let query = Ticket.find(filter).populate({
+      path: "event_id",
+      select: "title date location ticket_types category",
+    });
+
+    if (options.populate && options.populate.user) {
+      query = query.populate(
+        "user_id",
+        options.populate.userFields || "username email"
+      );
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    }
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    if (options.skip) {
+      query = query.skip(options.skip);
+    }
+
+    return await query;
+  }
+
+  /**
+   * Calculate ticket price from event data
+   * @param {String} eventId - Event ID
+   * @param {String} ticketType - Ticket type
+   * @param {Number} quantity - Quantity
+   * @returns {Promise<Number>} Total price
+   */
+  async calculateTicketPrice(eventId, ticketType, quantity) {
+    const Event = require("../../models/Event");
+    const event = await Event.findById(eventId).select("ticket_types");
+
+    if (!event) {
+      throw new Error("Event not found");
+    }
+
+    const ticketTypeData = event.ticket_types.find(
+      (t) => t.type === ticketType
+    );
+    if (!ticketTypeData) {
+      throw new Error("Ticket type not found");
+    }
+
+    return ticketTypeData.price * quantity;
+  }
+
+  /**
+   * Find tickets with calculated total values
+   * @param {Object} filter - MongoDB filter object
+   * @param {Object} options - Query options
+   * @returns {Array} Array of tickets with calculated prices
+   */
+  async findWithCalculatedPrices(filter = {}, options = {}) {
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: "events",
+          localField: "event_id",
+          foreignField: "_id",
+          as: "event",
+        },
+      },
+      { $unwind: "$event" },
+      {
+        $addFields: {
+          calculatedPrice: {
+            $multiply: [
+              "$quantity",
+              {
+                $arrayElemAt: [
+                  {
+                    $map: {
+                      input: {
+                        $filter: {
+                          input: "$event.ticket_types",
+                          cond: { $eq: ["$$this.type", "$ticket_type"] },
+                        },
+                      },
+                      as: "ticketType",
+                      in: "$$ticketType.price",
+                    },
+                  },
+                  0,
+                ],
+              },
+            ],
+          },
+        },
+      },
+    ];
+
+    if (options.sort) {
+      pipeline.push({ $sort: options.sort });
+    }
+    if (options.limit) {
+      pipeline.push({ $limit: options.limit });
+    }
+    if (options.skip) {
+      pipeline.push({ $skip: options.skip });
+    }
+
+    return await Ticket.aggregate(pipeline);
+  }
+
+  /**
+   * Get tickets with event pricing information
+   * @param {String} userId - User ID
+   * @param {Object} options - Query options
+   * @returns {Array} Array of tickets with pricing
+   */
+  async findUserTicketsWithPricing(userId, options = {}) {
+    return await this.findWithEventDetails(
+      { user_id: userId },
+      {
+        ...options,
+        populate: { user: true, userFields: "username email" },
+      }
+    );
+  }
+
+  /**
+   * Find tickets by payment status with event details
+   * @param {String} paymentStatus - Payment status
+   * @param {Object} options - Query options
+   * @returns {Array} Array of tickets with event details
+   */
+  async findByPaymentStatusWithDetails(paymentStatus, options = {}) {
+    return await this.findWithEventDetails(
+      { payment_status: paymentStatus },
+      options
+    );
+  }
+
+  /**
+   * Get ticket revenue for an event
+   * @param {String} eventId - Event ID
+   * @returns {Promise<Number>} Total revenue from sold tickets
+   */
+  async getEventRevenue(eventId) {
+    const pipeline = [
+      {
+        $match: {
+          event_id: eventId,
+          payment_status: "paid",
+        },
+      },
+      {
+        $lookup: {
+          from: "events",
+          localField: "event_id",
+          foreignField: "_id",
+          as: "event",
+        },
+      },
+      { $unwind: "$event" },
+      {
+        $addFields: {
+          ticketPrice: {
+            $arrayElemAt: [
+              {
+                $map: {
+                  input: {
+                    $filter: {
+                      input: "$event.ticket_types",
+                      cond: { $eq: ["$$this.type", "$ticket_type"] },
+                    },
+                  },
+                  as: "ticketType",
+                  in: "$$ticketType.price",
+                },
+              },
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: {
+            $sum: { $multiply: ["$quantity", "$ticketPrice"] },
+          },
+        },
+      },
+    ];
+
+    const result = await Ticket.aggregate(pipeline);
+    return result[0]?.totalRevenue || 0;
+  }
+
+  /**
+   * Get user's total spent on tickets
+   * @param {String} userId - User ID
+   * @returns {Promise<Number>} Total amount spent by user
+   */
+  async getUserTotalSpent(userId) {
+    const pipeline = [
+      {
+        $match: {
+          user_id: userId,
+          payment_status: "paid",
+        },
+      },
+      {
+        $lookup: {
+          from: "events",
+          localField: "event_id",
+          foreignField: "_id",
+          as: "event",
+        },
+      },
+      { $unwind: "$event" },
+      {
+        $addFields: {
+          ticketPrice: {
+            $arrayElemAt: [
+              {
+                $map: {
+                  input: {
+                    $filter: {
+                      input: "$event.ticket_types",
+                      cond: { $eq: ["$$this.type", "$ticket_type"] },
+                    },
+                  },
+                  as: "ticketType",
+                  in: "$$ticketType.price",
+                },
+              },
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalSpent: {
+            $sum: { $multiply: ["$quantity", "$ticketPrice"] },
+          },
+        },
+      },
+    ];
+
+    const result = await Ticket.aggregate(pipeline);
+    return result[0]?.totalSpent || 0;
   }
 }
 

@@ -1,7 +1,7 @@
 // 4. Google Auth Handler Component (components/GoogleAuthHandler.jsx)
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { googleAuth } from "../../../Redux/Slicers/GoogleAuthSlice";
+import { googleAuth } from "../../../Redux/Thunks/googleAuththunks";
 
 const GoogleAuthHandler = ({ activeForm, onSuccess, onError }) => {
   const [isGoogleInitialized, setIsGoogleInitialized] = useState(false);

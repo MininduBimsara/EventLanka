@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   getOrganizerEventById,
   updateEvent,
-} from "../../Redux/Slicers/OrganizerSlice";
+} from "../../Redux/Thunks/organizerThunk";
 import {
   ArrowLeft,
   Upload,
