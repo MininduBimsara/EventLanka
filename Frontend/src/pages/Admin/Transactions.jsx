@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Download, Search, ChevronDown, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTransactions } from "../../Redux/Slicers/adminSlice"; // Adjust path as needed
+import { fetchTransactions } from "../../Redux/Thunks/adminThunks"; // Adjust path as needed
 
 const AdminTransactions = () => {
   const dispatch = useDispatch();

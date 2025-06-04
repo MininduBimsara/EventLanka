@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Filter, User, Ban, Eye, Check, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUsers, updateUserStatus } from "../../Redux/Slicers/adminSlice"; // Adjust the import path as needed
+import { fetchUsers, updateUserStatus } from "../../Redux/Thunks/adminThunks"; // Adjust the import path as needed
 
 export default function AdminUsers() {
   const dispatch = useDispatch();

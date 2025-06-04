@@ -4,6 +4,8 @@ import {
   fetchAdminProfile,
   updateAdminProfile,
   changeAdminPassword,
+} from "../../Redux/Thunks/adminThunks";
+import {
   resetProfileUpdateSuccess,
   resetPasswordChangeSuccess,
 } from "../../Redux/Slicers/adminSlice";

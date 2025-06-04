@@ -14,8 +14,10 @@ import {
   fetchEventDetails,
   approveEvent,
   rejectEvent,
+} from "../../Redux/Thunks/adminThunks"; 
+import {
   clearCurrentEvent,
-} from "../../Redux/Slicers/adminSlice"; // Adjust path as needed
+} from "../../Redux/Slicers/adminSlice";
 
 export default function EventApprovals() {
   const dispatch = useDispatch();

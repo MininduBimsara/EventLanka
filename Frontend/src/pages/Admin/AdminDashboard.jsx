@@ -21,7 +21,7 @@ import {
   RefreshCw,
   Clock,
 } from "lucide-react";
-import { fetchDashboardStats } from "../../Redux/Slicers/adminSlice";
+import { fetchDashboardStats } from "../../Redux/Thunks/adminThunks";
 import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {

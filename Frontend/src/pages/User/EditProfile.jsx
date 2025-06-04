@@ -14,10 +14,12 @@ import {
 import { useTheme } from "../../Context/ThemeContext";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  updateUserProfile,
   clearUserError,
   clearSuccessMessage,
 } from "../../Redux/Slicers/userSlice";
+import {
+  updateUserProfile,
+} from "../../Redux/Thunks/userThunks";
 import UserNavbar from "../../components/User/UserNavbar";
 import { useNavigate } from "react-router-dom";
 

@@ -16,7 +16,7 @@ import {
   updateOrganizerStatus,
   fetchOrganizerProfile,
   fetchOrganizerEvents,
-} from "../../Redux/Slicers/adminSlice"; // Adjust path as needed
+} from "../../Redux/Thunks/adminThunks"; // Adjust path as needed
 
 export default function OrganizersAdmin() {
   const dispatch = useDispatch();
