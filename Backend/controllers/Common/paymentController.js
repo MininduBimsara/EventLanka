@@ -2,6 +2,7 @@
 const PaymentService = require("../../Services/Common/paymentService");
 const asyncHandler = require("express-async-handler");
 
+
 // ===========================
 // CREATE PAYPAL ORDER
 // ===========================
@@ -16,8 +17,10 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
   }
 
   try {
-    const returnUrl = `${req.headers.origin}/payment-success`;
-    const cancelUrl = `${req.headers.origin}/checkout?orderId=${orderId}`;
+    const origin = req.headers.origin || "http://localhost:5173"; // Fallback for dev
+    const returnUrl = `${origin}/payment-success`;
+    const cancelUrl = `${origin}/checkout?orderId=${orderId}`;
+
 
     const result = await PaymentService.createPayPalOrder(
       orderId,

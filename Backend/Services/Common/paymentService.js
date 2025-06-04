@@ -6,14 +6,31 @@ const PDFDocument = require("pdfkit");
 const axios = require("axios");
 
 // Configuration
-const getPayPalConfig = () => ({
-  PAYPAL_CLIENT_ID: process.env.VITE_PAYPAL_CLIENT_ID,
-  PAYPAL_CLIENT_SECRET: process.env.VITE_PAYPAL_CLIENT_SECRET,
-  PAYPAL_API_BASE:
-    process.env.NODE_ENV === "production"
-      ? "https://api-m.paypal.com"
-      : "https://api-m.sandbox.paypal.com",
-});
+const getPayPalConfig = () => {
+  const config = {
+    PAYPAL_CLIENT_ID: process.env.VITE_PAYPAL_CLIENT_ID,
+    PAYPAL_CLIENT_SECRET: process.env.VITE_PAYPAL_CLIENT_SECRET,
+    PAYPAL_API_BASE:
+      process.env.NODE_ENV === "production"
+        ? "https://api-m.paypal.com"
+        : "https://api-m.sandbox.paypal.com",
+  };
+
+  // Debug: Log configuration (remove in production)
+  console.log("PayPal Config Check:", {
+    clientIdExists: !!config.PAYPAL_CLIENT_ID,
+    clientSecretExists: !!config.PAYPAL_CLIENT_SECRET,
+    apiBase: config.PAYPAL_API_BASE,
+    nodeEnv: process.env.NODE_ENV,
+  });
+
+  // Validate required environment variables
+  if (!config.PAYPAL_CLIENT_ID || !config.PAYPAL_CLIENT_SECRET) {
+    throw new Error("Missing PayPal credentials in environment variables");
+  }
+
+  return config;
+};
 
 /**
  * Get PayPal access token for API authentication
@@ -27,6 +44,8 @@ const getPayPalAccessToken = async () => {
       `${config.PAYPAL_CLIENT_ID}:${config.PAYPAL_CLIENT_SECRET}`
     ).toString("base64");
 
+    console.log("Requesting PayPal access token..."); // Debug log
+
     const response = await axios({
       method: "post",
       url: `${config.PAYPAL_API_BASE}/v1/oauth2/token`,
@@ -35,13 +54,29 @@ const getPayPalAccessToken = async () => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       data: "grant_type=client_credentials",
+      timeout: 10000, // 10 second timeout
     });
 
+    console.log("PayPal access token obtained successfully"); // Debug log
     return response.data.access_token;
   } catch (error) {
-    throw new Error("Failed to authenticate with PayPal");
+    console.error("PayPal Access Token Error:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+      },
+    });
+    throw new Error(
+      `Failed to authenticate with PayPal: ${
+        error.response?.data?.error_description || error.message
+      }`
+    );
   }
 };
+
 
 /**
  * Update ticket availability in Event collection
@@ -118,19 +153,62 @@ const createPayPalOrder = async (
   returnUrl,
   cancelUrl
 ) => {
-  // Validate order ownership
-  const order = await validateOrderOwnership(orderId, userId);
-
-  // Use provided amount or fall back to order amount
-  const paymentAmount = amount || order.total_amount;
-
-  if (!paymentAmount || paymentAmount <= 0) {
-    throw new Error("Invalid order amount");
-  }
+  console.log("Creating PayPal order with params:", {
+    orderId,
+    amount,
+    userId,
+    returnUrl,
+    cancelUrl,
+  });
 
   try {
+    // Validate order ownership
+    const order = await validateOrderOwnership(orderId, userId);
+    console.log("Order validation successful:", {
+      orderId: order._id,
+      totalAmount: order.total_amount,
+      ticketCount: order.tickets?.length,
+    });
+
+    // Use provided amount or fall back to order amount
+    const paymentAmount = amount || order.total_amount;
+
+    if (!paymentAmount || paymentAmount <= 0) {
+      throw new Error("Invalid order amount");
+    }
+
+    console.log("Payment amount determined:", paymentAmount);
+
     const config = getPayPalConfig();
     const accessToken = await getPayPalAccessToken();
+
+    const eventTitle = order.tickets[0]?.event_id?.title || "Unknown Event";
+
+    const paypalOrderData = {
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          reference_id: orderId,
+          description: `Event tickets for ${eventTitle}`,
+          amount: {
+            currency_code: "USD",
+            value: paymentAmount.toFixed(2), // Ensure 2 decimal places
+          },
+        },
+      ],
+      application_context: {
+        brand_name: "EventLanka",
+        landing_page: "BILLING",
+        user_action: "PAY_NOW",
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+      },
+    };
+
+    console.log(
+      "Sending PayPal order request:",
+      JSON.stringify(paypalOrderData, null, 2)
+    );
 
     const response = await axios({
       method: "post",
@@ -139,26 +217,14 @@ const createPayPalOrder = async (
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      data: {
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            reference_id: orderId,
-            description: `Event tickets for ${order.tickets[0]?.event_id}`,
-            amount: {
-              currency_code: "USD",
-              value: paymentAmount.toString(),
-            },
-          },
-        ],
-        application_context: {
-          brand_name: "EventLanka",
-          landing_page: "BILLING",
-          user_action: "PAY_NOW",
-          return_url: returnUrl,
-          cancel_url: cancelUrl,
-        },
-      },
+      data: paypalOrderData,
+      timeout: 15000, // 15 second timeout
+    });
+
+    console.log("PayPal order created successfully:", {
+      id: response.data.id,
+      status: response.data.status,
+      linksCount: response.data.links?.length,
     });
 
     return {
@@ -168,9 +234,33 @@ const createPayPalOrder = async (
       links: response.data.links,
     };
   } catch (error) {
-    throw new Error(
-      `Error creating PayPal order: ${error.response?.data || error.message}`
-    );
+    console.error("Create PayPal Order Error:", {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      orderId,
+      amount,
+      userId,
+    });
+
+    // More specific error messages
+    if (error.response?.status === 400) {
+      throw new Error(
+        `PayPal API validation error: ${JSON.stringify(error.response.data)}`
+      );
+    } else if (error.response?.status === 401) {
+      throw new Error("PayPal authentication failed - check your credentials");
+    } else if (error.response?.status >= 500) {
+      throw new Error("PayPal service temporarily unavailable");
+    } else {
+      throw new Error(
+        `Error creating PayPal order: ${
+          error.response?.data?.message || error.message
+        }`
+      );
+    }
   }
 };
 
