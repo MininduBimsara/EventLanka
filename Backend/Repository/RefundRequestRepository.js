@@ -1,4 +1,4 @@
-const RefundRequest = require("../../models/RefundRequest");
+const RefundRequest = require("../models/RefundRequest");
 
 /**
  * RefundRequest Repository - Handles all database operations for RefundRequest model

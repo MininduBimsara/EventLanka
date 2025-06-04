@@ -1,4 +1,4 @@
-const Order = require("../../models/Order");
+const Order = require("../models/Order");
 
 /**
  * Order Repository - Handles all database operations for Order model

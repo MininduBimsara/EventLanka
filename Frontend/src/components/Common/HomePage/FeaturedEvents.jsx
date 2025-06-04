@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllEvents } from "../../../Redux/Slicers/EventSlice";
+import { fetchAllEvents } from "../../../Redux/Thunks/eventThunk";
 import { useNavigate } from "react-router-dom";
 
 // Enhanced Featured Events with modern styling and improved carousel functionality

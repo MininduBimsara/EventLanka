@@ -1,4 +1,4 @@
-const Payment = require("../../models/Payment");
+const Payment = require("../models/Payment");
 
 /**
  * Payment Repository - Handles all database operations for Payment model

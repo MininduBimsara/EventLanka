@@ -1,4 +1,4 @@
-const Event = require("../../models/Event");
+const Event = require("../models/Event");
 
 /**
  * Event Repository - Handles all database operations for Event model

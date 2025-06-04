@@ -1,6 +1,6 @@
 // 2. Left Side Artwork Component (components/LeftSideArtwork.jsx)
 import React from "react";
-import { loginUser } from "../../../Redux/Slicers/AuthSlice";
+import { loginUser } from "../../../Redux/Thunks/authThunks";
 import loginImg from "../../../assets/login.png";
 
 const LeftSideArtwork = ({ activeForm }) => {

@@ -1,4 +1,4 @@
-const Organizer = require("../../models/Organizer");
+const Organizer = require("../models/Organizer");
 
 /**
  * Organizer Repository - Handles all database operations for Organizer model

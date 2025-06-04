@@ -1,4 +1,4 @@
-const Admin = require("../../models/Admin");
+const Admin = require("../models/Admin");
 
 /**
  * Admin Repository - Handles all database operations for Admin model

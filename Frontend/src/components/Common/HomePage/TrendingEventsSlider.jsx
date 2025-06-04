@@ -7,7 +7,7 @@ import {
   FaSearch,
   FaArrowRight,
 } from "react-icons/fa";
-import { fetchAllEvents } from "../../../Redux/Slicers/EventSlice";
+import { fetchAllEvents } from "../../../Redux//Thunks/eventThunk";
 import { useNavigate } from "react-router-dom";
 
 // Updated Trending Events Slider Component

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   forgotPassword,
   clearPasswordResetState,
-} from "../../../Redux/Slicers/PasswordResetSlice";
+} from "../../../Redux/Thunks/passwordResetThunks";
 
 const ForgotPasswordForm = () => {
   const [email, setEmail] = useState("");
