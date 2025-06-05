@@ -3,16 +3,14 @@ import { userApi } from "../../Api/User/userApi";
 
 // Helper function to safely get user ID
 export const getUserId = (state) => {
-  const { auth, user } = state;
+  const { user, profile } = state;
 
-  // Check auth slice first, then user slice
+  // Check the actual paths where user data exists
   return (
-    auth?.user?.userInfo?._id ||
-    auth?.user?.userInfo?.id ||
-    auth?.user?.user?._id ||
-    auth?.user?.user?.id ||
-    user?.userInfo?._id ||
-    user?.userInfo?.id ||
+    user?.user?._id || // state.user.user._id
+    user?.user?.id || // state.user.user.id
+    profile?.userInfo?._id || // state.profile.userInfo._id
+    profile?.userInfo?.id || // state.profile.userInfo.id
     null
   );
 };

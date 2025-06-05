@@ -42,7 +42,12 @@ const EditProfile = () => {
 
   // Auth slice holds the logged‑in user
   const authUser = useSelector((state) => state.user.user);
-
+  console.log("Auth user:", authUser);
+  console.log(
+    "Full state:",
+    useSelector((state) => state)
+  );
+  
   // Profile slice holds loading, error, successMessage, and the updated user
   const { loading, error, successMessage, userInfo } = useSelector(
     (state) => state.profile
@@ -57,6 +62,8 @@ const EditProfile = () => {
 
   // Combine: prefer the freshly‐updated profile, else fall back to authUser
   const profileData = userInfo || authUser;
+
+  console.log("Profile data:", profileData);
 
   // Local form state
   const [userData, setUserData] = useState({
@@ -210,15 +217,22 @@ const EditProfile = () => {
     ["firstName", "lastName", "email", "phone", "address", "city"].forEach(
       (key) => {
         const val = userData[key];
-        // original values from profileData
-        const orig =
-          key === "firstName" || key === "lastName"
-            ? (profileData.name || "").split(" ")[
-                key === "firstName" ? 0 : 1
-              ] || ""
-            : profileData[key] || "";
+        // Add null checks for original values
+        let orig = "";
+
+        if (key === "firstName" || key === "lastName") {
+          const currentName = profileData?.name || "";
+          const nameParts = currentName.split(" ");
+          orig =
+            key === "firstName"
+              ? nameParts[0] || ""
+              : nameParts.slice(1).join(" ") || "";
+        } else {
+          orig = profileData?.[key] || "";
+        }
+
         if (val && val !== orig) {
-          changed[key] = sanitizeInput(val); // Extra sanitization before sending
+          changed[key] = sanitizeInput(val);
           hasChanges = true;
         }
       }
@@ -248,11 +262,15 @@ const EditProfile = () => {
 
     // Always send `name` if either first or last changed
     if (changed.firstName || changed.lastName) {
-      const firstName =
-        changed.firstName || sanitizeInput(profileData.name.split(" ")[0]);
+      // Safely handle the name splitting with null checks
+      const currentName = profileData?.name || "";
+      const nameParts = currentName.split(" ");
+
+      const firstName = changed.firstName || sanitizeInput(nameParts[0] || "");
       const lastName =
-        changed.lastName || sanitizeInput(profileData.name.split(" ")[1] || "");
-      changed.name = `${firstName} ${lastName}`.trim();
+        changed.lastName || sanitizeInput(nameParts.slice(1).join(" ") || "");
+
+      changed.username = `${firstName} ${lastName}`.trim();
     }
 
     // If no changes detected, show an alert
