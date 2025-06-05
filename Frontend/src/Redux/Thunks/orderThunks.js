@@ -190,8 +190,9 @@ export const generateTicketQRCode = createAsyncThunk(
     try {
       // This would need to be added to OrderAPI if you want to use it
       const response = await axios.get(
-        `http://localhost:5000/api/tickets/${ticketId}/qrcode`
+        `${import.meta.env.REACT_APP_API_URL}/api/tickets/${ticketId}/qrcode`
       );
+
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -208,7 +209,7 @@ export const downloadTicketPDF = createAsyncThunk(
     try {
       // This would need to be added to OrderAPI if you want to use it
       window.open(
-        `http://localhost:5000/api/tickets/${ticketId}/download/pdf`,
+        `${import.meta.env.REACT_APP_API_URL}/${ticketId}/download/pdf`,
         "_blank"
       );
       return { ticketId, success: true };
