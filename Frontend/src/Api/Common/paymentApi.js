@@ -15,11 +15,35 @@ class PaymentAPI {
    * @returns {Promise} API response
    */
   static async createPayPalOrder(orderId, amount) {
-    const response = await axios.post(
-      `${PAYMENT_API_URL}/create-paypal-order`,
-      { orderId, amount }
-    );
-    return response.data;
+    try {
+      console.log("Making request to create PayPal order:", {
+        orderId,
+        amount,
+      });
+
+      const response = await axios.post(
+        `${PAYMENT_API_URL}/create-paypal-order`,
+        { orderId, amount },
+        {
+          timeout: 30000, // 30 second timeout
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("PayPal order creation successful:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("PayPal API Error Details:");
+      console.error("- Status:", error.response?.status);
+      console.error("- Data:", error.response?.data);
+      console.error("- Headers:", error.response?.headers);
+      console.error("- Request config:", error.config);
+
+      // Re-throw the error with more context
+      throw error;
+    }
   }
 
   /**

@@ -19,13 +19,23 @@ export const createPaymentIntent = createAsyncThunk(
         }
       }
 
+      console.log("Creating PayPal order with:", { orderId, amount });
+
       const data = await PaymentAPI.createPayPalOrder(orderId, amount);
+      console.log("PayPal order creation response:", data);
+
       return data;
     } catch (error) {
       console.error("PayPal order creation error:", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to prepare payment"
-      );
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error headers:", error.response?.headers);
+
+      return rejectWithValue({
+        message: error.response?.data?.message || "Failed to prepare payment",
+        status: error.response?.status,
+        details: error.response?.data || error.message,
+      });
     }
   }
 );

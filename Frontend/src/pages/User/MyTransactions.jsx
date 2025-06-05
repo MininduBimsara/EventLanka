@@ -16,7 +16,7 @@ import UserNavbar from "../../components/User/UserNavbar";
 import {
   fetchPaymentHistory,
   downloadReceipt,
-} from "../../Redux/Slicers/PaymentSlice";
+} from "../../Redux/Thunks/paymentThunks";
 
 const MyTransactions = () => {
   // Use theme context

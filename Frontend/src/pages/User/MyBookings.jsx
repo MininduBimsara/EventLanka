@@ -7,7 +7,7 @@ import {
   cancelOrder,
   generateTicketQRCode,
   downloadTicketPDF,
-} from "../../Redux/Slicers/orderSlice";
+} from "../../Redux/Thunks/orderThunks";
 import {
   FaDownload,
   FaTimes,

@@ -16,7 +16,7 @@ import {
   FileText,
   Home,
 } from "lucide-react";
-import { fetchAdminProfile } from "../../Redux/Slicers/adminSlice"; // Update with correct path
+import { fetchAdminProfile } from "../../Redux/Thunks/adminThunks"; // Update with correct path
 
 const Sidebar = () => {
   const navigate = useNavigate();
