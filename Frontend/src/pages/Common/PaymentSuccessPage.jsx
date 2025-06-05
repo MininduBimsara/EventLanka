@@ -28,8 +28,15 @@ const PaymentSuccessPage = () => {
       // Get the most recent transaction or find by payment intent ID
       const latestTransaction = paymentIntentId
         ? paymentHistory.find(
-            (payment) => payment.payment_intent_id === paymentIntentId
-          )
+          (payment) => {
+            // Check multiple possible locations for the PayPal order ID
+            return (
+            payment.payment_details?.paypal_order_id === paymentIntentId ||
+            payment.transaction_id === paymentIntentId ||
+            payment._id === paymentIntentId
+            );
+          }
+        )
         : paymentHistory[0]; // Get the most recent one
 
       if (latestTransaction) {
@@ -38,7 +45,7 @@ const PaymentSuccessPage = () => {
           date: latestTransaction.createdAt || new Date().toISOString(),
           eventName: latestTransaction.event_id?.title || "Unknown Event",
           amount: latestTransaction.amount || 0,
-          paymentMethod: latestTransaction.payment_method || "Credit Card",
+          paymentMethod: latestTransaction.payment_method || "PayPal",
           status: latestTransaction.payment_status || "Completed",
         });
       }

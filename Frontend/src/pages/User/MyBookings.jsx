@@ -1,13 +1,13 @@
 // MyBookings.jsx - Updated to allow downloads only for completed orders
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../../Context/ThemeContext";
 import {
   fetchOrders,
   cancelOrder,
-  generateTicketQRCode,
   downloadTicketPDF,
 } from "../../Redux/Thunks/orderThunks";
+import { generateTicketQRCode } from "../../Redux/Thunks/ticketThunks";
 import {
   FaDownload,
   FaTimes,
@@ -28,10 +28,8 @@ const MyBookings = () => {
   const { darkMode, toggleTheme } = useTheme();
   const dispatch = useDispatch();
 
-  // Get orders data from Redux store
-  const { orders, loading, error, qrCode, qrCodeLoading } = useSelector(
-    (state) => state.orders
-  );
+  const { orders, loading, error } = useSelector((state) => state.orders);
+  const { qrCode, qrCodeLoading } = useSelector((state) => state.tickets);
 
   // State for QR code modal
   const [qrCodeModal, setQrCodeModal] = useState(false);
@@ -47,7 +45,11 @@ const MyBookings = () => {
   }, [dispatch]);
 
   // Format the orders data
-  const formatOrders = (orders) => {
+  const formattedOrders = useMemo(() => {
+    if (!orders || orders.length === 0) {
+      return [];
+    }
+
     // First sort the orders by creation date (latest first)
     const sortedOrders = [...orders].sort((a, b) => {
       // Try to sort by order creation date first
@@ -105,13 +107,15 @@ const MyBookings = () => {
             : "/api/placeholder/150/100",
       };
     });
-  };
+  }, [orders]);
 
   // Filter state
   const [filter, setFilter] = useState("all");
 
   // Dropdown state for actions
   const [openActionMenu, setOpenActionMenu] = useState(null);
+
+  
 
   // Cancel booking
   const handleCancelBooking = (id) => {
@@ -151,19 +155,13 @@ const MyBookings = () => {
     setOpenActionMenu(null);
   };
 
-  // Get formatted orders
-  const selectFormattedOrders = useSelector((state) => {
-    if (!state.orders.orders || state.orders.orders.length === 0) {
-      return [];
-    }
-    return formatOrders(state.orders.orders);
-  });
 
-  // Filter bookings based on status
-  const filteredBookings = selectFormattedOrders.filter((booking) => {
-    if (filter === "all") return true;
-    return booking.status.toLowerCase() === filter.toLowerCase();
-  });
+  const filteredBookings = useMemo(() => {
+    return formattedOrders.filter((booking) => {
+      if (filter === "all") return true;
+      return booking.status.toLowerCase() === filter.toLowerCase();
+    });
+  }, [formattedOrders, filter]);
 
   // Toggle action menu
   const toggleActionMenu = (id) => {

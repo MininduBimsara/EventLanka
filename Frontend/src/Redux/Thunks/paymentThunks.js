@@ -9,7 +9,12 @@ export const createPaymentIntent = createAsyncThunk(
     try {
       // Get the pending order from localStorage to include the amount
       let amount = 0;
-      const storedOrder = localStorage.getItem("pendingOrder");
+      let storedOrder = null;
+      try {
+        storedOrder = localStorage.getItem("pendingOrder");
+      } catch (error) {
+        console.warn("localStorage not available:", error);
+      }
       if (storedOrder) {
         try {
           const parsedOrder = JSON.parse(storedOrder);
