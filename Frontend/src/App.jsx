@@ -58,6 +58,9 @@ import Notifications from "./pages/User/Notifications";
 import MyTransactions from "./pages/User/MyTransactions";
 import MyReviews from "./pages/User/MyReviews";
 
+
+import { ToastProvider } from "./components/Common/Notification/ToastContext";
+
 function App() {
   const dispatch = useDispatch();
   const token = sessionStorage.getItem("token");
@@ -93,69 +96,74 @@ function App() {
 
   return (
     <>
-      <ThemeProvider>
-        <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<LoginRegistrationUI />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactUsPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordForm />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordForm />} />
+      <ToastProvider>
+        <ThemeProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<LoginRegistrationUI />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactUsPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+              <Route
+                path="/reset-password/:token"
+                element={<ResetPasswordForm />}
+              />
 
-            {/* Protected Common Routes */}
-            <Route path="/" element={<NewHome />} />
-            <Route path="/newhome" element={<NewHome />} />
-            <Route path="/eventbrowsing" element={<EventBrowsingPage />} />
-            <Route path="/event/:id" element={<EventBookingPage />} />
-            <Route
-              path="/payment-success/:paymentIntentId"
-              element={<PaymentSuccessPage />}
-            />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/payment-form/:orderId" element={<PaymentForm />} />
+              {/* Protected Common Routes */}
+              <Route path="/" element={<NewHome />} />
+              <Route path="/newhome" element={<NewHome />} />
+              <Route path="/eventbrowsing" element={<EventBrowsingPage />} />
+              <Route path="/event/:id" element={<EventBookingPage />} />
+              <Route
+                path="/payment-success/:paymentIntentId"
+                element={<PaymentSuccessPage />}
+              />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/payment-form/:orderId" element={<PaymentForm />} />
 
-            {/* Protected Organizer Routes */}
-            <Route path="/organizer" element={<OrganizerLayout />}>
-              <Route path="dashboard" element={<OrganizerDashboard />} />
-              <Route path="profile" element={<OrganizerProfile />} />
-              <Route path="settings" element={<OrganizerSettings />} />
-              <Route path="attendees" element={<Attendees />} />
-              <Route path="create-event" element={<CreateEvent />} />
-              <Route path="discounts" element={<Discounts />} />
-              <Route path="manage-events" element={<ManageEvents />} />
-              <Route path="media" element={<MediaManager />} />
-              <Route path="sales-analytics" element={<SalesAnalytics />} />
-              <Route path="update-event/:id" element={<UpdateEvent />} />
-            </Route>
+              {/* Protected Organizer Routes */}
+              <Route path="/organizer" element={<OrganizerLayout />}>
+                <Route path="dashboard" element={<OrganizerDashboard />} />
+                <Route path="profile" element={<OrganizerProfile />} />
+                <Route path="settings" element={<OrganizerSettings />} />
+                <Route path="attendees" element={<Attendees />} />
+                <Route path="create-event" element={<CreateEvent />} />
+                <Route path="discounts" element={<Discounts />} />
+                <Route path="manage-events" element={<ManageEvents />} />
+                <Route path="media" element={<MediaManager />} />
+                <Route path="sales-analytics" element={<SalesAnalytics />} />
+                <Route path="update-event/:id" element={<UpdateEvent />} />
+              </Route>
 
-            {/* Protected Admin Routes */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="settings" element={<AdminSettings />} />
-              <Route path="event-approvals" element={<EventApprovals />} />
-              <Route path="organizers" element={<OrganizersAdmin />} />
-              <Route path="refund-requests" element={<RefundRequests />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="transactions" element={<AdminTransactions />} />
-              <Route path="users" element={<AdminUsers />} />
-            </Route>
+              {/* Protected Admin Routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="event-approvals" element={<EventApprovals />} />
+                <Route path="organizers" element={<OrganizersAdmin />} />
+                <Route path="refund-requests" element={<RefundRequests />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="users" element={<AdminUsers />} />
+              </Route>
 
-            {/* Protected User Routes */}
-            <Route path="/user">
-              <Route path="editprofile" element={<EditProfile />} />
-              <Route path="helpcenter" element={<Support />} />
-              <Route path="mybookings" element={<MyBookings />} />
-              <Route path="notifications" element={<Notifications />} />
-              <Route path="transactions" element={<MyTransactions />} />
-              <Route path="myreviews" element={<MyReviews />} />
-            </Route>
+              {/* Protected User Routes */}
+              <Route path="/user">
+                <Route path="editprofile" element={<EditProfile />} />
+                <Route path="helpcenter" element={<Support />} />
+                <Route path="mybookings" element={<MyBookings />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="transactions" element={<MyTransactions />} />
+                <Route path="myreviews" element={<MyReviews />} />
+              </Route>
 
-            {/* Redirect any unknown routes to home */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
+              {/* Redirect any unknown routes to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </ThemeProvider>
+      </ToastProvider>
     </>
   );
 }
