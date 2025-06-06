@@ -176,29 +176,68 @@ const changeAdminPassword = async (userId, oldPassword, newPassword) => {
   }
 };
 
-// Get admin profile
+// Get admin profile - FIXED VERSION
 const getAdminProfile = async (userId) => {
   try {
+    console.log("🔍 getAdminProfile service called with userId:", userId);
+
+    // Find the user first
     const user = await UserRepository.findById(userId);
+    console.log(
+      "🔍 Found user:",
+      user ? { id: user._id, role: user.role } : "Not found"
+    );
+
     if (!user) {
       throw new Error("User not found");
     }
     if (user.role !== "admin") {
       throw new Error("User is not an admin");
     }
-    const adminProfile = await AdminRepository.findByUserId(userId);
+
+    // Look for admin profile using the user's _id
+    const adminProfile = await AdminRepository.findByUserId(user._id);
+    console.log("🔍 Found admin profile:", adminProfile ? "Yes" : "No");
+
     if (!adminProfile) {
-      throw new Error("Admin profile not found");
+      // Instead of throwing an error, create a default profile
+      console.log("🔍 Creating default admin profile for user:", user._id);
+      const defaultProfile = await AdminRepository.create({
+        user: user._id,
+        phone: "",
+        position: "System Administrator",
+        department: "IT",
+        permissions: {
+          manageUsers: true,
+          manageEvents: true,
+          managePayments: true,
+          manageRefunds: true,
+          managePlatformSettings: true,
+        },
+        emailNotifications: {
+          newUsers: true,
+          newEvents: true,
+          refundRequests: true,
+          systemAlerts: true,
+        },
+        lastLogin: new Date(),
+      });
+      return defaultProfile;
     }
+
     return adminProfile;
   } catch (error) {
+    console.error("❌ getAdminProfile service error:", error);
     throw new Error(`Failed to get admin profile: ${error.message}`);
   }
 };
 
-// Update admin profile
+// Update admin profile - FIXED VERSION
 const updateAdminProfile = async (userId, profileData) => {
   try {
+    console.log("🔍 updateAdminProfile service called with userId:", userId);
+    console.log("🔍 Profile data:", profileData);
+
     const { phone, position, department, permissions, emailNotifications } =
       profileData;
 
@@ -210,7 +249,11 @@ const updateAdminProfile = async (userId, profileData) => {
       throw new Error("User is not an admin");
     }
 
-    let adminProfile = await AdminRepository.findByUserId(userId);
+    let adminProfile = await AdminRepository.findByUserId(user._id);
+    console.log(
+      "🔍 Existing admin profile found:",
+      adminProfile ? "Yes" : "No"
+    );
 
     if (adminProfile) {
       const updateData = {};
@@ -229,10 +272,13 @@ const updateAdminProfile = async (userId, profileData) => {
           ...emailNotifications,
         };
       }
-      adminProfile = await AdminRepository.updateByUserId(userId, updateData);
+
+      console.log("🔍 Updating admin profile with data:", updateData);
+      adminProfile = await AdminRepository.updateByUserId(user._id, updateData);
     } else {
+      console.log("🔍 Creating new admin profile");
       adminProfile = await AdminRepository.create({
-        user: userId,
+        user: user._id,
         phone: phone || "",
         position: position || "System Administrator",
         department: department || "IT",
@@ -257,6 +303,7 @@ const updateAdminProfile = async (userId, profileData) => {
       adminProfile,
     };
   } catch (error) {
+    console.error("❌ updateAdminProfile service error:", error);
     throw new Error(`Failed to update admin profile: ${error.message}`);
   }
 };
@@ -264,7 +311,10 @@ const updateAdminProfile = async (userId, profileData) => {
 // Validate admin permission
 const validateAdminPermission = async (userId, permission) => {
   try {
-    const adminProfile = await AdminRepository.findByUserId(userId);
+    const user = await UserRepository.findById(userId);
+    if (!user) return false;
+
+    const adminProfile = await AdminRepository.findByUserId(user._id);
     if (!adminProfile) {
       return false;
     }

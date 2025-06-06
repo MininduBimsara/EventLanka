@@ -29,17 +29,34 @@ router.get(
   analyticsController.getAnalyticsData
 );
 
-/* 👤 Admin Profile */
+/* 👤 Admin Profile - Add debug logging */
 router.get(
   "/profile",
+  (req, res, next) => {
+    console.log("🔍 Profile GET route reached, applying middleware...");
+    next();
+  },
   protect,
   adminOnly,
+  (req, res, next) => {
+    console.log("🔍 Profile GET: All middleware passed, calling controller...");
+    next();
+  },
   adminController.getAdminProfile
 );
+
 router.put(
   "/profile",
+  (req, res, next) => {
+    console.log("🔍 Profile PUT route reached, applying middleware...");
+    next();
+  },
   protect,
   adminOnly,
+  (req, res, next) => {
+    console.log("🔍 Profile PUT: All middleware passed, calling controller...");
+    next();
+  },
   adminController.updateAdminProfile
 );
 
@@ -144,5 +161,6 @@ router.get(
   adminOnly,
   financeController.getPopularEvents
 );
+
 
 module.exports = router;
