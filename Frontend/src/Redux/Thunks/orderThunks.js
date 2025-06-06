@@ -2,6 +2,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import OrderAPI from "../../Api/Common/orderApi";
+import TicketAPI from "../../Api/Common/ticketApi";
 
 // Async thunk for creating a new order
 export const createOrder = createAsyncThunk(
@@ -207,16 +208,11 @@ export const downloadTicketPDF = createAsyncThunk(
   "orders/downloadTicketPDF",
   async (ticketId, { rejectWithValue }) => {
     try {
-      // This would need to be added to OrderAPI if you want to use it
-      window.open(
-        `${import.meta.env.REACT_APP_API_URL}/${ticketId}/download/pdf`,
-        "_blank"
-      );
-      return { ticketId, success: true };
+      const result = await TicketAPI.downloadTicketPDF(ticketId);
+      return result;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to download ticket"
-      );
+      console.error("Download ticket PDF error:", error);
+      return rejectWithValue(error.message || "Failed to download ticket PDF");
     }
   }
 );

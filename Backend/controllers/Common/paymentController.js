@@ -197,6 +197,22 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
   }
 
   try {
+    // Set CORS headers explicitly for this endpoint
+    res.header(
+      "Access-Control-Allow-Origin",
+      req.headers.origin || "http://localhost:5173"
+    );
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    );
+    res.header(
+      "Access-Control-Expose-Headers",
+      "Content-Disposition, Content-Type, Content-Length"
+    );
+
     // Get receipt data from service
     const receiptData = await PaymentService.getReceiptData(
       transactionId,
@@ -210,8 +226,22 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `inline; filename=receipt-${transactionId}.pdf`
+      `attachment; filename=receipt-${transactionId}.pdf`
     );
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
+    // Handle any errors during PDF generation
+    doc.on("error", (error) => {
+      console.error("PDF generation error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          message: "Error generating PDF",
+          error: error.message,
+        });
+      }
+    });
 
     // Pipe the PDF directly to the response
     doc.pipe(res);
@@ -219,10 +249,15 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     // Finalize the PDF
     doc.end();
   } catch (error) {
-    res.status(500).json({
-      message: "Error generating receipt",
-      error: error.message,
-    });
+    console.error("Receipt generation error:", error);
+
+    // Make sure we haven't already sent headers
+    if (!res.headersSent) {
+      res.status(500).json({
+        message: "Error generating receipt",
+        error: error.message,
+      });
+    }
   }
 });
 

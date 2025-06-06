@@ -155,6 +155,7 @@ const MyBookings = () => {
       return;
     }
     dispatch(downloadTicketPDF(ticketId));
+    toast.success("Ticket downloaded successfully!");
     setOpenActionMenu(null);
   };
 
