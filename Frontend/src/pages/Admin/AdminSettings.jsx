@@ -11,6 +11,7 @@ import {
 } from "../../Redux/Slicers/adminSlice";
 import { toast } from "react-toastify";
 import { inputValidation } from "../../Utils/Admin/adminValidation"; // Import the validation utilities
+import { useToast } from "../../components/Common/Notification/ToastContext";
 
 const AdminSettings = () => {
   const dispatch = useDispatch();
@@ -22,6 +23,8 @@ const AdminSettings = () => {
     updateSuccess: profileUpdateSuccess,
   } = useSelector((state) => state.admin.profile);
 
+
+  const toast = useToast();
   // Get password change success from settings
   const { passwordChangeSuccess } = useSelector(
     (state) => state.admin.settings

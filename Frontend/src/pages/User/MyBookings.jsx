@@ -23,10 +23,12 @@ import {
 } from "react-icons/fa";
 import UserNavbar from "../../components/User/UserNavbar";
 import Modal from "../../components/User/Modal";
+import { useToast } from "../../components/Common/Notification/ToastContext";
 
 const MyBookings = () => {
   const { darkMode, toggleTheme } = useTheme();
   const dispatch = useDispatch();
+  const toast = useToast();
 
   const { orders, loading, error } = useSelector((state) => state.orders);
   const { qrCode, qrCodeLoading } = useSelector((state) => state.tickets);
@@ -39,8 +41,9 @@ const MyBookings = () => {
   useEffect(() => {
     dispatch(fetchOrders())
       .unwrap()
+      // eslint-disable-next-line no-unused-vars
       .catch((error) => {
-        console.error("Failed to fetch orders:", error);
+        // console.error("Failed to fetch orders:", error);
       });
   }, [dispatch]);
 
@@ -140,7 +143,7 @@ const MyBookings = () => {
       })
       .catch((error) => {
         console.error("Failed to generate QR code:", error);
-        alert("Failed to generate QR code. Please try again.");
+        toast.error("Failed to generate QR code. Please try again.");
       });
     setOpenActionMenu(null);
   };
@@ -148,7 +151,7 @@ const MyBookings = () => {
   // Download ticket - only for completed orders
   const handleDownloadTicket = (ticketId, orderStatus) => {
     if (orderStatus.toLowerCase() !== "completed") {
-      alert("Tickets can only be downloaded for completed orders.");
+      toast.info("Tickets can only be downloaded for completed orders.");
       return;
     }
     dispatch(downloadTicketPDF(ticketId));

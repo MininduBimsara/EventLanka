@@ -18,6 +18,7 @@ import {
 import {
   clearCurrentEvent,
 } from "../../Redux/Slicers/adminSlice";
+import { useToast } from "../../components/Common/Notification/ToastContext";
 
 export default function EventApprovals() {
   const dispatch = useDispatch();
@@ -25,6 +26,7 @@ export default function EventApprovals() {
     (state) => state.admin.events
   );
   const error = useSelector((state) => state.admin.error);
+  const toast = useToast();
 
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);

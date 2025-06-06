@@ -23,10 +23,12 @@ import {
 } from "lucide-react";
 import { fetchDashboardStats } from "../../Redux/Thunks/adminThunks";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../components/Common/Notification/ToastContext";
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const toast = useToast();
 
   // Fix the selector to properly access the data from the Redux state
   const { stats: dashboardStats, loading } = useSelector(

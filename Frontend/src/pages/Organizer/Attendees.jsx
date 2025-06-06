@@ -15,8 +15,11 @@ import {
   exportAttendeeList,
   getOrganizerEvents, // Add this function to fetch events
 } from "../../Redux/Thunks/organizerThunk";
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
+
 
 const Attendees = () => {
+  const toast = useToast(); // Use the toast context for notifications
   const dispatch = useDispatch();
 
   // Redux state
@@ -93,7 +96,7 @@ const Attendees = () => {
   // Handle export
   const handleExport = () => {
     if (filteredAttendees.length === 0) {
-      alert("No attendees to export");
+      toast.warning("No attendees to export");
       return;
     }
 
@@ -112,11 +115,13 @@ const Attendees = () => {
         })
         .catch((error) => {
           // Error feedback
-          console.error("Export failed:", error);
-          alert(`Failed to export as ${exportType.toUpperCase()}: ${error}`);
+          toast.error("Export failed");
+          toast.info(
+            `Failed to export as ${exportType.toUpperCase()}: ${error}`
+          );
         });
     } catch (error) {
-      console.error("Export error:", error);
+      // console.error("Export error:", error);
     }
   };
 
@@ -137,8 +142,8 @@ const Attendees = () => {
       setSelectedQRCode(data.qrCode);
       setShowQRModal(true);
     } catch (error) {
-      console.error("Error fetching QR code:", error);
-      alert("Error fetching QR code");
+      // console.error("Error fetching QR code:", error);
+      toast.error("Error fetching QR code");
     }
   };
 
