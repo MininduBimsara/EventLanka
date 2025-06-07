@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Base URL for orders API endpoints
-const ORDERS_API_URL = "http://localhost:5000/api/orders";
+const ORDERS_API_URL = `${import.meta.env.VITE_API_URL}/api/orders`;
 
 // Set default axios config
 axios.defaults.withCredentials = true;

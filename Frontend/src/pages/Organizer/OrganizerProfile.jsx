@@ -280,8 +280,7 @@ export default function OrganizerProfile() {
           ? organizerProfile.profileImage.substring(1)
           : organizerProfile.profileImage;
 
-        const baseUrl =
-          import.meta.env.REACT_APP_API_URL || "http://localhost:5000";
+        const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
         imageUrl = `${baseUrl}/${imagePath}`;
       }
 

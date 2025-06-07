@@ -16,7 +16,7 @@ const TrendingEventsSlider = () => {
   const dispatch = useDispatch();
   const { events, loading, error } = useSelector((state) => state.events);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const API_URL = "http://localhost:5000";
+  const API_URL = `${import.meta.env.VITE_API_URL}`;
 
   // Fetch events when component mounts
   useEffect(() => {

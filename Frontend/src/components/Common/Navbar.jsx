@@ -187,7 +187,7 @@ const Navbar = () => {
               <img
                 src={
                   user?.profileImage
-                    ? `http://localhost:5000${user.profileImage}`
+                    ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
                     : "/api/placeholder/50/50"
                 }
                 alt="Profile"

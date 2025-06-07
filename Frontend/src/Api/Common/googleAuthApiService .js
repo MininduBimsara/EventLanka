@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const AUTH_API_URL = "http://localhost:5000/api/googleauth";
+const AUTH_API_URL = `${import.meta.env.VITE_API_URL}/api/googleauth`;
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;

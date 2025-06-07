@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Base URL for payment API endpoints
-const PAYMENT_API_URL = "http://localhost:5000/api/payments";
+const PAYMENT_API_URL = `${import.meta.env.VITE_API_URL}/api/payments`;
 
 // Set default axios config
 axios.defaults.withCredentials = true;

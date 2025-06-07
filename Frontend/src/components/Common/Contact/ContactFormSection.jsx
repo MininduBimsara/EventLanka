@@ -27,7 +27,7 @@ const ContactFormSection = () => {
           <input
             type="hidden"
             name="_next"
-            value="http://localhost:5173/contact"
+            value={`${import.meta.env.VITE_API_URL}/contact`}
           />
           <input
             type="hidden"

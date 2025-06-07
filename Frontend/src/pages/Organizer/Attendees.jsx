@@ -130,7 +130,9 @@ const Attendees = () => {
     try {
       // In a real implementation, you would fetch the QR code from your backend
       const response = await fetch(
-        `http://localhost:5000/api/organizer/tickets/${ticketId}/qrcode`,
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/organizer/tickets/${ticketId}/qrcode`,
         {
           credentials: "include",
         }

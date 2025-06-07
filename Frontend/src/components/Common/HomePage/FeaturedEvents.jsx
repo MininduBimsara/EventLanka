@@ -9,7 +9,7 @@ const FeaturedEvents = () => {
   const dispatch = useDispatch();
   const { events = [], loading, error } = useSelector((state) => state.events);
   const carouselRef = useRef(null);
-  const API_URL = "http://localhost:5000";
+  const API_URL = `${import.meta.env.VITE_API_URL}`;
 
   useEffect(() => {
     dispatch(fetchAllEvents());

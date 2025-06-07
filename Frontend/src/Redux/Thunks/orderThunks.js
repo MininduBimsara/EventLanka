@@ -191,7 +191,7 @@ export const generateTicketQRCode = createAsyncThunk(
     try {
       // This would need to be added to OrderAPI if you want to use it
       const response = await axios.get(
-        `${import.meta.env.REACT_APP_API_URL}/api/tickets/${ticketId}/qrcode`
+        `${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/qrcode`
       );
 
       return response.data;

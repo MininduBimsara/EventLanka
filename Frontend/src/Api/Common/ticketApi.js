@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Base URL for tickets API endpoints
-const TICKETS_API_URL = "http://localhost:5000/api/tickets";
+const TICKETS_API_URL = `${import.meta.env.VITE_API_URL}/api/tickets`;
 
 // Set default axios config
 axios.defaults.withCredentials = true;

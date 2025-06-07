@@ -228,7 +228,7 @@ const EventBookingPage = () => {
   }
 
   // Get the API URL for images
-  const API_URL = "http://localhost:5000";
+  const API_URL = `${import.meta.env.VITE_API_URL}`;
 
   // Format event data for components
   const eventData = {

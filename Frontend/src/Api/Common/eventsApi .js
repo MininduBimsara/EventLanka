@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/events";
+const API_URL = `${import.meta.env.VITE_API_URL}/api/events`;
 
 // Configure axios instance for events API
 const eventsApi = axios.create({
@@ -19,7 +19,7 @@ export const eventsApiService = {
   // Fetch all events (public, no authentication required)
   fetchAllEvents: async () => {
     const response = await axios.get(
-      "http://localhost:5000/api/events/public/all",
+      `${import.meta.env.VITE_API_URL}/api/events/public/all`,
       {
         headers: {
           "Content-Type": "application/json",

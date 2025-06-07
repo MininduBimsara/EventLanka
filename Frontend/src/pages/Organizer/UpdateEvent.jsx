@@ -78,7 +78,9 @@ const UpdateEvent = () => {
 
       // Set preview image if banner exists
       if (currentEvent.banner) {
-        setPreviewImage(`http://localhost:5000${currentEvent.banner}`);
+        setPreviewImage(
+          `${import.meta.env.VITE_API_URL}${currentEvent.banner}`
+        );
       }
     }
   }, [currentEvent]);

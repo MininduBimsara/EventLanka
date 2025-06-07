@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const EventCard = ({ event }) => {
   const navigate = useNavigate();
-  const API_URL = "http://localhost:5000";
+  const API_URL = `${import.meta.env.VITE_API_URL}`;
 
   // useEffect(() => {
   //   // Debug: Log the banner value we're receiving
