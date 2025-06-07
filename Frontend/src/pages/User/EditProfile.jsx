@@ -45,11 +45,11 @@ const EditProfile = () => {
 
   // Auth slice holds the logged‑in user
   const authUser = useSelector((state) => state.user.user);
-  console.log("Auth user:", authUser);
-  console.log(
-    "Full state:",
-    useSelector((state) => state)
-  );
+  // console.log("Auth user:", authUser);
+  // console.log(
+  //   "Full state:",
+  //   useSelector((state) => state)
+  // );
   
   // Profile slice holds loading, error, successMessage, and the updated user
   const { loading, error, successMessage, userInfo } = useSelector(
