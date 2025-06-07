@@ -4,7 +4,7 @@ const setCORSHeaders = (req, res, next) => {
   // Set CORS headers for all requests
   res.header(
     "Access-Control-Allow-Origin",
-    req.headers.origin || "http://localhost:5173"
+    req.headers.origin || process.env.FRONTEND_URL || "http://localhost:5173"
   );
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");

@@ -17,7 +17,8 @@ exports.createPayPalOrder = asyncHandler(async (req, res) => {
   }
 
   try {
-    const origin = req.headers.origin || "http://localhost:5173"; // Fallback for dev
+    const origin =
+      req.headers.origin || process.env.FRONTEND_URL || "http://localhost:5173"; // Fallback for dev
     const returnUrl = `${origin}/payment-success`;
     const cancelUrl = `${origin}/checkout?orderId=${orderId}`;
 
@@ -200,7 +201,7 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     // Set CORS headers explicitly for this endpoint
     res.header(
       "Access-Control-Allow-Origin",
-      req.headers.origin || "http://localhost:5173"
+      req.headers.origin || process.env.FRONTEND_URL || "http://localhost:5173"
     );
     res.header("Access-Control-Allow-Credentials", "true");
     res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
