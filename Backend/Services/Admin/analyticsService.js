@@ -26,7 +26,7 @@ class AnalyticsService {
       // Return sample data if no results found
       return this.getSampleRevenueData();
     } catch (error) {
-      console.error("Error fetching revenue data:", error);
+      // console.error("Error fetching revenue data:", error);
       return this.getSampleRevenueData();
     }
   }
@@ -59,7 +59,7 @@ class AnalyticsService {
       // Return sample data if no results found
       return this.getSampleCategoryData();
     } catch (error) {
-      console.error("Error fetching category data:", error);
+      // console.error("Error fetching category data:", error);
       return this.getSampleCategoryData();
     }
   }
@@ -101,7 +101,7 @@ class AnalyticsService {
       // Return sample data if no results found
       return this.getSampleBestSellingEvents();
     } catch (error) {
-      console.error("Error fetching best selling events:", error);
+      // console.error("Error fetching best selling events:", error);
       return this.getSampleBestSellingEvents();
     }
   }
@@ -166,7 +166,7 @@ class AnalyticsService {
       // Return sample data if no results found
       return this.getSampleTopOrganizers();
     } catch (error) {
-      console.error("Error fetching top organizers:", error);
+      // console.error("Error fetching top organizers:", error);
       return this.getSampleTopOrganizers();
     }
   }
@@ -200,7 +200,7 @@ class AnalyticsService {
       // Return sample data if no results found
       return this.getSampleUserGrowthData();
     } catch (error) {
-      console.error("Error fetching user growth data:", error);
+      // console.error("Error fetching user growth data:", error);
       return this.getSampleUserGrowthData();
     }
   }
@@ -224,7 +224,7 @@ class AnalyticsService {
           totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0,
       };
     } catch (error) {
-      console.error("Error fetching statistics:", error);
+      // console.error("Error fetching statistics:", error);
       return {
         totalUsers: 18740,
         activeUsers: 12355,

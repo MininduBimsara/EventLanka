@@ -32,7 +32,7 @@ router.post("/google", async (req, res) => {
 
     return res.json(userData);
   } catch (error) {
-    console.error("Google auth error:", error);
+    // console.error("Google auth error:", error);
     return res.status(401).json({
       message: "Google authentication failed",
       error: error.message,
@@ -52,7 +52,7 @@ router.get("/user", (req, res) => {
 
 // Logout
 router.get("/logout", (req, res) => {
-  console.log("Before clearing - Cookies:", req.cookies);
+  // console.log("Before clearing - Cookies:", req.cookies);
 
   // Clear authToken
   res.clearCookie("authToken", {
@@ -66,7 +66,7 @@ router.get("/logout", (req, res) => {
   if (req.session) {
     req.session.destroy((err) => {
       if (err) {
-        console.error("Session destruction error:", err);
+        // console.error("Session destruction error:", err);
       }
 
       res.clearCookie("connect.sid", {

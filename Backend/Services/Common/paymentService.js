@@ -17,12 +17,12 @@ const getPayPalConfig = () => {
   };
 
   // Debug: Log configuration (remove in production)
-  console.log("PayPal Config Check:", {
-    clientIdExists: !!config.PAYPAL_CLIENT_ID,
-    clientSecretExists: !!config.PAYPAL_CLIENT_SECRET,
-    apiBase: config.PAYPAL_API_BASE,
-    nodeEnv: process.env.NODE_ENV,
-  });
+  // console.log("PayPal Config Check:", {
+  //   clientIdExists: !!config.PAYPAL_CLIENT_ID,
+  //   clientSecretExists: !!config.PAYPAL_CLIENT_SECRET,
+  //   apiBase: config.PAYPAL_API_BASE,
+  //   nodeEnv: process.env.NODE_ENV,
+  // });
 
   // Validate required environment variables
   if (!config.PAYPAL_CLIENT_ID || !config.PAYPAL_CLIENT_SECRET) {
@@ -44,7 +44,7 @@ const getPayPalAccessToken = async () => {
       `${config.PAYPAL_CLIENT_ID}:${config.PAYPAL_CLIENT_SECRET}`
     ).toString("base64");
 
-    console.log("Requesting PayPal access token..."); // Debug log
+    // console.log("Requesting PayPal access token..."); // Debug log
 
     const response = await axios({
       method: "post",
@@ -57,18 +57,18 @@ const getPayPalAccessToken = async () => {
       timeout: 10000, // 10 second timeout
     });
 
-    console.log("PayPal access token obtained successfully"); // Debug log
+    // console.log("PayPal access token obtained successfully"); // Debug log
     return response.data.access_token;
   } catch (error) {
-    console.error("PayPal Access Token Error:", {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-      },
-    });
+    // console.error("PayPal Access Token Error:", {
+    //   message: error.message,
+    //   status: error.response?.status,
+    //   data: error.response?.data,
+    //   config: {
+    //     url: error.config?.url,
+    //     method: error.config?.method,
+    //   },
+    // });
     throw new Error(
       `Failed to authenticate with PayPal: ${
         error.response?.data?.error_description || error.message
@@ -153,22 +153,22 @@ const createPayPalOrder = async (
   returnUrl,
   cancelUrl
 ) => {
-  console.log("Creating PayPal order with params:", {
-    orderId,
-    amount,
-    userId,
-    returnUrl,
-    cancelUrl,
-  });
+  // console.log("Creating PayPal order with params:", {
+  //   orderId,
+  //   amount,
+  //   userId,
+  //   returnUrl,
+  //   cancelUrl,
+  // });
 
   try {
     // Validate order ownership
     const order = await validateOrderOwnership(orderId, userId);
-    console.log("Order validation successful:", {
-      orderId: order._id,
-      totalAmount: order.total_amount,
-      ticketCount: order.tickets?.length,
-    });
+    // console.log("Order validation successful:", {
+    //   orderId: order._id,
+    //   totalAmount: order.total_amount,
+    //   ticketCount: order.tickets?.length,
+    // });
 
     // Use provided amount or fall back to order amount
     const paymentAmount = amount || order.total_amount;
@@ -177,7 +177,7 @@ const createPayPalOrder = async (
       throw new Error("Invalid order amount");
     }
 
-    console.log("Payment amount determined:", paymentAmount);
+    // console.log("Payment amount determined:", paymentAmount);
 
     const config = getPayPalConfig();
     const accessToken = await getPayPalAccessToken();
@@ -205,10 +205,10 @@ const createPayPalOrder = async (
       },
     };
 
-    console.log(
-      "Sending PayPal order request:",
-      JSON.stringify(paypalOrderData, null, 2)
-    );
+    // console.log(
+    //   "Sending PayPal order request:",
+    //   JSON.stringify(paypalOrderData, null, 2)
+    // );
 
     const response = await axios({
       method: "post",
@@ -221,11 +221,11 @@ const createPayPalOrder = async (
       timeout: 15000, // 15 second timeout
     });
 
-    console.log("PayPal order created successfully:", {
-      id: response.data.id,
-      status: response.data.status,
-      linksCount: response.data.links?.length,
-    });
+    // console.log("PayPal order created successfully:", {
+    //   id: response.data.id,
+    //   status: response.data.status,
+    //   linksCount: response.data.links?.length,
+    // });
 
     return {
       orderId: order._id,
@@ -234,16 +234,16 @@ const createPayPalOrder = async (
       links: response.data.links,
     };
   } catch (error) {
-    console.error("Create PayPal Order Error:", {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      headers: error.response?.headers,
-      orderId,
-      amount,
-      userId,
-    });
+    // console.error("Create PayPal Order Error:", {
+    //   message: error.message,
+    //   status: error.response?.status,
+    //   statusText: error.response?.statusText,
+    //   data: error.response?.data,
+    //   headers: error.response?.headers,
+    //   orderId,
+    //   amount,
+    //   userId,
+    // });
 
     // More specific error messages
     if (error.response?.status === 400) {
@@ -312,7 +312,7 @@ const updateDiscountUsage = async (discountId) => {
     });
   } catch (error) {
     // Silently handle if Discount model doesn't exist
-    console.log("No discount model or error updating discount", error);
+    // console.log("No discount model or error updating discount", error);
   }
 };
 
@@ -561,7 +561,7 @@ const checkPaymentStatus = async (paymentIntentId, orderId, userId) => {
       message: "Payment found successfully",
     };
   } catch (error) {
-    console.error("Error in checkPaymentStatus:", error);
+    // console.error("Error in checkPaymentStatus:", error);
     throw new Error(`Failed to check payment status: ${error.message}`);
   }
 };

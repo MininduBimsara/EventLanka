@@ -179,14 +179,14 @@ const changeAdminPassword = async (userId, oldPassword, newPassword) => {
 // Get admin profile - FIXED VERSION
 const getAdminProfile = async (userId) => {
   try {
-    console.log("🔍 getAdminProfile service called with userId:", userId);
+    // console.log("🔍 getAdminProfile service called with userId:", userId);
 
     // Find the user first
     const user = await UserRepository.findById(userId);
-    console.log(
-      "🔍 Found user:",
-      user ? { id: user._id, role: user.role } : "Not found"
-    );
+    // console.log(
+    //   "🔍 Found user:",
+    //   user ? { id: user._id, role: user.role } : "Not found"
+    // );
 
     if (!user) {
       throw new Error("User not found");
@@ -197,11 +197,11 @@ const getAdminProfile = async (userId) => {
 
     // Look for admin profile using the user's _id
     const adminProfile = await AdminRepository.findByUserId(user._id);
-    console.log("🔍 Found admin profile:", adminProfile ? "Yes" : "No");
+    // console.log("🔍 Found admin profile:", adminProfile ? "Yes" : "No");
 
     if (!adminProfile) {
       // Instead of throwing an error, create a default profile
-      console.log("🔍 Creating default admin profile for user:", user._id);
+      // console.log("🔍 Creating default admin profile for user:", user._id);
       const defaultProfile = await AdminRepository.create({
         user: user._id,
         phone: "",
@@ -227,7 +227,7 @@ const getAdminProfile = async (userId) => {
 
     return adminProfile;
   } catch (error) {
-    console.error("❌ getAdminProfile service error:", error);
+    // console.error("❌ getAdminProfile service error:", error);
     throw new Error(`Failed to get admin profile: ${error.message}`);
   }
 };
@@ -235,8 +235,8 @@ const getAdminProfile = async (userId) => {
 // Update admin profile - FIXED VERSION
 const updateAdminProfile = async (userId, profileData) => {
   try {
-    console.log("🔍 updateAdminProfile service called with userId:", userId);
-    console.log("🔍 Profile data:", profileData);
+    // console.log("🔍 updateAdminProfile service called with userId:", userId);
+    // console.log("🔍 Profile data:", profileData);
 
     const { phone, position, department, permissions, emailNotifications } =
       profileData;
@@ -250,10 +250,10 @@ const updateAdminProfile = async (userId, profileData) => {
     }
 
     let adminProfile = await AdminRepository.findByUserId(user._id);
-    console.log(
-      "🔍 Existing admin profile found:",
-      adminProfile ? "Yes" : "No"
-    );
+    // console.log(
+    //   "🔍 Existing admin profile found:",
+    //   adminProfile ? "Yes" : "No"
+    // );
 
     if (adminProfile) {
       const updateData = {};
@@ -273,10 +273,10 @@ const updateAdminProfile = async (userId, profileData) => {
         };
       }
 
-      console.log("🔍 Updating admin profile with data:", updateData);
+      // console.log("🔍 Updating admin profile with data:", updateData);
       adminProfile = await AdminRepository.updateByUserId(user._id, updateData);
     } else {
-      console.log("🔍 Creating new admin profile");
+      // console.log("🔍 Creating new admin profile");
       adminProfile = await AdminRepository.create({
         user: user._id,
         phone: phone || "",
@@ -303,7 +303,7 @@ const updateAdminProfile = async (userId, profileData) => {
       adminProfile,
     };
   } catch (error) {
-    console.error("❌ updateAdminProfile service error:", error);
+    // console.error("❌ updateAdminProfile service error:", error);
     throw new Error(`Failed to update admin profile: ${error.message}`);
   }
 };

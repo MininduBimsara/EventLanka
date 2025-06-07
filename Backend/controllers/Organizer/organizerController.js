@@ -28,7 +28,7 @@ exports.updateProfile = asyncHandler(async (req, res) => {
       try {
         updateData.categories = JSON.parse(updateData.categories);
       } catch (parseError) {
-        console.error("Error parsing categories:", parseError);
+        // console.error("Error parsing categories:", parseError);
         updateData.categories = [];
       }
     }
@@ -49,7 +49,7 @@ exports.updateProfile = asyncHandler(async (req, res) => {
       organizer: updatedOrganizerData,
     });
   } catch (error) {
-    console.error("Profile update error:", error);
+    // console.error("Profile update error:", error);
     res.status(500).json({ message: error.message });
   }
 });

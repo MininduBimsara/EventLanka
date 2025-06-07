@@ -234,7 +234,7 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
 
     // Handle any errors during PDF generation
     doc.on("error", (error) => {
-      console.error("PDF generation error:", error);
+      // console.error("PDF generation error:", error);
       if (!res.headersSent) {
         res.status(500).json({
           message: "Error generating PDF",
@@ -249,7 +249,7 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
     // Finalize the PDF
     doc.end();
   } catch (error) {
-    console.error("Receipt generation error:", error);
+    // console.error("Receipt generation error:", error);
 
     // Make sure we haven't already sent headers
     if (!res.headersSent) {

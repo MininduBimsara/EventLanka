@@ -59,7 +59,7 @@ const verifyGoogleToken = async (token) => {
       throw new Error("Failed to generate JWT token");
     }
 
-    console.log("Generated JWT token for Google user:", user._id);
+    // console.log("Generated JWT token for Google user:", user._id);
 
     // Return user data and token
     return {
