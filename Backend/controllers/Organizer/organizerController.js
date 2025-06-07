@@ -21,9 +21,26 @@ exports.getProfile = asyncHandler(async (req, res) => {
 exports.updateProfile = asyncHandler(async (req, res) => {
   try {
     const profileImageFilename = req.file ? req.file.filename : null;
+
+    // Parse categories if it's a string (from FormData)
+    let updateData = { ...req.body };
+    if (typeof updateData.categories === "string") {
+      try {
+        updateData.categories = JSON.parse(updateData.categories);
+      } catch (parseError) {
+        console.error("Error parsing categories:", parseError);
+        updateData.categories = [];
+      }
+    }
+
+    // Convert string boolean to actual boolean for isPublic
+    if (typeof updateData.isPublic === "string") {
+      updateData.isPublic = updateData.isPublic === "true";
+    }
+
     const updatedOrganizerData = await organizerService.updateOrganizerProfile(
       req.user.id,
-      req.body,
+      updateData,
       profileImageFilename
     );
 
@@ -32,6 +49,7 @@ exports.updateProfile = asyncHandler(async (req, res) => {
       organizer: updatedOrganizerData,
     });
   } catch (error) {
+    console.error("Profile update error:", error);
     res.status(500).json({ message: error.message });
   }
 });

@@ -20,11 +20,21 @@ async function getOrganizerProfile(userId) {
   const user = await UserRepository.findById(userId);
 
   // Combine user and organizer data
-  return {
+  const profileData = {
     ...user._doc,
     ...organizer._doc,
     id: user._id,
   };
+
+  // Ensure profileImage has the correct URL format
+  if (
+    profileData.profileImage &&
+    !profileData.profileImage.startsWith("http")
+  ) {
+    profileData.profileImage = `/uploads/profile-images/${profileData.profileImage}`;
+  }
+
+  return profileData;
 }
 
 /**
@@ -97,11 +107,21 @@ async function updateOrganizerProfile(
   const user = await UserRepository.findById(userId);
 
   // Combine user and organizer data
-  return {
+  const updatedData = {
     ...user._doc,
     ...organizer._doc,
     id: user._id,
   };
+
+  // Ensure profileImage has the correct URL format
+  if (
+    updatedData.profileImage &&
+    !updatedData.profileImage.startsWith("http")
+  ) {
+    updatedData.profileImage = `/uploads/profile-images/${updatedData.profileImage}`;
+  }
+
+  return updatedData;
 }
 
 /**

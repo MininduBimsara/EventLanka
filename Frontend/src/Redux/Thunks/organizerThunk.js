@@ -294,7 +294,27 @@ export const updateOrganizerProfile = createAsyncThunk(
   "organizer/updateOrganizerProfile",
   async (organizerData, { rejectWithValue }) => {
     try {
-      return await organizerProfileApi.update(organizerData);
+      // If organizerData is FormData, pass it directly
+      // If it's a regular object, convert it to FormData for consistency
+      let formData;
+
+      if (organizerData instanceof FormData) {
+        formData = organizerData;
+      } else {
+        formData = new FormData();
+        Object.keys(organizerData).forEach((key) => {
+          if (organizerData[key] !== null && organizerData[key] !== undefined) {
+            if (key === "categories" && Array.isArray(organizerData[key])) {
+              formData.append(key, JSON.stringify(organizerData[key]));
+            } else {
+              formData.append(key, organizerData[key]);
+            }
+          }
+        });
+      }
+
+      const response = await organizerProfileApi.update(formData);
+      return response;
     } catch (error) {
       if (error.response?.status === 401) {
         return rejectWithValue("401 Unauthorized: Please log in again");

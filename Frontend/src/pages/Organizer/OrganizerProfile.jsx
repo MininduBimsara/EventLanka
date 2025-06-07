@@ -22,12 +22,10 @@ import {
   validateNewCategory,
   validateProfileImage,
   validateFieldRealTime,
-} from "../../Utils/Organizer/profileValidation"; 
-import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
-
+} from "../../Utils/Organizer/profileValidation";
+import { useToast } from "../../components/Common/Notification/ToastContext";
 
 export default function OrganizerProfile() {
-
   const toast = useToast();
   const dispatch = useDispatch();
   const { organizerProfile, loading, error } = useSelector(
@@ -37,6 +35,7 @@ export default function OrganizerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null); // Add image preview state
   const [validationErrors, setValidationErrors] = useState({});
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,14 +55,18 @@ export default function OrganizerProfile() {
     isPublic: true,
   });
 
-  // Fetch profile data when component mounts
+  // Fetch profile data when component mounts - ONLY ONCE
   useEffect(() => {
     dispatch(fetchOrganizerProfile());
-  }, [dispatch]);
+  }, [dispatch]); // Only dispatch as dependency
 
   // Update local state when profile data is received from Redux
   useEffect(() => {
+    // console.log("Profile data useEffect triggered");
     if (organizerProfile) {
+      // console.log("Profile data received:", organizerProfile);
+      // console.log("Profile image field:", organizerProfile.profileImage);
+
       setProfile({
         name: organizerProfile.username || "",
         email: organizerProfile.email || "",
@@ -82,7 +85,7 @@ export default function OrganizerProfile() {
             : true,
       });
     }
-  }, [organizerProfile]);
+  }, [organizerProfile]); // Only organizerProfile as dependency
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -160,6 +163,7 @@ export default function OrganizerProfile() {
           ...prev,
           profileImage: validation.errors.file,
         }));
+        setImagePreview(null);
         return;
       }
 
@@ -168,6 +172,13 @@ export default function OrganizerProfile() {
         ...prev,
         profileImage: null,
       }));
+
+      // Create image preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -187,31 +198,44 @@ export default function OrganizerProfile() {
     setValidationErrors({});
     setFieldErrors({});
 
+    // Create FormData for file upload
+    const formData = new FormData();
+
     // Map the sanitized profile data to what the backend expects
-    const organizerData = {
-      username: validation.sanitizedProfile.name,
-      phone: validation.sanitizedProfile.phone,
-      bio: validation.sanitizedProfile.bio,
-      website: validation.sanitizedProfile.website,
-      instagram: validation.sanitizedProfile.social.instagram,
-      facebook: validation.sanitizedProfile.social.facebook,
-      linkedin: validation.sanitizedProfile.social.linkedin,
-      categories: validation.sanitizedProfile.categories,
-      isPublic: validation.sanitizedProfile.isPublic,
-    };
+    formData.append("username", validation.sanitizedProfile.name);
+    formData.append("phone", validation.sanitizedProfile.phone);
+    formData.append("bio", validation.sanitizedProfile.bio);
+    formData.append("website", validation.sanitizedProfile.website);
+    formData.append("instagram", validation.sanitizedProfile.social.instagram);
+    formData.append("facebook", validation.sanitizedProfile.social.facebook);
+    formData.append("linkedin", validation.sanitizedProfile.social.linkedin);
+    formData.append(
+      "categories",
+      JSON.stringify(validation.sanitizedProfile.categories)
+    );
+    formData.append("isPublic", validation.sanitizedProfile.isPublic);
 
     // Add profile image if one was selected
     if (profileImage) {
-      organizerData.profileImage = profileImage;
+      formData.append("profileImage", profileImage);
     }
 
     // Dispatch the update action
     try {
-      await dispatch(updateOrganizerProfile(organizerData)).unwrap();
+      await dispatch(updateOrganizerProfile(formData)).unwrap();
+
+      // Show success message
+      toast.success("Profile updated successfully!");
+
       setIsEditing(false);
       setProfileImage(null);
+      setImagePreview(null);
+
+      // Don't manually refetch - Redux state should already be updated by the thunk
+      // dispatch(fetchOrganizerProfile()); // REMOVE THIS LINE - it causes infinite loop
     } catch (error) {
-      toast.error("Failed to update profile:", error);
+      // console.error("Failed to update profile:", error);
+      toast.error(error || "Failed to update profile. Please try again.");
       setValidationErrors({
         submit: "Failed to update profile. Please try again.",
       });
@@ -228,6 +252,45 @@ export default function OrganizerProfile() {
         {error}
       </div>
     );
+  };
+
+  // Function to get the correct image URL
+  const getImageUrl = () => {
+    // console.log("Getting image URL...");
+    // console.log("imagePreview:", imagePreview);
+    // console.log(
+    //   "organizerProfile?.profileImage:",
+    //   organizerProfile?.profileImage
+    // );
+
+    if (imagePreview) {
+      // console.log("Using image preview");
+      return imagePreview; // Show preview of newly selected image
+    }
+
+    if (organizerProfile?.profileImage) {
+      let imageUrl;
+
+      // If the profileImage is just a filename, construct the full URL
+      if (organizerProfile.profileImage.startsWith("http")) {
+        imageUrl = organizerProfile.profileImage;
+      } else {
+        // Remove leading slash if present
+        const imagePath = organizerProfile.profileImage.startsWith("/")
+          ? organizerProfile.profileImage.substring(1)
+          : organizerProfile.profileImage;
+
+        const baseUrl =
+          import.meta.env.REACT_APP_API_URL || "http://localhost:5000";
+        imageUrl = `${baseUrl}/${imagePath}`;
+      }
+
+      // console.log("Constructed image URL:", imageUrl);
+      return imageUrl;
+    }
+
+    // console.log("Using fallback placeholder");
+    return "/api/placeholder/200/200"; // Fallback placeholder
   };
 
   if (loading && !organizerProfile) {
@@ -258,19 +321,18 @@ export default function OrganizerProfile() {
           <div className="flex flex-col items-center">
             <div className="relative w-48 h-48 mb-4">
               <div className="flex items-center justify-center w-full h-full overflow-hidden bg-gray-200 rounded-full">
-                {organizerProfile?.profileImage ? (
-                  <img
-                    src={organizerProfile.profileImage}
-                    alt="Profile"
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <img
-                    src="/api/placeholder/200/200"
-                    alt="Profile"
-                    className="object-cover w-full h-full"
-                  />
-                )}
+                <img
+                  src={getImageUrl()}
+                  alt="Profile"
+                  className="object-cover w-full h-full"
+                  onError={(e) => {
+                    // console.error("Image failed to load:", e.target.src);
+                    e.target.src = "/api/placeholder/200/200";
+                  }}
+                  onLoad={() => {
+                    // console.log("Image loaded successfully:", getImageUrl());
+                  }}
+                />
               </div>
               {isEditing && (
                 <label
@@ -339,6 +401,8 @@ export default function OrganizerProfile() {
                   if (isEditing) {
                     setValidationErrors({});
                     setFieldErrors({});
+                    setImagePreview(null);
+                    setProfileImage(null);
                   }
                 }}
                 className="text-blue-600 hover:text-blue-800"
