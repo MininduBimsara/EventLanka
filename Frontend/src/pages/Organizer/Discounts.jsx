@@ -9,6 +9,7 @@ import {
   X,
   ChevronDown,
   Loader,
+  AlertTriangle,
 } from "lucide-react";
 import {
   createDiscount,
@@ -34,6 +35,11 @@ export default function Discounts() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [loadingState, setLoadingState] = useState(true);
   const [eventsInitialized, setEventsInitialized] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    discountId: null,
+    discountCode: null,
+  });
 
   const [formData, setFormData] = useState({
     code: "",
@@ -219,26 +225,42 @@ export default function Discounts() {
     [dispatch, toast, selectedEvent]
   );
 
-  const handleDeleteDiscount = useCallback(
-    async (discountId) => {
-      const confirmed = window.confirm(
-        "Are you sure you want to delete this discount code?"
-      );
+  const handleDeleteDiscount = useCallback((discountId, discountCode) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      discountId,
+      discountCode,
+    });
+  }, []);
 
-      if (!confirmed) return;
+  const confirmDelete = useCallback(async () => {
+    const { discountId } = deleteConfirmation;
 
-      try {
-        await dispatch(deleteDiscount(discountId)).unwrap();
-        toast.success("Discount code deleted successfully!");
-        // Refresh the list
-        await dispatch(getEventDiscounts(selectedEvent)).unwrap();
-      } catch (error) {
-        console.error("Error deleting discount:", error);
-        toast.error("Failed to delete discount code");
-      }
-    },
-    [dispatch, toast, selectedEvent]
-  );
+    try {
+      await dispatch(deleteDiscount(discountId)).unwrap();
+      toast.success("Discount code deleted successfully!");
+      // Refresh the list
+      await dispatch(getEventDiscounts(selectedEvent)).unwrap();
+    } catch (error) {
+      console.error("Error deleting discount:", error);
+      toast.error("Failed to delete discount code");
+    } finally {
+      setDeleteConfirmation({
+        isOpen: false,
+        discountId: null,
+        discountCode: null,
+      });
+    }
+  }, [deleteConfirmation, dispatch, toast, selectedEvent]);
+
+  // Add this function to cancel the deletion:
+  const cancelDelete = useCallback(() => {
+    setDeleteConfirmation({
+      isOpen: false,
+      discountId: null,
+      discountCode: null,
+    });
+  }, []);
 
   const duplicateDiscount = useCallback(
     async (discount) => {
@@ -263,15 +285,25 @@ export default function Discounts() {
   );
 
   const formatValue = useCallback((discount) => {
+    if (!discount || typeof discount.discount_value === "undefined") {
+      return "N/A";
+    }
+
     return discount.discount_type === "percentage"
       ? `${discount.discount_value}%`
       : `$${discount.discount_value}`;
   }, []);
 
   const getStatusBadge = useCallback((discount) => {
+    if (!discount) return null;
+
     const now = new Date();
-    const startDate = new Date(discount.start_date);
-    const endDate = new Date(discount.end_date);
+    const startDate = discount.start_date
+      ? new Date(discount.start_date)
+      : new Date();
+    const endDate = discount.end_date
+      ? new Date(discount.end_date)
+      : new Date();
 
     if (!discount.is_active) {
       return (
@@ -291,7 +323,7 @@ export default function Discounts() {
           <X size={12} className="mr-1" /> Expired
         </span>
       );
-    } else if (discount.usage_count >= discount.usage_limit) {
+    } else if ((discount.usage_count || 0) >= (discount.usage_limit || 0)) {
       return (
         <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-800 bg-orange-100 rounded-full">
           <X size={12} className="mr-1" /> Depleted
@@ -621,79 +653,91 @@ export default function Discounts() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {selectedEvent && discounts?.length > 0 ? (
-                discounts.map((discount) => (
-                  <tr
-                    key={discount._id}
-                    className={!discount.is_active ? "bg-gray-50" : ""}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">
-                        {discount.code}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold leading-5 text-blue-800 bg-blue-100 rounded-full">
-                        {formatValue(discount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {discount.description || "No description"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      <div>
-                        From:{" "}
-                        {new Date(discount.start_date).toLocaleDateString()}
-                      </div>
-                      <div>
-                        To: {new Date(discount.end_date).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {discount.usage_count} / {discount.usage_limit}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(discount)}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() =>
-                            toggleDiscountActive(
-                              discount._id,
+                discounts
+                  .filter((discount) => discount && discount._id) // Filter out undefined/null items
+                  .map((discount) => (
+                    <tr
+                      key={discount._id}
+                      className={!discount.is_active ? "bg-gray-50" : ""}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">
+                          {discount.code || "N/A"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold leading-5 text-blue-800 bg-blue-100 rounded-full">
+                          {formatValue(discount)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {discount.description || "No description"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        <div>
+                          From:{" "}
+                          {discount.start_date
+                            ? new Date(discount.start_date).toLocaleDateString()
+                            : "N/A"}
+                        </div>
+                        <div>
+                          To:{" "}
+                          {discount.end_date
+                            ? new Date(discount.end_date).toLocaleDateString()
+                            : "N/A"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {discount.usage_count || 0} /{" "}
+                        {discount.usage_limit || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(discount)}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() =>
+                              toggleDiscountActive(
+                                discount._id,
+                                discount.is_active
+                              )
+                            }
+                            className={`p-1 rounded ${
                               discount.is_active
-                            )
-                          }
-                          className={`p-1 rounded ${
-                            discount.is_active
-                              ? "text-red-600 hover:bg-red-100"
-                              : "text-green-600 hover:bg-green-100"
-                          }`}
-                          title={discount.is_active ? "Deactivate" : "Activate"}
-                        >
-                          {discount.is_active ? (
-                            <X size={16} />
-                          ) : (
-                            <Check size={16} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => duplicateDiscount(discount)}
-                          className="p-1 text-blue-600 rounded hover:bg-blue-100"
-                          title="Duplicate"
-                        >
-                          <Copy size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDiscount(discount._id)}
-                          className="p-1 text-red-600 rounded hover:bg-red-100"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                                ? "text-red-600 hover:bg-red-100"
+                                : "text-green-600 hover:bg-green-100"
+                            }`}
+                            title={
+                              discount.is_active ? "Deactivate" : "Activate"
+                            }
+                          >
+                            {discount.is_active ? (
+                              <X size={16} />
+                            ) : (
+                              <Check size={16} />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => duplicateDiscount(discount)}
+                            className="p-1 text-blue-600 rounded hover:bg-blue-100"
+                            title="Duplicate"
+                          >
+                            <Copy size={16} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeleteDiscount(discount._id, discount.code)
+                            }
+                            className="p-1 text-red-600 rounded hover:bg-red-100"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
               ) : (
                 <tr>
                   <td
@@ -708,6 +752,57 @@ export default function Discounts() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+      {deleteConfirmation.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md mx-4 bg-white rounded-lg shadow-xl">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Delete Discount Code
+                  </h3>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete the discount code{" "}
+                  <span className="font-semibold text-gray-900">
+                    "{deleteConfirmation.discountCode}"
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <Loader size={16} className="mr-2 animate-spin" />
+                      Deleting...
+                    </div>
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

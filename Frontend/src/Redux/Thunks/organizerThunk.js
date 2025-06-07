@@ -168,7 +168,8 @@ export const createDiscount = createAsyncThunk(
   "organizer/createDiscount",
   async (discountData, { rejectWithValue }) => {
     try {
-      return await discountApi.create(discountData);
+      const response =  await discountApi.create(discountData);
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create discount"
@@ -181,7 +182,8 @@ export const updateDiscount = createAsyncThunk(
   "organizer/updateDiscount",
   async ({ discountId, discountData }, { rejectWithValue }) => {
     try {
-      return await discountApi.update(discountId, discountData);
+      const response = await discountApi.update(discountId, discountData);
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update discount"
@@ -194,7 +196,8 @@ export const deleteDiscount = createAsyncThunk(
   "organizer/deleteDiscount",
   async (discountId, { rejectWithValue }) => {
     try {
-      return await discountApi.delete(discountId);
+      const response = await discountApi.delete(discountId);
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete discount"
@@ -220,7 +223,8 @@ export const validateDiscountCode = createAsyncThunk(
   "organizer/validateDiscountCode",
   async (codeData, { rejectWithValue }) => {
     try {
-      return await discountApi.validateCode(codeData);
+      const response = await discountApi.validateCode(codeData);
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Invalid discount code"

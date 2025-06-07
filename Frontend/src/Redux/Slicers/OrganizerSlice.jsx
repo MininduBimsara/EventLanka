@@ -47,7 +47,7 @@ const initialState = {
   attendees: [],
 
   // Discount states
-  discounts: {},
+  discounts: [],
   currentDiscount: null,
   selectedEvent: null,
   validatedDiscount: null,
@@ -322,12 +322,8 @@ const organizerSlice = createSlice({
       })
       .addCase(createDiscount.fulfilled, (state, action) => {
         state.loading = false;
-        // Add to the appropriate event's discounts
-        const eventId = action.payload.event;
-        if (!state.discounts[eventId]) {
-          state.discounts[eventId] = [];
-        }
-        state.discounts[eventId].push(action.payload);
+        // Add to the discounts array
+        state.discounts.push(action.payload);
         state.currentDiscount = action.payload;
         state.success = true;
         state.message = "Discount created successfully";
@@ -344,15 +340,12 @@ const organizerSlice = createSlice({
       })
       .addCase(updateDiscount.fulfilled, (state, action) => {
         state.loading = false;
-        // Update in the appropriate event's discounts
-        const eventId = action.payload.event;
-        if (state.discounts[eventId]) {
-          const index = state.discounts[eventId].findIndex(
-            (discount) => discount._id === action.payload._id
-          );
-          if (index !== -1) {
-            state.discounts[eventId][index] = action.payload;
-          }
+        // Update in the discounts array
+        const index = state.discounts.findIndex(
+          (discount) => discount._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.discounts[index] = action.payload;
         }
         state.currentDiscount = action.payload;
         state.success = true;
@@ -370,12 +363,10 @@ const organizerSlice = createSlice({
       })
       .addCase(deleteDiscount.fulfilled, (state, action) => {
         state.loading = false;
-        // Remove from all event discounts
-        Object.keys(state.discounts).forEach((eventId) => {
-          state.discounts[eventId] = state.discounts[eventId].filter(
-            (discount) => discount._id !== action.payload
-          );
-        });
+        // Remove from discounts array
+        state.discounts = state.discounts.filter(
+          (discount) => discount._id !== action.payload
+        );
         if (
           state.currentDiscount &&
           state.currentDiscount._id === action.payload
@@ -397,7 +388,8 @@ const organizerSlice = createSlice({
       })
       .addCase(getEventDiscounts.fulfilled, (state, action) => {
         state.loading = false;
-        state.discounts = action.payload.discounts;
+        // Set discounts as array directly
+        state.discounts = action.payload.discounts || action.payload || [];
       })
       .addCase(getEventDiscounts.rejected, (state, action) => {
         state.loading = false;
