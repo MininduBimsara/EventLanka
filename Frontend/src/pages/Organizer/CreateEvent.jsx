@@ -12,8 +12,11 @@ import {
   DollarSign,
   Users,
 } from "lucide-react";
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
+
 
 export default function CreateEvent() {
+  const toast = useToast(); // Use the toast context for notifications
   const dispatch = useDispatch();
   const { loading, error, success } = useSelector((state) => state.organizer);
 
@@ -59,7 +62,7 @@ export default function CreateEvent() {
       };
 
       reader.onerror = () => {
-        console.error("Error reading file");
+        toast.error("Error reading file");
         // Handle the error gracefully - maybe set an error state
         setSubmissionMessage("Failed to load image preview");
       };
@@ -68,7 +71,7 @@ export default function CreateEvent() {
       try {
         reader.readAsDataURL(file);
       } catch (err) {
-        console.error("Error starting file read:", err);
+        toast.error("Error starting file read");
         setSubmissionMessage("Failed to process image");
       }
     }

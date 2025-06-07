@@ -22,9 +22,13 @@ import {
   validateNewCategory,
   validateProfileImage,
   validateFieldRealTime,
-} from "../../Utils/Organizer/profileValidation"; // Adjust path as needed
+} from "../../Utils/Organizer/profileValidation"; 
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
+
 
 export default function OrganizerProfile() {
+
+  const toast = useToast();
   const dispatch = useDispatch();
   const { organizerProfile, loading, error } = useSelector(
     (state) => state.organizer
@@ -207,7 +211,7 @@ export default function OrganizerProfile() {
       setIsEditing(false);
       setProfileImage(null);
     } catch (error) {
-      console.error("Failed to update profile:", error);
+      toast.error("Failed to update profile:", error);
       setValidationErrors({
         submit: "Failed to update profile. Please try again.",
       });

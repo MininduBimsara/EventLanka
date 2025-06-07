@@ -9,9 +9,13 @@ import FilterSidebar from "../../components/Common/EventBrowsing/FilterSidebar";
 import ViewToggle from "../../components/Common/EventBrowsing/ViewToggle";
 import NoEventsFound from "../../components/Common/EventBrowsing/NoEventsFound";
 import Pagination from "../../components/Common/EventBrowsing/Pagination";
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
+
 
 const EventBrowsingPage = () => {
   const dispatch = useDispatch();
+
+  const toast = useToast(); // Use the toast context for notifications
   const { events, loading, error } = useSelector((state) => state.events);
 
   const [isVisible, setIsVisible] = useState(true);
@@ -95,6 +99,7 @@ const EventBrowsingPage = () => {
         return isNaN(price) ? Infinity : price;
       }
     } catch (error) {
+      // toast.error("Error getting primary ticket price");
       console.error("Error getting primary ticket price:", error);
     }
     return Infinity;

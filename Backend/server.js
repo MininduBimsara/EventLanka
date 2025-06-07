@@ -27,12 +27,40 @@ const corsOptions = {
     "Origin",
     "X-Requested-With",
     "Accept",
+    "Cache-Control",
+    "Pragma",
+    "Expires",
+    "Access-Control-Allow-Origin",
+    "Access-Control-Allow-Credentials",
+    "Access-Control-Allow-Methods",
+    "Access-Control-Allow-Headers",
   ],
-  exposedHeaders: ["set-cookie"],
+  exposedHeaders: [
+    "set-cookie",
+    "Content-Disposition",
+    "Content-Type",
+    "Content-Length",
+  ],
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Handle preflight requests properly
+
+
+// Additional CORS middleware for file downloads
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Expose-Headers', 'Content-Disposition, Content-Type, Content-Length');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 
 // Setup session
 app.use(session({

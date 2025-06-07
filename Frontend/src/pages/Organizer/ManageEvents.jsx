@@ -7,9 +7,7 @@ import {
   deleteOrganizerEvent,
   getEventAttendees,
 } from "../../Redux/Thunks/organizerThunk";
-import {
-  clearAttendees,
-} from "../../Redux/Slicers/OrganizerSlice";
+import { clearAttendees } from "../../Redux/Slicers/OrganizerSlice";
 import {
   Search,
   Edit,
@@ -23,7 +21,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
-import axios from "axios";
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
 
 // Event Details Modal Component
 const EventDetailsModal = ({ event, onClose }) => {
@@ -156,18 +154,20 @@ const AttendeesModal = ({ attendees, eventTitle, loading, onClose }) => {
                   <tr key={attendee._id || index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {attendee.user_id.username ||
-                          `${attendee.firstName} ${attendee.lastName}`}
+                        {attendee.user_id?.username ||
+                          `${attendee.firstName || ""} ${
+                            attendee.lastName || ""
+                          }`}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {attendee.user_id.email}
+                      {attendee.user_id?.email || "N/A"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                       {attendee.ticket_type || "Standard"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {attendee.attendance_status}
+                      {attendee.attendance_status || "Pending"}
                     </td>
                   </tr>
                 ))}
@@ -218,9 +218,43 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-md p-6 mx-4 bg-white rounded-lg shadow-xl">
+        <div className="flex items-center mb-4">
+          <AlertCircle className="w-6 h-6 mr-3 text-red-600" />
+          <h2 className="text-lg font-bold">{title}</h2>
+        </div>
+        <p className="mb-6 text-gray-600">{message}</p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ManageEvents = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const toast = useToast(); // Updated to use the new toast context
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
 
   // Get events from Redux instead of local state
   const { events, loading, error } = useSelector((state) => state.organizer);
@@ -243,8 +277,13 @@ const ManageEvents = () => {
 
   // Fetch events when component mounts
   useEffect(() => {
-    dispatch(getOrganizerEvents());
-  }, [dispatch]);
+    dispatch(getOrganizerEvents())
+      .unwrap()
+      .catch((error) => {
+        console.error("Error fetching events:", error);
+        toast.error("Failed to load events");
+      });
+  }, [dispatch, toast]);
 
   // Handle sorting
   const handleSort = (field) => {
@@ -263,8 +302,7 @@ const ManageEvents = () => {
 
   // View event details in modal
   const handleView = async (id) => {
-    // Find the event in current list or fetch it
-    const event = events.find((e) => (e._id || e.id) === id);
+    const event = events?.find((e) => (e._id || e.id) === id);
 
     if (event) {
       setSelectedEvent(event);
@@ -272,7 +310,6 @@ const ManageEvents = () => {
     } else {
       try {
         setLoadingEventDetails(true);
-        // Use the existing Redux function to fetch event details
         const resultAction = await dispatch(getOrganizerEventById(id));
         if (getOrganizerEventById.fulfilled.match(resultAction)) {
           setSelectedEvent(resultAction.payload);
@@ -280,6 +317,7 @@ const ManageEvents = () => {
         }
       } catch (error) {
         console.error("Failed to fetch event details:", error);
+        toast.error("Failed to load event details");
       } finally {
         setLoadingEventDetails(false);
       }
@@ -288,7 +326,7 @@ const ManageEvents = () => {
 
   // View attendees in modal with direct API call
   const handleViewAttendees = async (id) => {
-    const event = events.find((e) => (e._id || e.id) === id);
+    const event = events?.find((e) => (e._id || e.id) === id);
 
     if (event) {
       setSelectedEvent(event);
@@ -296,11 +334,10 @@ const ManageEvents = () => {
       setShowAttendeesModal(true);
 
       try {
-        // Use Redux thunk instead of direct API call
-        await dispatch(getEventAttendees(id));
-        // Attendees will be updated in Redux, so no need to setAttendees here
+        await dispatch(getEventAttendees(id)).unwrap();
       } catch (error) {
         console.error("Failed to fetch attendees:", error);
+        toast.error("Failed to load attendees");
       } finally {
         setLoadingAttendees(false);
       }
@@ -311,8 +348,26 @@ const ManageEvents = () => {
 
   // Handle event deletion with API call
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this event?")) {
-      dispatch(deleteOrganizerEvent(id));
+    setEventToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (eventToDelete) {
+      dispatch(deleteOrganizerEvent(eventToDelete))
+        .unwrap()
+        .then(() => {
+          toast.success("Event deleted successfully!");
+          dispatch(getOrganizerEvents());
+        })
+        .catch((error) => {
+          console.error("Error deleting event:", error);
+          toast.error("Failed to delete event");
+        })
+        .finally(() => {
+          setShowDeleteConfirm(false);
+          setEventToDelete(null);
+        });
     }
   };
 
@@ -325,6 +380,11 @@ const ManageEvents = () => {
   const closeAttendeesModal = () => {
     setShowAttendeesModal(false);
     dispatch(clearAttendees());
+  };
+
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false);
+    setEventToDelete(null);
   };
 
   // Filter and sort events
@@ -691,6 +751,15 @@ const ManageEvents = () => {
           onClose={closeAttendeesModal}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={closeDeleteConfirm}
+        onConfirm={confirmDelete}
+        title="Delete Event"
+        message="Are you sure you want to delete this event? This action cannot be undone."
+      />
     </div>
   );
 };

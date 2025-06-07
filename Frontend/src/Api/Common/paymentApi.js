@@ -102,9 +102,80 @@ class PaymentAPI {
    * @returns {Promise} Success indicator
    */
   static async downloadReceipt(transactionId) {
-    // Use window.open approach for direct download
-    window.open(`${PAYMENT_API_URL}/receipt/${transactionId}`, "_blank");
-    return { success: true, transactionId };
+    // Method 1: Try blob download
+    try {
+      console.log("Attempting blob download for receipt:", transactionId);
+
+      const response = await axios.get(
+        `${PAYMENT_API_URL}/receipt/${transactionId}`,
+        {
+          responseType: "blob",
+          timeout: 15000,
+        }
+      );
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `receipt_${transactionId}.pdf`);
+      link.style.display = "none";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+
+      console.log("Blob download successful");
+      return { success: true, transactionId, method: "blob" };
+    } catch (blobError) {
+      console.warn("Blob download failed, trying fallback:", blobError.message);
+
+      // Method 2: Fallback to window.open
+      try {
+        const downloadUrl = `${PAYMENT_API_URL}/receipt/${transactionId}`;
+        const newWindow = window.open(downloadUrl, "_blank");
+
+        if (
+          !newWindow ||
+          newWindow.closed ||
+          typeof newWindow.closed == "undefined"
+        ) {
+          throw new Error("Popup blocked");
+        }
+
+        console.log("Window.open download successful");
+        return { success: true, transactionId, method: "window" };
+      } catch (windowError) {
+        console.warn(
+          "Window.open failed, trying iframe method:",
+          windowError.message
+        );
+
+        // Method 3: Hidden iframe method
+        try {
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = `${PAYMENT_API_URL}/receipt/${transactionId}`;
+
+          document.body.appendChild(iframe);
+
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 5000);
+
+          console.log("Iframe download initiated");
+          return { success: true, transactionId, method: "iframe" };
+        } catch (iframeError) {
+          console.error("All download methods failed:", iframeError);
+          throw new Error(
+            "All download methods failed. Please contact support or try a different browser."
+          );
+        }
+      }
+    }
   }
 
   /**

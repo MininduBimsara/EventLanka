@@ -12,11 +12,13 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
 
 const UpdateEvent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const toast = useToast(); // Updated to use the new toast context
 
   // Get event details and loading states from Redux store
   const { currentEvent, loading, error } = useSelector(
@@ -50,8 +52,13 @@ const UpdateEvent = () => {
 
   // Fetch event data when component mounts
   useEffect(() => {
-    dispatch(getOrganizerEventById(id));
-  }, [dispatch, id]);
+    dispatch(getOrganizerEventById(id))
+      .unwrap()
+      .catch((error) => {
+        console.error("Error fetching event:", error);
+        toast.error("Failed to load event details");
+      });
+  }, [dispatch, id, toast]);
 
   // Populate form when event data is loaded
   useEffect(() => {
@@ -112,6 +119,9 @@ const UpdateEvent = () => {
         ticket_types: [...formData.ticket_types, ticketType],
       });
       setTicketType({ type: "", price: 0, availability: 0 });
+      toast.success("Ticket type added successfully!");
+    } else {
+      toast.warning("Please fill in all ticket type fields correctly");
     }
   };
 
@@ -120,6 +130,7 @@ const UpdateEvent = () => {
     const updatedTickets = [...formData.ticket_types];
     updatedTickets.splice(index, 1);
     setFormData({ ...formData, ticket_types: updatedTickets });
+    toast.success("Ticket type removed");
   };
 
   // Handle form submission
@@ -170,16 +181,20 @@ const UpdateEvent = () => {
 
       if (updateEvent.fulfilled.match(resultAction)) {
         setSubmitSuccess(true);
+        toast.success("Event updated successfully!");
         // Navigate back after successful update
         setTimeout(() => navigate("/organizer/manage-events"), 1500);
       } else {
-        setSubmitError(resultAction.payload || "Failed to update event");
+        const errorMessage = resultAction.payload || "Failed to update event";
+        setSubmitError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error in form submission:", error);
-      setSubmitError(
-        error.message || "An error occurred while updating the event"
-      );
+      const errorMessage =
+        error.message || "An error occurred while updating the event";
+      setSubmitError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -489,21 +504,6 @@ const UpdateEvent = () => {
               </button>
             </div>
           </div>
-
-          {/* Submission Status */}
-          {submitSuccess && (
-            <div className="flex items-center p-4 mb-6 text-green-700 bg-green-100 rounded-lg">
-              <CheckCircle className="w-5 h-5 mr-2" />
-              Event updated successfully! Redirecting...
-            </div>
-          )}
-
-          {submitError && (
-            <div className="flex items-center p-4 mb-6 text-red-700 bg-red-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 mr-2" />
-              {submitError}
-            </div>
-          )}
 
           {/* Submit Button */}
           <div className="flex justify-end mt-6">

@@ -22,6 +22,7 @@ import {
 } from "../../Redux/Thunks/userThunks";
 import UserNavbar from "../../components/User/UserNavbar";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
 
 // Import validation utilities
 import {
@@ -36,17 +37,19 @@ import {
 } from "../../Utils/User/validationUtils";
 
 const EditProfile = () => {
+
+  const toast = useToast(); // Use the toast context for notifications
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { darkMode, toggleTheme } = useTheme();
 
   // Auth slice holds the logged‑in user
   const authUser = useSelector((state) => state.user.user);
-  console.log("Auth user:", authUser);
-  console.log(
-    "Full state:",
-    useSelector((state) => state)
-  );
+  // console.log("Auth user:", authUser);
+  // console.log(
+  //   "Full state:",
+  //   useSelector((state) => state)
+  // );
   
   // Profile slice holds loading, error, successMessage, and the updated user
   const { loading, error, successMessage, userInfo } = useSelector(
@@ -63,7 +66,7 @@ const EditProfile = () => {
   // Combine: prefer the freshly‐updated profile, else fall back to authUser
   const profileData = userInfo || authUser;
 
-  console.log("Profile data:", profileData);
+  // console.log("Profile data:", profileData);
 
   // Local form state
   const [userData, setUserData] = useState({
@@ -195,7 +198,7 @@ const EditProfile = () => {
     e.preventDefault();
 
     if (!authUser || !authUser.id) {
-      alert("Session expired. Please log in again.");
+      toast.warning("Session expired. Please log in again.");
       navigate("/login");
       return;
     }
@@ -205,7 +208,7 @@ const EditProfile = () => {
     setValidationErrors(errors);
 
     if (!isFormValid(errors)) {
-      alert("Please fix the validation errors before submitting.");
+      toast.warning("Please fix the validation errors before submitting.");
       return;
     }
 
@@ -247,13 +250,13 @@ const EditProfile = () => {
     // Password?
     if (userData.newPassword) {
       if (userData.newPassword !== userData.confirmPassword) {
-        alert("New passwords don't match.");
+        toast.warning("New passwords don't match.");
         return;
       }
       // Additional password validation using utility
       const passwordError = validateField("newPassword", userData.newPassword);
       if (passwordError) {
-        alert("Password does not meet security requirements.");
+        toast.warning("Password does not meet security requirements.");
         return;
       }
       changed.password = userData.newPassword;
@@ -275,7 +278,7 @@ const EditProfile = () => {
 
     // If no changes detected, show an alert
     if (!hasChanges) {
-      alert("No changes detected.");
+      toast.info("No changes detected.");
       return;
     }
 
@@ -288,14 +291,14 @@ const EditProfile = () => {
       .then(() => {
         // Check if only the profile image was updated
         if (Object.keys(changed).length === 1 && changed.profileImage) {
-          alert("Profile image updated successfully!");
+          toast.success("Profile image updated successfully!");
         } else {
-          alert("Profile updated successfully!");
+          toast.success("Profile updated successfully!");
         }
       })
       .catch((err) => {
         if (err.includes("401")) {
-          alert("Session expired. Please log in again.");
+          toast.warning("Session expired. Please log in again.");
           navigate("/login");
         }
       });

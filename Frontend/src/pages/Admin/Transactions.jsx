@@ -6,6 +6,12 @@ import { fetchTransactions } from "../../Redux/Thunks/adminThunks"; // Adjust pa
 const AdminTransactions = () => {
   const dispatch = useDispatch();
   const { transactions, loading } = useSelector((state) => state.admin.finance);
+
+  // Add debugging logs
+  // console.log("Raw transactions from Redux:", transactions);
+  // console.log("Type of transactions:", typeof transactions);
+  // console.log("Is Array:", Array.isArray(transactions));
+
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -64,11 +70,56 @@ const AdminTransactions = () => {
     statusFilter,
   ]);
 
-  // Apply client-side search filter
+  // Apply client-side search filter - FIXED VERSION
   useEffect(() => {
-    if (!transactions) return;
+    // console.log("useEffect triggered with transactions:", transactions);
 
-    let results = transactions;
+    // Handle case where transactions might be null, undefined, or not an array
+    if (!transactions) {
+      // console.log("Transactions is null/undefined");
+      setFilteredTransactions([]);
+      return;
+    }
+
+    // Handle case where API returns transactions wrapped in an object
+    let transactionArray = transactions;
+
+    // Check if transactions is an object with a data property (common API pattern)
+    if (
+      transactions &&
+      typeof transactions === "object" &&
+      !Array.isArray(transactions)
+    ) {
+      if (transactions.data && Array.isArray(transactions.data)) {
+        transactionArray = transactions.data;
+        // console.log("Found transactions in .data property:", transactionArray);
+      } else if (
+        transactions.transactions &&
+        Array.isArray(transactions.transactions)
+      ) {
+        transactionArray = transactions.transactions;
+        // console.log(
+        //   "Found transactions in .transactions property:",
+        //   transactionArray
+        // );
+      } else {
+        // console.log(
+        //   "Transactions object doesn't contain array data:",
+        //   transactions
+        // );
+        setFilteredTransactions([]);
+        return;
+      }
+    }
+
+    // Final safety check
+    if (!Array.isArray(transactionArray)) {
+      // console.log("Final check failed - not an array:", transactionArray);
+      setFilteredTransactions([]);
+      return;
+    }
+
+    let results = transactionArray;
 
     // Apply search term filter locally
     if (searchTerm) {
@@ -88,17 +139,58 @@ const AdminTransactions = () => {
       });
     }
 
+    // console.log("Final filtered results:", results);
     setFilteredTransactions(results);
     setCurrentPage(1); // Reset to first page when filters change
   }, [searchTerm, transactions]);
 
-  // Extract unique payment methods and statuses for filter dropdowns
-  const paymentMethods = transactions
-    ? [...new Set(transactions.map((t) => t.payment_method))]
-    : [];
-  const statuses = transactions
-    ? [...new Set(transactions.map((t) => t.status))]
-    : [];
+  // Extract unique payment methods and statuses for filter dropdowns - FIXED VERSION
+  const getTransactionArray = () => {
+    if (!transactions) return [];
+
+    if (Array.isArray(transactions)) {
+      return transactions;
+    }
+
+    // Handle API response wrapped in object
+    if (transactions.data && Array.isArray(transactions.data)) {
+      return transactions.data;
+    }
+
+    if (transactions.transactions && Array.isArray(transactions.transactions)) {
+      return transactions.transactions;
+    }
+
+    return [];
+  };
+
+  const transactionArray = getTransactionArray();
+
+  const paymentMethods =
+    transactionArray.length > 0
+      ? [
+          ...new Set(
+            transactionArray.map((t) => t.payment_method).filter(Boolean)
+          ),
+        ]
+      : [];
+
+  const statuses =
+    transactionArray.length > 0
+      ? [
+          ...new Set(
+            transactionArray
+              .map((t) => t.status || t.payment_status)
+              .filter(Boolean)
+          ),
+        ]
+      : [];
+
+  // console.log("Payment methods:", paymentMethods);
+  // console.log("Statuses:", statuses);
+
+  // Rest of your component code remains the same...
+  // [Include all the other functions and JSX as they were]
 
   // Handle CSV export
   const exportToCSV = () => {
@@ -118,7 +210,7 @@ const AdminTransactions = () => {
       t.event_id?.title || "Unknown Event",
       t.payment_method,
       new Date(t.createdAt).toISOString().split("T")[0],
-      t.status,
+      t.status || t.payment_status,
     ]);
 
     const csvContent = [

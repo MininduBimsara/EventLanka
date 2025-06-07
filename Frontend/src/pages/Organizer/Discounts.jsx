@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   PlusCircle,
@@ -15,24 +15,25 @@ import {
   updateDiscount,
   deleteDiscount,
   getEventDiscounts,
-} from "../../Redux/Thunks/organizerThunk"; // Adjust path as needed
-import { fetchEvents } from "../../Redux/Thunks/eventThunk"; // Import the action to fetch all events
-
+} from "../../Redux/Thunks/organizerThunk";
+import { fetchEvents } from "../../Redux/Thunks/eventThunk";
+import { useToast } from "../../components/Common/Notification/ToastContext"; // Updated import
 
 export default function Discounts() {
   const dispatch = useDispatch();
+  const toast = useToast();
 
-  // Access Organizer slice state
   const { discounts, isLoading, error } = useSelector(
     (state) => state.organizer
   );
 
-const events = useSelector((state) => state.events?.events || []);
-const loadingEvents = useSelector((state) => state.events?.loading);
+  const events = useSelector((state) => state.events?.events || []);
+  const loadingEvents = useSelector((state) => state.events?.loading);
 
   const [selectedEvent, setSelectedEvent] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [loadingState, setLoadingState] = useState(true); // Add this to track overall loading
+  const [loadingState, setLoadingState] = useState(true);
+  const [eventsInitialized, setEventsInitialized] = useState(false);
 
   const [formData, setFormData] = useState({
     code: "",
@@ -47,106 +48,136 @@ const loadingEvents = useSelector((state) => state.events?.loading);
     is_active: true,
   });
 
-  // Fetch all events when component mounts
+  // Memoize the first event ID to prevent unnecessary re-renders
+  const firstEventId = useMemo(() => {
+    return events?.length > 0 ? events[0]._id : null;
+  }, [events]);
+
+  // Fetch events only once when component mounts
   useEffect(() => {
-    setLoadingState(true);
-    dispatch(fetchEvents())
-      .unwrap()
-      .then(() => {
-        // Set loading state to false when events are loaded
-        if (!selectedEvent) {
+    let isMounted = true;
+
+    const fetchEventsData = async () => {
+      try {
+        setLoadingState(true);
+        await dispatch(fetchEvents()).unwrap();
+        if (isMounted) {
+          setEventsInitialized(true);
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        if (isMounted) {
+          toast.error("Failed to load events");
           setLoadingState(false);
         }
-      })
-      .catch((error) => {
-        console.error("Error fetching events:", error);
-        setLoadingState(false);
-      });
-  }, [dispatch]);
-
-  // Initialize with first event if available
-  useEffect(() => {
-    if (events?.length > 0 && !selectedEvent) {
-      setSelectedEvent(events[0]._id);
-    }
-  }, [events, selectedEvent]);
-
-  // Fetch discounts for the selected event
-  useEffect(() => {
-    if (selectedEvent) {
-      setLoadingState(true); // Set loading back to true when fetching discounts
-      dispatch(getEventDiscounts(selectedEvent))
-        .unwrap()
-        .then(() => {
-          setLoadingState(false); // Set loading to false when discounts are loaded
-        })
-        .catch((error) => {
-          console.error("Error fetching discounts:", error);
-          setLoadingState(false);
-        });
-    }
-  }, [selectedEvent, dispatch]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleToggleChange = (e) => {
-    const { name, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: checked,
-    });
-  };
-
-  const handleEventSelectionChange = (e) => {
-    const { value } = e.target;
-    setFormData({
-      ...formData,
-      applicable_events: [value],
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    // Validate if we have an event selected
-    if (!formData.applicable_events?.length) {
-      alert("Please select an event for this discount code");
-      return;
-    }
-
-    // Prepare data for API
-    const discountData = {
-      code: formData.code,
-      description: formData.description || "",
-      discount_type: formData.discount_type,
-      discount_value: parseFloat(formData.discount_value),
-      applicable_events: formData.applicable_events,
-      start_date: formData.start_date,
-      end_date: formData.end_date,
-      usage_limit: parseInt(formData.usage_limit) || 0,
-      minimum_purchase_amount: parseInt(formData.minimum_purchase_amount) || 0,
-      is_active: formData.is_active,
+      }
     };
 
-    dispatch(createDiscount(discountData))
-      .unwrap()
-      .then(() => {
-        resetForm();
-        dispatch(getEventDiscounts(selectedEvent)); // Refresh discounts list
-      })
-      .catch((error) => {
-        console.error("Error creating discount:", error);
-        // You might want to show an error message to the user
-      });
-  };
+    fetchEventsData();
 
-  const resetForm = () => {
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch, toast]);
+
+  // Set initial selected event only after events are loaded and initialized
+  useEffect(() => {
+    if (eventsInitialized && firstEventId && !selectedEvent) {
+      setSelectedEvent(firstEventId);
+    }
+  }, [eventsInitialized, firstEventId, selectedEvent]);
+
+  // Fetch discounts when selectedEvent changes
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDiscounts = async () => {
+      if (!selectedEvent) return;
+
+      try {
+        setLoadingState(true);
+        await dispatch(getEventDiscounts(selectedEvent)).unwrap();
+        if (isMounted) {
+          setLoadingState(false);
+        }
+      } catch (error) {
+        console.error("Error fetching discounts:", error);
+        if (isMounted) {
+          toast.error("Failed to load discounts");
+          setLoadingState(false);
+        }
+      }
+    };
+
+    fetchDiscounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedEvent, dispatch, toast]);
+
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }, []);
+
+  const handleToggleChange = useCallback((e) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: checked,
+    }));
+  }, []);
+
+  const handleEventSelectionChange = useCallback((e) => {
+    const { value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      applicable_events: [value],
+    }));
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+
+      if (!formData.applicable_events?.length) {
+        toast.warning("Please select an event for this discount code");
+        return;
+      }
+
+      const discountData = {
+        code: formData.code,
+        description: formData.description || "",
+        discount_type: formData.discount_type,
+        discount_value: parseFloat(formData.discount_value),
+        applicable_events: formData.applicable_events,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        usage_limit: parseInt(formData.usage_limit) || 0,
+        minimum_purchase_amount:
+          parseInt(formData.minimum_purchase_amount) || 0,
+        is_active: formData.is_active,
+      };
+
+      try {
+        await dispatch(createDiscount(discountData)).unwrap();
+        toast.success("Discount code created successfully!");
+        resetForm();
+        // Refresh the discounts list
+        await dispatch(getEventDiscounts(selectedEvent)).unwrap();
+      } catch (error) {
+        console.error("Error creating discount:", error);
+        toast.error("Failed to create discount code");
+      }
+    },
+    [formData, dispatch, toast, selectedEvent]
+  );
+
+  const resetForm = useCallback(() => {
     setFormData({
       code: "",
       discount_type: "percentage",
@@ -160,64 +191,84 @@ const loadingEvents = useSelector((state) => state.events?.loading);
       is_active: true,
     });
     setIsFormOpen(false);
-  };
+  }, []);
 
-  const toggleDiscountActive = (discountId, currentActive) => {
-    dispatch(
-      updateDiscount({
-        discountId,
-        discountData: { is_active: !currentActive },
-      })
-    )
-      .unwrap()
-      .then(() => {
-        dispatch(getEventDiscounts(selectedEvent)); // Refresh the list
-      })
-      .catch((error) => {
+  const toggleDiscountActive = useCallback(
+    async (discountId, currentActive) => {
+      try {
+        await dispatch(
+          updateDiscount({
+            discountId,
+            discountData: { is_active: !currentActive },
+          })
+        ).unwrap();
+
+        toast.success(
+          `Discount ${
+            !currentActive ? "activated" : "deactivated"
+          } successfully!`
+        );
+
+        // Refresh the list
+        await dispatch(getEventDiscounts(selectedEvent)).unwrap();
+      } catch (error) {
         console.error("Error toggling discount status:", error);
-      });
-  };
+        toast.error("Failed to update discount status");
+      }
+    },
+    [dispatch, toast, selectedEvent]
+  );
 
-  const handleDeleteDiscount = (discountId) => {
-    if (window.confirm("Are you sure you want to delete this discount code?")) {
-      dispatch(deleteDiscount(discountId))
-        .unwrap()
-        .then(() => {
-          dispatch(getEventDiscounts(selectedEvent)); // Refresh the list
-        })
-        .catch((error) => {
-          console.error("Error deleting discount:", error);
-        });
-    }
-  };
+  const handleDeleteDiscount = useCallback(
+    async (discountId) => {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this discount code?"
+      );
 
-  const duplicateDiscount = (discount) => {
-    // Create a copy with a new code
-    const newDiscount = {
-      ...discount,
-      code: `${discount.code}_COPY`,
-      // We don't include the id here as the backend will generate a new one
-    };
+      if (!confirmed) return;
 
-    delete newDiscount._id; // Remove the ID so the backend creates a new record
+      try {
+        await dispatch(deleteDiscount(discountId)).unwrap();
+        toast.success("Discount code deleted successfully!");
+        // Refresh the list
+        await dispatch(getEventDiscounts(selectedEvent)).unwrap();
+      } catch (error) {
+        console.error("Error deleting discount:", error);
+        toast.error("Failed to delete discount code");
+      }
+    },
+    [dispatch, toast, selectedEvent]
+  );
 
-    dispatch(createDiscount(newDiscount))
-      .unwrap()
-      .then(() => {
-        dispatch(getEventDiscounts(selectedEvent)); // Refresh the list
-      })
-      .catch((error) => {
+  const duplicateDiscount = useCallback(
+    async (discount) => {
+      const newDiscount = {
+        ...discount,
+        code: `${discount.code}_COPY`,
+      };
+
+      delete newDiscount._id;
+
+      try {
+        await dispatch(createDiscount(newDiscount)).unwrap();
+        toast.success("Discount code duplicated successfully!");
+        // Refresh the list
+        await dispatch(getEventDiscounts(selectedEvent)).unwrap();
+      } catch (error) {
         console.error("Error duplicating discount:", error);
-      });
-  };
+        toast.error("Failed to duplicate discount code");
+      }
+    },
+    [dispatch, toast, selectedEvent]
+  );
 
-  const formatValue = (discount) => {
+  const formatValue = useCallback((discount) => {
     return discount.discount_type === "percentage"
       ? `${discount.discount_value}%`
       : `$${discount.discount_value}`;
-  };
+  }, []);
 
-  const getStatusBadge = (discount) => {
+  const getStatusBadge = useCallback((discount) => {
     const now = new Date();
     const startDate = new Date(discount.start_date);
     const endDate = new Date(discount.end_date);
@@ -253,10 +304,15 @@ const loadingEvents = useSelector((state) => state.events?.loading);
         </span>
       );
     }
-  };
+  }, []);
+
+  // Handle event selection change with useCallback
+  const handleEventDropdownChange = useCallback((e) => {
+    setSelectedEvent(e.target.value);
+  }, []);
 
   // Render loading state for initial load
-  if (loadingState) {
+  if (loadingState && !eventsInitialized) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader className="w-8 h-8 text-blue-600 animate-spin" />
@@ -286,7 +342,7 @@ const loadingEvents = useSelector((state) => state.events?.loading);
           <div className="relative">
             <select
               value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
+              onChange={handleEventDropdownChange}
               className="w-full p-2 pr-8 text-gray-700 border border-gray-300 rounded-md appearance-none"
             >
               {events.map((event) => (
@@ -308,13 +364,6 @@ const loadingEvents = useSelector((state) => state.events?.loading);
         <div className="p-4 mb-6 text-yellow-700 bg-yellow-100 border border-yellow-200 rounded-md">
           No events found. Please create an event first before adding discount
           codes.
-        </div>
-      )}
-
-      {/* Error Message Display */}
-      {error && (
-        <div className="p-4 mb-6 text-red-700 bg-red-100 border border-red-200 rounded-md">
-          {error}
         </div>
       )}
 
@@ -517,137 +566,150 @@ const loadingEvents = useSelector((state) => state.events?.loading);
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
-                Code
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
-                Discount
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
-                Description
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
-                Validity
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
-                Usage
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {selectedEvent && discounts?.length > 0 ? (
-              discounts.map((discount) => (
-                <tr
-                  key={discount._id}
-                  className={!discount.is_active ? "bg-gray-50" : ""}
+      {loadingState && selectedEvent ? (
+        <div className="flex items-center justify-center h-32">
+          <Loader className="w-6 h-6 text-blue-600 animate-spin" />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">
-                      {discount.code}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold leading-5 text-blue-800 bg-blue-100 rounded-full">
-                      {formatValue(discount)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {discount.description || "No description"}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    <div>
-                      From: {new Date(discount.start_date).toLocaleDateString()}
-                    </div>
-                    <div>
-                      To: {new Date(discount.end_date).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {discount.usage_count} / {discount.usage_limit}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(discount)}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() =>
-                          toggleDiscountActive(discount._id, discount.is_active)
-                        }
-                        className={`p-1 rounded ${
-                          discount.is_active
-                            ? "text-red-600 hover:bg-red-100"
-                            : "text-green-600 hover:bg-green-100"
-                        }`}
-                        title={discount.is_active ? "Deactivate" : "Activate"}
-                      >
-                        {discount.is_active ? (
-                          <X size={16} />
-                        ) : (
-                          <Check size={16} />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => duplicateDiscount(discount)}
-                        className="p-1 text-blue-600 rounded hover:bg-blue-100"
-                        title="Duplicate"
-                      >
-                        <Copy size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDiscount(discount._id)}
-                        className="p-1 text-red-600 rounded hover:bg-red-100"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                  Code
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                >
+                  Discount
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                >
+                  Description
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                >
+                  Validity
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                >
+                  Usage
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {selectedEvent && discounts?.length > 0 ? (
+                discounts.map((discount) => (
+                  <tr
+                    key={discount._id}
+                    className={!discount.is_active ? "bg-gray-50" : ""}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">
+                        {discount.code}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold leading-5 text-blue-800 bg-blue-100 rounded-full">
+                        {formatValue(discount)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                      {discount.description || "No description"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                      <div>
+                        From:{" "}
+                        {new Date(discount.start_date).toLocaleDateString()}
+                      </div>
+                      <div>
+                        To: {new Date(discount.end_date).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                      {discount.usage_count} / {discount.usage_limit}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(discount)}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() =>
+                            toggleDiscountActive(
+                              discount._id,
+                              discount.is_active
+                            )
+                          }
+                          className={`p-1 rounded ${
+                            discount.is_active
+                              ? "text-red-600 hover:bg-red-100"
+                              : "text-green-600 hover:bg-green-100"
+                          }`}
+                          title={discount.is_active ? "Deactivate" : "Activate"}
+                        >
+                          {discount.is_active ? (
+                            <X size={16} />
+                          ) : (
+                            <Check size={16} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => duplicateDiscount(discount)}
+                          className="p-1 text-blue-600 rounded hover:bg-blue-100"
+                          title="Duplicate"
+                        >
+                          <Copy size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDiscount(discount._id)}
+                          className="p-1 text-red-600 rounded hover:bg-red-100"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan="7"
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
+                    {selectedEvent
+                      ? "No discount codes found for this event. Create one to get started."
+                      : "Please select an event to view discount codes."}
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
-                  {selectedEvent
-                    ? "No discount codes found for this event. Create one to get started."
-                    : "Please select an event to view discount codes."}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,10 +17,12 @@ import {
   fetchPaymentHistory,
   downloadReceipt,
 } from "../../Redux/Thunks/paymentThunks";
+import { useToast } from "../../components/Common/Notification/ToastContext";
 
 const MyTransactions = () => {
   // Use theme context
   const { darkMode, toggleTheme } = useTheme();
+  const toast = useToast();
 
   // Redux state and dispatch
   const dispatch = useDispatch();
