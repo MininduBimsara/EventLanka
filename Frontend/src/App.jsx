@@ -56,7 +56,7 @@ import Support from "./pages/User/HelpCenter";
 import MyBookings from "./pages/User/MyBookings";
 import Notifications from "./pages/User/Notifications";
 import MyTransactions from "./pages/User/MyTransactions";
-import MyReviews from "./pages/User/MyReviews";
+// import MyReviews from "./pages/User/MyReviews";
 
 
 import { ToastProvider } from "./components/Common/Notification/ToastContext";
@@ -155,7 +155,7 @@ function App() {
                 <Route path="mybookings" element={<MyBookings />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="transactions" element={<MyTransactions />} />
-                <Route path="myreviews" element={<MyReviews />} />
+                {/* <Route path="myreviews" element={<MyReviews />} /> */}
               </Route>
 
               {/* Redirect any unknown routes to home */}
