@@ -38,7 +38,7 @@ const corsOptions = {
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://accounts.google.com",
-    // "https://eventlanka-backend-hwbfgybfdtatb6a4.southeastasia-01.azurewebsites.net/",
+    "https://eventlanka.vercel.app",
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
