@@ -38,6 +38,7 @@ const corsOptions = {
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://accounts.google.com",
+    "https://eventlanka-backend-hwbfgybfdtatb6a4.southeastasia-01.azurewebsites.net/",
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -62,6 +63,10 @@ const corsOptions = {
     "Content-Length",
   ],
 };
+
+app.get("/", (req, res) => {
+  res.send("EventLanka Backend is running 🚀");
+});
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions)); // Handle preflight requests properly
