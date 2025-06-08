@@ -1,5 +1,5 @@
-// MyBookings.jsx - Updated to allow downloads only for completed orders
-import React, { useState, useEffect, useMemo } from "react";
+// MyBookings.jsx - Fixed version with proper error handling and loading states
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../../Context/ThemeContext";
 import {
@@ -30,87 +30,12 @@ const MyBookings = () => {
   const dispatch = useDispatch();
   const toast = useToast();
 
-  const { orders, loading, error } = useSelector((state) => state.orders);
-  const { qrCode, qrCodeLoading } = useSelector((state) => state.tickets);
+  const { orders, loading, error } = useSelector((state) => state.orders || {});
+  const { qrCode, qrCodeLoading } = useSelector((state) => state.tickets || {});
 
   // State for QR code modal
   const [qrCodeModal, setQrCodeModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
-
-  // Fetch orders when component mounts
-  useEffect(() => {
-    dispatch(fetchOrders())
-      .unwrap()
-      // eslint-disable-next-line no-unused-vars
-      .catch((error) => {
-        // console.error("Failed to fetch orders:", error);
-      });
-  }, [dispatch]);
-
-  // Format the orders data
-  const formattedOrders = useMemo(() => {
-    if (!orders || orders.length === 0) {
-      return [];
-    }
-
-    // First sort the orders by creation date (latest first)
-    const sortedOrders = [...orders].sort((a, b) => {
-      // Try to sort by order creation date first
-      const dateA = new Date(a.createdAt || a.created_at || a.order_date);
-      const dateB = new Date(b.createdAt || b.created_at || b.order_date);
-
-      // If creation dates are available, sort by them
-      if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
-        return dateB - dateA; // Latest first
-      }
-
-      // Fallback: sort by event date if creation date is not available
-      const firstTicketA =
-        a.tickets && a.tickets.length > 0 ? a.tickets[0] : null;
-      const firstTicketB =
-        b.tickets && b.tickets.length > 0 ? b.tickets[0] : null;
-      const eventDateA =
-        firstTicketA && firstTicketA.event_id
-          ? new Date(firstTicketA.event_id.date)
-          : new Date(0);
-      const eventDateB =
-        firstTicketB && firstTicketB.event_id
-          ? new Date(firstTicketB.event_id.date)
-          : new Date(0);
-
-      return eventDateB - eventDateA; // Latest first
-    });
-
-    return sortedOrders.map((order) => {
-      const firstTicket =
-        order.tickets && order.tickets.length > 0 ? order.tickets[0] : null;
-      const eventData =
-        firstTicket && firstTicket.event_id ? firstTicket.event_id : null;
-
-      return {
-        id: order.order_number || order._id,
-        orderId: order._id,
-        tickets: order.tickets || [],
-        eventName: eventData ? eventData.title : "Event",
-        date: eventData ? new Date(eventData.date).toLocaleDateString() : "TBD",
-        time: eventData
-          ? new Date(eventData.date).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "TBD",
-        location: eventData ? eventData.location : "TBD",
-        ticketType: firstTicket ? firstTicket.ticket_type : "Regular",
-        ticketCount: order.tickets ? order.tickets.length : 0,
-        amount: order.total_amount,
-        status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
-        imageUrl:
-          eventData && eventData.banner
-            ? eventData.banner
-            : "/api/placeholder/150/100",
-      };
-    });
-  }, [orders]);
 
   // Filter state
   const [filter, setFilter] = useState("all");
@@ -118,68 +43,220 @@ const MyBookings = () => {
   // Dropdown state for actions
   const [openActionMenu, setOpenActionMenu] = useState(null);
 
-  
+  // Component mounted state to prevent memory leaks
+  const [isMounted, setIsMounted] = useState(true);
 
-  // Cancel booking
-  const handleCancelBooking = (id) => {
-    if (window.confirm("Are you sure you want to cancel this booking?")) {
-      const orderToCancel = orders.find(
-        (order) => order.order_number === id || order._id === id
-      );
-      if (orderToCancel) {
-        dispatch(cancelOrder(orderToCancel._id));
+  // Fetch orders when component mounts or when navigating to this page
+  useEffect(() => {
+    setIsMounted(true);
+
+    const loadOrders = async () => {
+      try {
+        await dispatch(fetchOrders()).unwrap();
+      } catch (error) {
+        // console.error("Failed to fetch orders:", error);
+        if (isMounted && toast) {
+          toast.error("Failed to load bookings. Please try again.");
+        }
       }
-      setOpenActionMenu(null);
-    }
-  };
+    };
 
-  // Show QR code modal
-  const handleShowQRCode = (ticket) => {
-    setSelectedTicket(ticket);
-    dispatch(generateTicketQRCode(ticket._id))
-      .unwrap()
-      .then(() => {
-        setQrCodeModal(true);
-      })
-      .catch((error) => {
-        console.error("Failed to generate QR code:", error);
-        toast.error("Failed to generate QR code. Please try again.");
+    loadOrders();
+
+    // Cleanup function
+    return () => {
+      setIsMounted(false);
+    };
+  }, [dispatch, toast]);
+
+  // Close action menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openActionMenu && !event.target.closest(".action-menu-container")) {
+        setOpenActionMenu(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openActionMenu]);
+
+  // Format the orders data with better error handling
+  const formattedOrders = useMemo(() => {
+    if (!orders || !Array.isArray(orders) || orders.length === 0) {
+      return [];
+    }
+
+    try {
+      // First sort the orders by creation date (latest first)
+      const sortedOrders = [...orders].sort((a, b) => {
+        // Try to sort by order creation date first
+        const dateA = new Date(a.createdAt || a.created_at || a.order_date);
+        const dateB = new Date(b.createdAt || b.created_at || b.order_date);
+
+        // If creation dates are available, sort by them
+        if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+          return dateB - dateA; // Latest first
+        }
+
+        // Fallback: sort by event date if creation date is not available
+        const firstTicketA =
+          a.tickets && a.tickets.length > 0 ? a.tickets[0] : null;
+        const firstTicketB =
+          b.tickets && b.tickets.length > 0 ? b.tickets[0] : null;
+        const eventDateA =
+          firstTicketA && firstTicketA.event_id
+            ? new Date(firstTicketA.event_id.date)
+            : new Date(0);
+        const eventDateB =
+          firstTicketB && firstTicketB.event_id
+            ? new Date(firstTicketB.event_id.date)
+            : new Date(0);
+
+        return eventDateB - eventDateA; // Latest first
       });
-    setOpenActionMenu(null);
-  };
 
-  // Download ticket - only for completed orders
-  const handleDownloadTicket = (ticketId, orderStatus) => {
-    if (orderStatus.toLowerCase() !== "completed") {
-      toast.info("Tickets can only be downloaded for completed orders.");
-      return;
+      return sortedOrders.map((order) => {
+        const firstTicket =
+          order.tickets && order.tickets.length > 0 ? order.tickets[0] : null;
+        const eventData =
+          firstTicket && firstTicket.event_id ? firstTicket.event_id : null;
+
+        return {
+          id: order.order_number || order._id,
+          orderId: order._id,
+          tickets: order.tickets || [],
+          eventName: eventData ? eventData.title : "Event",
+          date: eventData
+            ? new Date(eventData.date).toLocaleDateString()
+            : "TBD",
+          time: eventData
+            ? new Date(eventData.date).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "TBD",
+          location: eventData ? eventData.location : "TBD",
+          ticketType: firstTicket ? firstTicket.ticket_type : "Regular",
+          ticketCount: order.tickets ? order.tickets.length : 0,
+          amount: order.total_amount || 0,
+          status: order.status
+            ? order.status.charAt(0).toUpperCase() + order.status.slice(1)
+            : "Unknown",
+          imageUrl:
+            eventData && eventData.banner
+              ? eventData.banner
+              : "/api/placeholder/150/100",
+        };
+      });
+    } catch (error) {
+      // console.error("Error formatting orders:", error);
+      return [];
     }
-    dispatch(downloadTicketPDF(ticketId));
-    toast.success("Ticket downloaded successfully!");
-    setOpenActionMenu(null);
-  };
+  }, [orders]);
 
-
+  // Filter bookings with error handling
   const filteredBookings = useMemo(() => {
-    return formattedOrders.filter((booking) => {
-      if (filter === "all") return true;
-      return booking.status.toLowerCase() === filter.toLowerCase();
-    });
+    try {
+      return formattedOrders.filter((booking) => {
+        if (filter === "all") return true;
+        return booking.status.toLowerCase() === filter.toLowerCase();
+      });
+    } catch (error) {
+      // console.error("Error filtering bookings:", error);
+      return [];
+    }
   }, [formattedOrders, filter]);
 
+  // Cancel booking with better error handling
+  const handleCancelBooking = useCallback(
+    async (id) => {
+      if (window.confirm("Are you sure you want to cancel this booking?")) {
+        try {
+          const orderToCancel = orders.find(
+            (order) => order.order_number === id || order._id === id
+          );
+          if (orderToCancel) {
+            await dispatch(cancelOrder(orderToCancel._id)).unwrap();
+            if (isMounted && toast) {
+              toast.success("Booking cancelled successfully!");
+            }
+          }
+          setOpenActionMenu(null);
+        } catch (error) {
+          // console.error("Failed to cancel booking:", error);
+          if (isMounted && toast) {
+            toast.error("Failed to cancel booking. Please try again.");
+          }
+        }
+      }
+    },
+    [orders, dispatch, toast, isMounted]
+  );
+
+  // Show QR code modal with better error handling
+  const handleShowQRCode = useCallback(
+    async (ticket) => {
+      if (!ticket || !ticket._id) {
+        toast?.error("Invalid ticket data.");
+        return;
+      }
+
+      try {
+        setSelectedTicket(ticket);
+        await dispatch(generateTicketQRCode(ticket._id)).unwrap();
+        setQrCodeModal(true);
+        setOpenActionMenu(null);
+      } catch (error) {
+        // console.error("Failed to generate QR code:", error);
+        if (isMounted && toast) {
+          toast.error("Failed to generate QR code. Please try again.");
+        }
+      }
+    },
+    [dispatch, toast, isMounted]
+  );
+
+  // Download ticket with better error handling
+  const handleDownloadTicket = useCallback(
+    async (ticketId, orderStatus) => {
+      if (!ticketId) {
+        toast?.error("Invalid ticket ID.");
+        return;
+      }
+
+      if (orderStatus.toLowerCase() !== "completed") {
+        toast?.info("Tickets can only be downloaded for completed orders.");
+        return;
+      }
+
+      try {
+        await dispatch(downloadTicketPDF(ticketId)).unwrap();
+        if (isMounted && toast) {
+          toast.success("Ticket downloaded successfully!");
+        }
+        setOpenActionMenu(null);
+      } catch (error) {
+        // console.error("Failed to download ticket:", error);
+        if (isMounted && toast) {
+          toast.error("Failed to download ticket. Please try again.");
+        }
+      }
+    },
+    [dispatch, toast, isMounted]
+  );
+
   // Toggle action menu
-  const toggleActionMenu = (id) => {
-    if (openActionMenu === id) {
-      setOpenActionMenu(null);
-    } else {
-      setOpenActionMenu(id);
-    }
-  };
+  const toggleActionMenu = useCallback((id) => {
+    setOpenActionMenu((prevId) => (prevId === id ? null : id));
+  }, []);
 
   // Check if download is allowed for the order
-  const isDownloadAllowed = (orderStatus) => {
-    return orderStatus.toLowerCase() === "completed";
-  };
+  const isDownloadAllowed = useCallback((orderStatus) => {
+    return orderStatus && orderStatus.toLowerCase() === "completed";
+  }, []);
 
   // Theme-based classes
   const themeClasses = {
@@ -206,6 +283,36 @@ const MyBookings = () => {
       : "bg-red-100 text-red-800",
     modalBg: darkMode ? "bg-gray-800" : "bg-white",
   };
+
+  // If there's a critical error, show error boundary
+  if (error && typeof error === "string" && error.includes("Network Error")) {
+    return (
+      <>
+        <UserNavbar />
+        <div
+          className={`container px-4 pt-20 pb-16 mx-auto ${themeClasses.background} ${themeClasses.text} min-h-screen`}
+        >
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="p-8 text-center bg-red-50 dark:bg-red-900/20 rounded-xl">
+              <h2 className="mb-4 text-2xl font-bold text-red-600 dark:text-red-400">
+                Connection Error
+              </h2>
+              <p className="mb-6 text-red-600 dark:text-red-300">
+                Unable to load your bookings. Please check your internet
+                connection.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -236,46 +343,21 @@ const MyBookings = () => {
 
         {/* Filter tabs */}
         <div className="flex pb-1 mb-8 space-x-1 overflow-x-auto md:space-x-4">
-          <button
-            onClick={() => setFilter("all")}
-            className={`pb-2 px-4 font-medium transition ${
-              filter === "all"
-                ? `border-b-2 ${themeClasses.activeTabBorder} ${themeClasses.activeTabText}`
-                : themeClasses.inactiveTabText
-            }`}
-          >
-            All Bookings
-          </button>
-          <button
-            onClick={() => setFilter("pending")}
-            className={`pb-2 px-4 font-medium transition ${
-              filter === "pending"
-                ? `border-b-2 ${themeClasses.activeTabBorder} ${themeClasses.activeTabText}`
-                : themeClasses.inactiveTabText
-            }`}
-          >
-            Upcoming
-          </button>
-          <button
-            onClick={() => setFilter("completed")}
-            className={`pb-2 px-4 font-medium transition ${
-              filter === "completed"
-                ? `border-b-2 ${themeClasses.activeTabBorder} ${themeClasses.activeTabText}`
-                : themeClasses.inactiveTabText
-            }`}
-          >
-            Completed
-          </button>
-          <button
-            onClick={() => setFilter("cancelled")}
-            className={`pb-2 px-4 font-medium transition ${
-              filter === "cancelled"
-                ? `border-b-2 ${themeClasses.activeTabBorder} ${themeClasses.activeTabText}`
-                : themeClasses.inactiveTabText
-            }`}
-          >
-            Cancelled
-          </button>
+          {["all", "pending", "completed", "cancelled"].map((filterOption) => (
+            <button
+              key={filterOption}
+              onClick={() => setFilter(filterOption)}
+              className={`pb-2 px-4 font-medium transition whitespace-nowrap ${
+                filter === filterOption
+                  ? `border-b-2 ${themeClasses.activeTabBorder} ${themeClasses.activeTabText}`
+                  : themeClasses.inactiveTabText
+              }`}
+            >
+              {filterOption === "all"
+                ? "All Bookings"
+                : filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+            </button>
+          ))}
         </div>
 
         {/* Loading state */}
@@ -286,9 +368,20 @@ const MyBookings = () => {
         )}
 
         {/* Error state */}
-        {error && (
-          <div className={`p-4 mb-6 text-white bg-red-500 rounded-lg`}>
-            <p>Error: {error}</p>
+        {error && !loading && (
+          <div className="p-4 mb-6 text-white bg-red-500 rounded-lg">
+            <p>
+              Error:{" "}
+              {typeof error === "string"
+                ? error
+                : "An unexpected error occurred"}
+            </p>
+            <button
+              onClick={() => dispatch(fetchOrders())}
+              className="px-4 py-2 mt-2 text-red-500 bg-white rounded hover:bg-gray-100"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -306,7 +399,10 @@ const MyBookings = () => {
                 ? "You haven't made any bookings yet."
                 : `You don't have any ${filter} bookings.`}
             </p>
-            <button className="px-5 py-2 mt-6 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700">
+            <button
+              onClick={() => (window.location.href = "/events")}
+              className="px-5 py-2 mt-6 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+            >
               Browse Events
             </button>
           </div>
@@ -326,6 +422,9 @@ const MyBookings = () => {
                         src={booking.imageUrl}
                         alt={booking.eventName}
                         className="object-cover w-full h-48 lg:h-full"
+                        onError={(e) => {
+                          e.target.src = "/api/placeholder/150/100";
+                        }}
                       />
                       <div className="absolute top-0 left-0 p-3">
                         <span
@@ -349,7 +448,7 @@ const MyBookings = () => {
                           <h3 className="text-xl font-bold">
                             {booking.eventName}
                           </h3>
-                          <div className="relative">
+                          <div className="relative action-menu-container">
                             <button
                               onClick={() => toggleActionMenu(booking.id)}
                               className="p-2 transition rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -543,6 +642,10 @@ const MyBookings = () => {
                       src={qrCode}
                       alt="Ticket QR Code"
                       className="w-64 h-64 border-2 border-gray-200 rounded-lg"
+                      onError={(e) => {
+                        // console.error("QR Code image failed to load");
+                        e.target.style.display = "none";
+                      }}
                     />
                   </div>
                 )}
