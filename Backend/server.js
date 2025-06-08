@@ -73,7 +73,19 @@ app.options("*", cors(corsOptions)); // Handle preflight requests properly
 
 // Additional CORS middleware for file downloads
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://accounts.google.com",
+    "https://eventlanka.vercel.app",
+    "https://your-actual-vercel-domain.vercel.app", // Add your actual domain
+  ];
+
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
@@ -98,9 +110,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     },
   })
