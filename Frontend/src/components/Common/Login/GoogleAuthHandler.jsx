@@ -1,4 +1,4 @@
-// 4. Google Auth Handler Component (components/GoogleAuthHandler.jsx)
+// 4. Google Auth Handler Component (components/GoogleAuthHandler.jsx) - Updated with responsive design
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { googleAuth } from "../../../Redux/Thunks/googleAuththunks";
@@ -50,29 +50,22 @@ const GoogleAuthHandler = ({ activeForm, onSuccess, onError }) => {
           "google-signin-button-login",
           "google-signin-button-register",
         ];
-        const buttonConfigs = [
-          {
-            theme: "outline",
-            size: "large",
-            text: "signin_with",
-            width: 270,
-            type: "standard",
-          },
-          {
-            theme: "outline",
-            size: "large",
-            text: "signup_with",
-            width: 270,
-            type: "standard",
-          },
-        ];
+
+        // Responsive button configurations
+        const getButtonConfig = (isRegister) => ({
+          theme: "outline",
+          size: "large",
+          text: isRegister ? "signup_with" : "signin_with",
+          width: window.innerWidth < 640 ? 250 : 300, // Responsive width
+          type: "standard",
+        });
 
         buttonIds.forEach((id, index) => {
           const element = document.getElementById(id);
           if (element) {
             window.google.accounts.id.renderButton(
               element,
-              buttonConfigs[index]
+              getButtonConfig(index === 1)
             );
           }
         });
@@ -119,17 +112,17 @@ const GoogleAuthHandler = ({ activeForm, onSuccess, onError }) => {
   }, [isGoogleInitialized]);
 
   return (
-    <>
+    <div className="w-full">
       <div
         id={`google-signin-button-${activeForm}`}
-        className="flex justify-center my-4"
+        className="flex justify-center w-full my-4"
       ></div>
       <div className="flex items-center my-4">
         <div className="flex-grow border-t border-gray-300"></div>
         <span className="px-4 text-sm text-gray-500">OR</span>
         <div className="flex-grow border-t border-gray-300"></div>
       </div>
-    </>
+    </div>
   );
 };
 

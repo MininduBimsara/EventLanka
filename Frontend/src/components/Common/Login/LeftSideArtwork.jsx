@@ -1,11 +1,11 @@
-// 2. Left Side Artwork Component (components/LeftSideArtwork.jsx)
+// 2. Left Side Artwork Component (components/LeftSideArtwork.jsx) - Updated with responsive design
 import React from "react";
 import { loginUser } from "../../../Redux/Thunks/authThunks";
 import loginImg from "../../../assets/login.png";
 
 const LeftSideArtwork = ({ activeForm }) => {
   return (
-    <div className="relative hidden overflow-hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-l-2xl">
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 rounded-l-2xl">
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-center bg-no-repeat bg-cover"
@@ -17,29 +17,29 @@ const LeftSideArtwork = ({ activeForm }) => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full p-12 text-white">
-        <div className="mb-8 text-center">
-          <h2 className="mb-4 text-4xl font-bold">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full p-8 text-white lg:p-12">
+        <div className="mb-6 text-center lg:mb-8">
+          <h2 className="mb-4 text-3xl font-bold lg:text-4xl xl:text-5xl">
             {activeForm === "login" ? "Welcome Back!" : "Join EventLanka"}
           </h2>
-          <p className="mb-8 text-xl text-blue-100">
+          <p className="text-lg leading-relaxed text-blue-100 lg:text-xl xl:text-2xl">
             {activeForm === "login"
               ? "Login to EventLanka & get going with your hustle!"
               : "Create your account and start your journey"}
           </p>
         </div>
 
-        <div className="space-y-4 text-left">
+        <div className="w-full max-w-md space-y-3 text-left lg:space-y-4">
           {[
             "Discover trending events near you",
             "Easy ticket booking & management",
             "Host your own events & conferences",
           ].map((feature, index) => (
             <div key={index} className="flex items-center text-blue-100">
-              <div className="flex items-center justify-center w-6 h-6 mr-3 rounded-full bg-white/20">
+              <div className="flex items-center justify-center flex-shrink-0 w-5 h-5 mr-3 rounded-full lg:w-6 lg:h-6 bg-white/20">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4"
+                  className="w-3 h-3 lg:w-4 lg:h-4"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -52,7 +52,7 @@ const LeftSideArtwork = ({ activeForm }) => {
                   />
                 </svg>
               </div>
-              {feature}
+              <span className="text-sm lg:text-base">{feature}</span>
             </div>
           ))}
         </div>

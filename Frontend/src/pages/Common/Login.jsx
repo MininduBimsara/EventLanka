@@ -1,4 +1,4 @@
-// 1. Main Login Container (Login.jsx)
+// 1. Main Login Container (Login.jsx) - Updated with responsive design
 import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Common/Navbar";
 import { useDispatch, useSelector } from "react-redux";
@@ -117,32 +117,43 @@ const LoginRegistrationUI = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      {/* Navbar with fixed positioning to prevent overlap */}
+      <div className="relative z-50">
+        <Navbar />
+      </div>
 
-      {/* New Card-style Layout */}
-      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="w-full max-w-6xl overflow-hidden bg-white shadow-2xl rounded-2xl">
-          <div className="flex min-h-[600px]">
-            <LeftSideArtwork activeForm={activeForm} />
+      {/* Main content area with proper spacing from navbar */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-[calc(100vh-80px)]">
+        <div className="w-full mx-auto max-w-7xl">
+          {/* Responsive card container */}
+          <div className="bg-white shadow-2xl rounded-2xl overflow-hidden min-h-[70vh] max-h-[90vh] flex flex-col lg:flex-row">
+            {/* Left side artwork - responsive sizing */}
+            <div className="hidden lg:flex lg:w-[45%] xl:w-[50%]">
+              <LeftSideArtwork activeForm={activeForm} />
+            </div>
 
-            <div className="flex items-center justify-center w-full p-12 md:w-1/2">
-              <div className="w-full max-w-md">
-                <div className="mb-8 text-center">
-                  <h1 className="mb-2 text-3xl font-bold text-gray-800">
+            {/* Right side form - responsive sizing */}
+            <div className="flex-1 lg:w-[55%] xl:w-[50%] flex items-center justify-center p-6 sm:p-8 lg:p-12">
+              <div className="w-full max-w-lg">
+                {/* Header section */}
+                <div className="mb-6 text-center lg:mb-8">
+                  <h1 className="mb-2 text-2xl font-bold text-gray-800 sm:text-3xl">
                     {activeForm === "login" ? "Login" : "Create Account"}
                   </h1>
-                  <p className="text-gray-600">
+                  <p className="text-sm text-gray-600 sm:text-base">
                     {activeForm === "login"
                       ? "Welcome back! Please sign in to your account"
                       : "Fill up the form to create your account"}
                   </p>
                 </div>
 
+                {/* Messages */}
                 <MessageDisplay
                   successMessage={successMessage}
                   errorMessage={errorMessage}
                 />
 
+                {/* Google Auth */}
                 <GoogleAuthHandler
                   activeForm={activeForm}
                   onSuccess={() => {
@@ -152,28 +163,31 @@ const LoginRegistrationUI = () => {
                   onError={(error) => setErrorMessage(error)}
                 />
 
-                {activeForm === "login" ? (
-                  <LoginForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    formErrors={formErrors}
-                    setFormErrors={setFormErrors}
-                    onSubmit={handleLoginSubmit}
-                    onSwitchForm={() => switchForm("register")}
-                    navigate={navigate}
-                  />
-                ) : (
-                  <RegistrationForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    formErrors={formErrors}
-                    setFormErrors={setFormErrors}
-                    imagePreview={imagePreview}
-                    setImagePreview={setImagePreview}
-                    onSubmit={handleRegistrationSubmit}
-                    onSwitchForm={() => switchForm("login")}
-                  />
-                )}
+                {/* Forms */}
+                <div className="overflow-y-auto max-h-[60vh] lg:max-h-none">
+                  {activeForm === "login" ? (
+                    <LoginForm
+                      formData={formData}
+                      setFormData={setFormData}
+                      formErrors={formErrors}
+                      setFormErrors={setFormErrors}
+                      onSubmit={handleLoginSubmit}
+                      onSwitchForm={() => switchForm("register")}
+                      navigate={navigate}
+                    />
+                  ) : (
+                    <RegistrationForm
+                      formData={formData}
+                      setFormData={setFormData}
+                      formErrors={formErrors}
+                      setFormErrors={setFormErrors}
+                      imagePreview={imagePreview}
+                      setImagePreview={setImagePreview}
+                      onSubmit={handleRegistrationSubmit}
+                      onSwitchForm={() => switchForm("login")}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
