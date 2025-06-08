@@ -1,4 +1,4 @@
-// 8. Password Strength Indicator Component (components/PasswordStrengthIndicator.jsx)
+// 8. Password Strength Indicator Component (components/PasswordStrengthIndicator.jsx) - Simplified version
 import React from "react";
 
 const PasswordStrengthIndicator = ({ strength }) => {
@@ -46,34 +46,20 @@ const PasswordStrengthIndicator = ({ strength }) => {
     <div className="mt-2">
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs text-gray-600">Password strength:</span>
-        <span
-          className={`text-xs font-medium ${getTextColor(strength.label)}`}
-        >
+        <span className={`text-xs font-medium ${getTextColor(strength.label)}`}>
           {strength.label}
         </span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-1.5">
         <div
-          className={`h-1.5 rounded-full transition-all duration-300`}
-          style={{ 
+          className={`h-1.5 rounded-full transition-all duration-300 ${
+            strength.label !== "Good" ? getStrengthColor(strength.label) : ""
+          }`}
+          style={{
             width: `${strength.percentage}%`,
-            backgroundColor: strength.label === "Good" ? "#1F40AF" : undefined
+            backgroundColor: strength.label === "Good" ? "#1F40AF" : undefined,
           }}
-          className={strength.label !== "Good" ? `h-1.5 rounded-full transition-all duration-300 ${getStrengthColor(strength.label)}` : "h-1.5 rounded-full transition-all duration-300"}
         ></div>
-      </div>
-      <div className="mt-1 text-xs text-gray-500">
-        {strength.requirements.map((req, index) => (
-          <div
-            key={index}
-            className={`flex items-center ${
-              req.test ? "text-green-600" : "text-gray-400"
-            }`}
-          >
-            <span className="mr-1">{req.test ? "✓" : "○"}</span>
-            {req.label}
-          </div>
-        ))}
       </div>
     </div>
   );
