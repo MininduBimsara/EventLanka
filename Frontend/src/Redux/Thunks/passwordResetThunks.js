@@ -1,11 +1,9 @@
+// Redux/Thunks/passwordResetThunks.js - Hybrid approach
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import {
-  sendPasswordReset,
-  confirmPasswordReset as firebaseConfirmPasswordReset,
-  verifyResetCode,
-} from "../../firebase/authService";
+import { sendPasswordReset } from "../../firebase/authService";
+import { passwordResetApiService } from "../../Api/Common/passwordResetApi";
 
-// Async thunk for requesting password reset using Firebase
+// Use Firebase for sending email
 export const forgotPassword = createAsyncThunk(
   "passwordReset/forgotPassword",
   async (email, { rejectWithValue }) => {
@@ -18,25 +16,28 @@ export const forgotPassword = createAsyncThunk(
   }
 );
 
-// Async thunk for verifying reset token (oobCode) using Firebase
+// Use backend for verifying token
 export const verifyResetToken = createAsyncThunk(
   "passwordReset/verifyResetToken",
-  async (oobCode, { rejectWithValue }) => {
+  async (token, { rejectWithValue }) => {
     try {
-      const email = await verifyResetCode(oobCode);
-      return { email, valid: true };
+      const result = await passwordResetApiService.verifyResetToken(token);
+      return { valid: true, message: result.message };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk for resetting password using Firebase
+// Use backend for resetting password
 export const resetPassword = createAsyncThunk(
   "passwordReset/resetPassword",
   async ({ token, password }, { rejectWithValue }) => {
     try {
-      const result = await firebaseConfirmPasswordReset(token, password);
+      const result = await passwordResetApiService.resetPassword(
+        token,
+        password
+      );
       return result;
     } catch (error) {
       return rejectWithValue(error.message);

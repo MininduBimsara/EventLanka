@@ -1,3 +1,4 @@
+// Repository/UserRepository.js - Add findOne method
 const User = require("../models/User");
 
 /**
@@ -20,6 +21,15 @@ class UserRepository {
    */
   async findById(userId) {
     return await User.findById(userId);
+  }
+
+  /**
+   * Find one user by query
+   * @param {Object} query - MongoDB query object
+   * @returns {Object|null} User document or null
+   */
+  async findOne(query) {
+    return await User.findOne(query);
   }
 
   /**
