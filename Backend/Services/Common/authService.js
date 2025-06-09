@@ -1,5 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { signInWithEmailAndPassword } = require("firebase/auth");
+const { auth } = require("../../firebase/config");
 
 // Import repositories
 const UserRepository = require("../../Repository/UserRepository");

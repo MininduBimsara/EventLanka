@@ -1,124 +1,124 @@
-// passwordResetService.js - Fixed to use correct repositories
-const UserRepository = require("../../Repository/UserRepository");
-const AuthRepository = require("../../Repository/AuthRepository"); // Add this import
-const crypto = require("crypto");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { sendPasswordResetEmail } = require("../emailService");
+// // passwordResetService.js - Fixed to use correct repositories
+// const UserRepository = require("../../Repository/UserRepository");
+// const AuthRepository = require("../../Repository/AuthRepository"); // Add this import
+// const crypto = require("crypto");
+// const bcrypt = require("bcryptjs");
+// const jwt = require("jsonwebtoken");
+// const { sendPasswordResetEmail } = require("../emailService");
 
-/**
- * Request a password reset email
- * @param {string} email - User's email address
- * @returns {Promise<Object>} - Response message
- */
-const requestPasswordReset = async (email) => {
-  if (!email) {
-    throw new Error("Email is required");
-  }
+// /**
+//  * Request a password reset email
+//  * @param {string} email - User's email address
+//  * @returns {Promise<Object>} - Response message
+//  */
+// const requestPasswordReset = async (email) => {
+//   if (!email) {
+//     throw new Error("Email is required");
+//   }
 
-  // Use UserRepository to find user by email
-  const user = await UserRepository.findByEmail(email);
+//   // Use UserRepository to find user by email
+//   const user = await UserRepository.findByEmail(email);
 
-  if (!user) {
-    return {
-      message:
-        "If that email exists in our system, a password reset link has been sent.",
-    };
-  }
+//   if (!user) {
+//     return {
+//       message:
+//         "If that email exists in our system, a password reset link has been sent.",
+//     };
+//   }
 
-  // Generate and hash token
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
+//   // Generate and hash token
+//   const resetToken = crypto.randomBytes(32).toString("hex");
+//   const hashedToken = crypto
+//     .createHash("sha256")
+//     .update(resetToken)
+//     .digest("hex");
 
-  // Use AuthRepository to update reset token
-  const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-  await AuthRepository.updateResetToken(user._id, hashedToken, tokenExpiry);
+//   // Use AuthRepository to update reset token
+//   const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+//   await AuthRepository.updateResetToken(user._id, hashedToken, tokenExpiry);
 
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+//   const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-  try {
-    await sendPasswordResetEmail(user.email, resetUrl);
-    return {
-      message:
-        "If that email exists in our system, a password reset link has been sent.",
-    };
-  } catch (error) {
-    // Clear tokens in case of email failure using AuthRepository
-    await AuthRepository.clearResetToken(user._id);
-    throw new Error("Could not send email. Please try again.");
-  }
-};
+//   try {
+//     await sendPasswordResetEmail(user.email, resetUrl);
+//     return {
+//       message:
+//         "If that email exists in our system, a password reset link has been sent.",
+//     };
+//   } catch (error) {
+//     // Clear tokens in case of email failure using AuthRepository
+//     await AuthRepository.clearResetToken(user._id);
+//     throw new Error("Could not send email. Please try again.");
+//   }
+// };
 
-/**
- * Verify a password reset token
- * @param {string} token - Reset token
- * @returns {Promise<Object>} - Response message
- */
-const verifyToken = async (token) => {
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+// /**
+//  * Verify a password reset token
+//  * @param {string} token - Reset token
+//  * @returns {Promise<Object>} - Response message
+//  */
+// const verifyToken = async (token) => {
+//   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  // Use AuthRepository to find user with reset token
-  const user = await AuthRepository.findByResetToken(hashedToken);
+//   // Use AuthRepository to find user with reset token
+//   const user = await AuthRepository.findByResetToken(hashedToken);
 
-  if (!user) {
-    throw new Error("Password reset token is invalid or has expired");
-  }
+//   if (!user) {
+//     throw new Error("Password reset token is invalid or has expired");
+//   }
 
-  return { message: "Token is valid" };
-};
+//   return { message: "Token is valid" };
+// };
 
-/**
- * Reset user password with valid token
- * @param {string} token - Reset token
- * @param {string} password - New password
- * @returns {Promise<Object>} - User data and JWT token
- */
-const resetUserPassword = async (token, password) => {
-  if (!password) {
-    throw new Error("Password is required");
-  }
+// /**
+//  * Reset user password with valid token
+//  * @param {string} token - Reset token
+//  * @param {string} password - New password
+//  * @returns {Promise<Object>} - User data and JWT token
+//  */
+// const resetUserPassword = async (token, password) => {
+//   if (!password) {
+//     throw new Error("Password is required");
+//   }
 
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+//   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  // Use AuthRepository to find user with reset token
-  const user = await AuthRepository.findByResetToken(hashedToken);
+//   // Use AuthRepository to find user with reset token
+//   const user = await AuthRepository.findByResetToken(hashedToken);
 
-  if (!user) {
-    throw new Error("Password reset token is invalid or has expired");
-  }
+//   if (!user) {
+//     throw new Error("Password reset token is invalid or has expired");
+//   }
 
-  // Hash new password and update using AuthRepository
-  const hashedPassword = await bcrypt.hash(password, 10);
-  await AuthRepository.updatePassword(user._id, hashedPassword);
-  await AuthRepository.clearResetToken(user._id);
+//   // Hash new password and update using AuthRepository
+//   const hashedPassword = await bcrypt.hash(password, 10);
+//   await AuthRepository.updatePassword(user._id, hashedPassword);
+//   await AuthRepository.clearResetToken(user._id);
 
-  // Generate JWT
-  const loginToken = jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" }
-  );
+//   // Generate JWT
+//   const loginToken = jwt.sign(
+//     { id: user._id, role: user.role },
+//     process.env.JWT_SECRET,
+//     { expiresIn: "1d" }
+//   );
 
-  return {
-    message: "Password has been reset successfully",
-    token: loginToken,
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      profileImage: user.profileImage
-        ? `/profile-images/${user.profileImage}`
-        : null,
-    },
-  };
-};
+//   return {
+//     message: "Password has been reset successfully",
+//     token: loginToken,
+//     user: {
+//       id: user._id,
+//       username: user.username,
+//       email: user.email,
+//       role: user.role,
+//       profileImage: user.profileImage
+//         ? `/profile-images/${user.profileImage}`
+//         : null,
+//     },
+//   };
+// };
 
-module.exports = {
-  requestPasswordReset,
-  verifyToken,
-  resetUserPassword,
-};
+// module.exports = {
+//   requestPasswordReset,
+//   verifyToken,
+//   resetUserPassword,
+// };

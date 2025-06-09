@@ -1,46 +1,45 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { passwordResetApiService } from "../../Api/Common/passwordResetApi";
+import {
+  sendPasswordReset,
+  confirmPasswordReset as firebaseConfirmPasswordReset,
+  verifyResetCode,
+} from "../../firebase/authService";
 
-// Async thunk for requesting password reset
+// Async thunk for requesting password reset using Firebase
 export const forgotPassword = createAsyncThunk(
   "passwordReset/forgotPassword",
   async (email, { rejectWithValue }) => {
     try {
-      return await passwordResetApiService.forgotPassword(email);
+      const result = await sendPasswordReset(email);
+      return result;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message ||
-          "Something went wrong. Please try again."
-      );
+      return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk for verifying reset token
+// Async thunk for verifying reset token (oobCode) using Firebase
 export const verifyResetToken = createAsyncThunk(
   "passwordReset/verifyResetToken",
-  async (token, { rejectWithValue }) => {
+  async (oobCode, { rejectWithValue }) => {
     try {
-      return await passwordResetApiService.verifyResetToken(token);
+      const email = await verifyResetCode(oobCode);
+      return { email, valid: true };
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Invalid or expired reset token."
-      );
+      return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk for resetting password
+// Async thunk for resetting password using Firebase
 export const resetPassword = createAsyncThunk(
   "passwordReset/resetPassword",
   async ({ token, password }, { rejectWithValue }) => {
     try {
-      return await passwordResetApiService.resetPassword(token, password);
+      const result = await firebaseConfirmPasswordReset(token, password);
+      return result;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message ||
-          "Failed to reset password. Please try again."
-      );
+      return rejectWithValue(error.message);
     }
   }
 );
