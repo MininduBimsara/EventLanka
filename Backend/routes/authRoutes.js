@@ -38,6 +38,5 @@ router.post("/register", upload.single("profileImage"), register);
 router.post("/login", login);
 router.post("/logout", logout);
 router.get("/verify", protect, verifyToken);
-router.post("/sync-firebase-password", syncFirebasePassword);
 module.exports = router;
   

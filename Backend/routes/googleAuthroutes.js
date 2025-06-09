@@ -23,11 +23,12 @@ router.post("/google", async (req, res) => {
     }
 
     // Set a cookie for authentication as well
-    res.cookie("authToken", userData.token, {
+    res.cookie("token", userData.token, {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: true,
+      sameSite: "none",
+      path: "/",
     });
 
     return res.json(userData);
@@ -55,7 +56,7 @@ router.get("/logout", (req, res) => {
   // console.log("Before clearing - Cookies:", req.cookies);
 
   // Clear authToken
-  res.clearCookie("authToken", {
+  res.clearCookie("token", {
     path: "/",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
