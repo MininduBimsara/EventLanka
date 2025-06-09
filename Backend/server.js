@@ -156,7 +156,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/organizer", organizerRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
-// app.use("/api/password-reset", passwordResetRoutes);
+app.use("/api/password-reset", passwordResetRoutes);
 
 // Error handling middleware
 app.use((error, req, res, next) => {
