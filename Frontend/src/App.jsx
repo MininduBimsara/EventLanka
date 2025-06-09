@@ -106,7 +106,7 @@ function App() {
               <Route path="/contact" element={<ContactUsPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordForm />} />
               <Route
-                path="/reset-password/:token"
+                path="/reset-password"
                 element={<ResetPasswordForm />}
               />
 

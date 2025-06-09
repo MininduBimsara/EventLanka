@@ -13,7 +13,9 @@ const ResetPasswordForm = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const { token } = useParams();
+  const [searchParams] = useSearchParams();
+  const oobCode = searchParams.get("oobCode");
+  const mode = searchParams.get("mode");
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -23,15 +25,16 @@ const ResetPasswordForm = () => {
 
   // Verify token when component mounts
   useEffect(() => {
-    if (token) {
-      dispatch(verifyResetToken(token));
+    if (mode === "resetPassword" && oobCode) {
+      dispatch(verifyResetToken(oobCode));
+    } else {
+      navigate("/forgot-password");
     }
 
-    // Clear state when component unmounts
     return () => {
       dispatch(clearPasswordResetState());
     };
-  }, [token, dispatch]);
+  }, [oobCode, mode, dispatch, navigate]);
 
   // Redirect to login after successful password reset
   useEffect(() => {
@@ -67,7 +70,7 @@ const ResetPasswordForm = () => {
       return;
     }
 
-    dispatch(resetPassword({ token, password }));
+    dispatch(resetPassword({ oobCode, password }));
   };
 
   // If token is invalid, show error message

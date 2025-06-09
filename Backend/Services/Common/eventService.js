@@ -313,6 +313,27 @@ const getEventsByCategory = async (category, options = {}) => {
   }));
 };
 
+/**
+ * Sync password from Firebase after reset
+ * This is called when user resets password via Firebase
+ * @param {String} email - User email
+ * @param {String} newPassword - New password from Firebase
+ * @returns {Object} Success message
+ */
+const syncPasswordFromFirebase = async (email, newPassword) => {
+  const user = await UserRepository.findByEmail(email);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Hash the new password and update in database
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await UserRepository.updateById(user._id, { password: hashedPassword });
+
+  return { message: "Password synced successfully" };
+};
+
+
 module.exports = {
   createEvent,
   getPublicEvents,
@@ -325,4 +346,5 @@ module.exports = {
   searchEvents,
   getUpcomingEvents,
   getEventsByCategory,
+  syncPasswordFromFirebase,
 };

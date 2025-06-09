@@ -1,14 +1,15 @@
-// Redux/Thunks/passwordResetThunks.js - Fixed implementation
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { sendPasswordReset } from "../../firebase/authService";
-import { passwordResetApiService } from "../../Api/Common/passwordResetApi";
+import {
+  sendPasswordReset,
+  verifyResetCode,
+  resetPassword as firebaseResetPassword,
+} from "../../firebase/authService";
 
-// Use Firebase for sending email (which calls backend to generate token)
+// Send password reset email (Pure Firebase)
 export const forgotPassword = createAsyncThunk(
   "passwordReset/forgotPassword",
   async (email, { rejectWithValue }) => {
     try {
-      // Input validation
       if (!email) {
         throw new Error("Email is required");
       }
@@ -27,61 +28,50 @@ export const forgotPassword = createAsyncThunk(
   }
 );
 
-// Use backend for verifying token
+// Verify reset code from email URL
 export const verifyResetToken = createAsyncThunk(
   "passwordReset/verifyResetToken",
-  async (token, { rejectWithValue }) => {
+  async (oobCode, { rejectWithValue }) => {
     try {
-      if (!token) {
-        throw new Error("Reset token is required");
+      if (!oobCode) {
+        throw new Error("Reset code is required");
       }
 
-      const result = await passwordResetApiService.verifyResetToken(token);
+      const result = await verifyResetCode(oobCode);
       return {
         valid: true,
-        message: result.message,
         email: result.email,
+        message: "Reset code is valid",
       };
     } catch (error) {
       console.error("Verify token thunk error:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Invalid or expired reset token";
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(error.message || "Invalid or expired reset code");
     }
   }
 );
 
-// Use backend for resetting password
+// Reset password with Firebase
 export const resetPassword = createAsyncThunk(
   "passwordReset/resetPassword",
-  async ({ token, password }, { rejectWithValue }) => {
+  async ({ oobCode, password }, { rejectWithValue }) => {
     try {
-      if (!token) {
-        throw new Error("Reset token is required");
+      if (!oobCode) {
+        throw new Error("Reset code is required");
       }
 
       if (!password) {
         throw new Error("Password is required");
       }
 
-      if (password.length < 8) {
-        throw new Error("Password must be at least 8 characters long");
+      if (password.length < 6) {
+        throw new Error("Password must be at least 6 characters long");
       }
 
-      const result = await passwordResetApiService.resetPassword(
-        token,
-        password
-      );
+      const result = await firebaseResetPassword(oobCode, password);
       return result;
     } catch (error) {
       console.error("Reset password thunk error:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to reset password";
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(error.message || "Failed to reset password");
     }
   }
 );

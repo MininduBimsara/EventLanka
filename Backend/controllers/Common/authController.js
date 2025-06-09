@@ -82,9 +82,34 @@ const logout = (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
+const syncFirebasePassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        message: "Email and new password are required",
+      });
+    }
+
+    // Sync password in backend database
+    await authService.syncPasswordFromFirebase(email, newPassword);
+
+    res.status(200).json({
+      message: "Password synced successfully",
+    });
+  } catch (error) {
+    console.error("Password sync error:", error);
+    res.status(500).json({
+      message: error.message || "Password sync failed",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   verifyToken,
   logout,
+  syncFirebasePassword,
 };

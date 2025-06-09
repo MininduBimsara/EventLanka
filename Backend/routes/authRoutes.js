@@ -4,6 +4,7 @@ const {
   login,
   verifyToken,
   logout,
+  syncFirebasePassword,
 } = require("../controllers/Common/authController");
 const { protect } = require("../middleware/authMiddleware");
 const multer = require("multer");
@@ -37,6 +38,6 @@ router.post("/register", upload.single("profileImage"), register);
 router.post("/login", login);
 router.post("/logout", logout);
 router.get("/verify", protect, verifyToken);
-
+router.post("/sync-firebase-password", syncFirebasePassword);
 module.exports = router;
   
