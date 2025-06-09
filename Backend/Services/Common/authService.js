@@ -119,24 +119,59 @@ const loginUser = async (email, password) => {
     throw new Error("Email and password are required");
   }
 
-  // Find user using repository
+  // Find user in database
   const user = await UserRepository.findByEmail(email);
   if (!user) {
-    throw new Error("Invalid credentials");
+    throw new Error("Invalid email or password");
   }
 
-  // Check password
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new Error("Invalid credentials");
+  // First, try to authenticate with database password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+
+  if (isPasswordValid) {
+    // Database authentication successful
+    return generateUserResponse(user);
   }
 
-  // Generate JWT token
-  const token = generateToken(user._id, user.role);
+  // If database auth fails, try Firebase (in case user reset password via Firebase)
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+
+    // Firebase auth successful - update database with new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await UserRepository.updateById(user._id, { password: hashedPassword });
+
+    return generateUserResponse(user);
+  } catch (firebaseError) {
+    // Both database and Firebase auth failed
+    throw new Error("Invalid email or password");
+  }
+};
+
+
+/**
+ * Generate user response with JWT token
+ * @param {Object} user - User document
+ * @returns {Object} - User data and token
+ */
+const generateUserResponse = (user) => {
+  const token = jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
 
   return {
     token,
-    user: formatUserResponse(user),
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      profileImage: user.profileImage
+        ? `/profile-images/${user.profileImage}`
+        : null,
+    },
   };
 };
 
