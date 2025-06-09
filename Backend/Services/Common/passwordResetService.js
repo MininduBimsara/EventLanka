@@ -4,7 +4,7 @@ const AuthRepository = require("../../Repository/AuthRepository");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
+const emailService = require("../emailService");
 /**
  * Request a password reset email (not used - Firebase handles this)
  * Keeping this for potential future use
@@ -29,17 +29,20 @@ const requestPasswordReset = async (email) => {
     .update(resetToken)
     .digest("hex");
 
-  // Store reset token in database (you'll need to add these fields back to User model)
+  // Store reset token in database
   const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
   await UserRepository.updateById(user._id, {
     resetPasswordToken: hashedToken,
     resetPasswordExpires: tokenExpiry,
   });
 
+  // Send reset email
+  await emailService.sendPasswordResetEmail(user.email, resetToken);
+
   return {
     message:
       "If that email exists in our system, a password reset link has been sent.",
-    resetToken: resetToken, // Return unhashed token for email link
+    resetToken: resetToken, // optional, frontend doesn't really need this
   };
 };
 

@@ -1,7 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { signInWithEmailAndPassword } = require("firebase/auth");
-const { auth } = require("../../firebase/config");
+
 
 // Import repositories
 const UserRepository = require("../../Repository/UserRepository");
@@ -133,19 +132,6 @@ const loginUser = async (email, password) => {
     return generateUserResponse(user);
   }
 
-  // If database auth fails, try Firebase (in case user reset password via Firebase)
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-
-    // Firebase auth successful - update database with new password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await UserRepository.updateById(user._id, { password: hashedPassword });
-
-    return generateUserResponse(user);
-  } catch (firebaseError) {
-    // Both database and Firebase auth failed
-    throw new Error("Invalid email or password");
-  }
 };
 
 
