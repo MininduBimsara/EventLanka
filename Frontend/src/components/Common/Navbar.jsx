@@ -311,8 +311,8 @@ const Navbar = () => {
       <nav
         className={`select-none fixed w-full z-50 transition-all duration-300 ${
           isScrolled
-            ? "bg-gray-900 text-white shadow-lg py-2"
-            : "bg-transparent text-gray-900 py-4"
+            ? "bg-gray-900  text-white py-2"
+            : "bg-transparent text-white py-4 shadow-sm"
         }`}
       >
         <div className="container flex items-center justify-between px-4 mx-auto">
