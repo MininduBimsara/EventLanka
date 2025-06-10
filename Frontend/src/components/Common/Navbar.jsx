@@ -248,6 +248,7 @@ const Navbar = () => {
   };
 
   // Mobile auth buttons with improved styling
+  // Mobile auth buttons with improved styling - FIXED VERSION
   const renderMobileAuthButtons = () => {
     if (!isAuthenticated) {
       return (
@@ -279,28 +280,41 @@ const Navbar = () => {
         </div>
       );
     } else {
+      // FIXED: Regular user - show profile info AND logout button
       return (
-        <div className="flex items-center justify-between w-full p-4 mt-4 shadow-lg bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl">
-          <div className="flex items-center">
-            <div className="w-10 h-10 mr-3 overflow-hidden rounded-full bg-gradient-to-br from-amber-400 to-amber-600 ring-2 ring-amber-400">
-              <img
-                src={
-                  user?.profileImage
-                    ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
-                    : "/api/placeholder/50/50"
-                }
-                alt="Profile"
-                className="object-cover w-full h-full"
-              />
+        <div className="flex flex-col mt-4 space-y-3">
+          {/* User Profile Card */}
+          <div className="flex items-center justify-between w-full p-4 shadow-lg bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl">
+            <div className="flex items-center">
+              <div className="w-10 h-10 mr-3 overflow-hidden rounded-full bg-gradient-to-br from-amber-400 to-amber-600 ring-2 ring-amber-400">
+                <img
+                  src={
+                    user?.profileImage
+                      ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
+                      : "/api/placeholder/50/50"
+                  }
+                  alt="Profile"
+                  className="object-cover w-full h-full"
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  {user?.username || "User"}
+                </p>
+                <p className="text-xs text-gray-400">Account Settings</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-white">
-                {user?.username || "User"}
-              </p>
-              <p className="text-xs text-gray-400">Account Settings</p>
-            </div>
+            <FaChevronDown className="text-amber-400" />
           </div>
-          <FaChevronDown className="text-amber-400" />
+
+          {/* Logout Button for Regular Users */}
+          <button
+            onClick={handleLogoutClick}
+            className="flex items-center justify-center w-full px-6 py-3 text-sm font-semibold text-white transition-all duration-300 transform shadow-lg bg-gradient-to-r from-red-600 to-red-700 rounded-xl hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 hover:scale-105"
+          >
+            <FaSignOutAlt className="mr-2" />
+            Sign Out
+          </button>
         </div>
       );
     }
