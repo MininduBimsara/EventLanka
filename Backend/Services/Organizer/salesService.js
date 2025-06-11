@@ -10,7 +10,7 @@ const UserRepository = require("../../Repository/UserRepository");
  * @returns {Object} Sales data for the event
  */
 async function getSalesByEvent(eventId, userId, userRole) {
-  // Check if user is authorized (event organizer or admin)
+  // Check if user is authorized
   const event = await EventRepository.findById(eventId);
   if (!event) {
     throw new Error("Event not found");
@@ -23,11 +23,16 @@ async function getSalesByEvent(eventId, userId, userRole) {
   // Get all paid tickets for the event
   const tickets = await TicketRepository.findAll({
     event_id: eventId,
-    payment_status: "paid", // Only count paid tickets
+    payment_status: "paid",
+  }, {
+    populate: { event: true }
   });
 
-  // Calculate total sales
-  const totalSales = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
+  // Calculate total sales using event ticket types
+  const totalSales = tickets.reduce((sum, ticket) => {
+    const price = calculateTicketPriceFromEvent(ticket);
+    return sum + price;
+  }, 0);
 
   // Calculate sales by ticket type
   const salesByTicketType = calculateSalesByTicketType(tickets);
@@ -39,7 +44,6 @@ async function getSalesByEvent(eventId, userId, userRole) {
     salesByTicketType,
   };
 }
-
 /**
  * Get sales data within a time frame
  * @param {string} startDate - Start date (optional)
@@ -48,8 +52,9 @@ async function getSalesByEvent(eventId, userId, userRole) {
  * @param {string} userRole - User role
  * @returns {Object} Sales data for the period
  */
+// In salesService.js - getSalesByPeriod function
 async function getSalesByPeriod(startDate, endDate, userId, userRole) {
-  // Check if user is authorized (must be an organizer or admin)
+  // Check if user is authorized
   if (userRole !== "organizer" && userRole !== "admin") {
     throw new Error("Unauthorized to view sales data");
   }
@@ -57,29 +62,39 @@ async function getSalesByPeriod(startDate, endDate, userId, userRole) {
   // Build query for date range
   const query = {
     payment_status: "paid",
-    createdAt: {},
   };
 
-  if (startDate) {
-    query.createdAt.$gte = new Date(startDate);
-  }
-
-  if (endDate) {
-    query.createdAt.$lte = new Date(endDate);
+  if (startDate || endDate) {
+    query.createdAt = {};
+    if (startDate) {
+      query.createdAt.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      query.createdAt.$lte = new Date(endDate);
+    }
   }
 
   // For organizers, only show their events
   if (userRole === "organizer") {
     const eventIds = await getOrganizerEventIds(userId);
+    if (eventIds.length === 0) {
+      return {
+        startDate: startDate || "All time",
+        endDate: endDate || "Present",
+        totalSales: 0,
+        ticketsSold: 0,
+        salesByDay: {},
+        salesByEvent: {},
+      };
+    }
     query.event_id = { $in: eventIds };
   }
 
-  // Get tickets in the date range with event population
-  // Make sure the population is working correctly
+  // Get tickets with event population to access ticket_types
   const tickets = await TicketRepository.findAll(query, {
     populate: {
-      event_id: true, // Changed from 'event' to 'event_id' to match the field name
-      user_id: true, // Also populate user_id for analytics
+      event: true,
+      user: true,
     },
   });
 
@@ -95,21 +110,51 @@ async function getSalesByPeriod(startDate, endDate, userId, userRole) {
     };
   }
 
+  // Calculate prices for tickets dynamically
+  const ticketsWithPrices = tickets.map(ticket => {
+    const calculatedPrice = calculateTicketPriceFromEvent(ticket);
+    return {
+      ...ticket.toObject(),
+      calculatedPrice
+    };
+  });
+
   // Calculate sales by day and by event
-  const salesByDay = calculateSalesByDay(tickets);
-  const salesByEvent = calculateSalesByEventFromTickets(tickets);
+  const salesByDay = calculateSalesByDay(ticketsWithPrices);
+  const salesByEvent = calculateSalesByEventFromTickets(ticketsWithPrices);
 
   return {
     startDate: startDate || "All time",
     endDate: endDate || "Present",
-    totalSales: tickets.reduce((sum, ticket) => sum + (ticket.price || 0), 0),
-    ticketsSold: tickets.reduce(
-      (sum, ticket) => sum + (ticket.quantity || 0),
-      0
-    ),
+    totalSales: ticketsWithPrices.reduce((sum, ticket) => sum + (ticket.calculatedPrice || 0), 0),
+    ticketsSold: ticketsWithPrices.reduce((sum, ticket) => sum + (ticket.quantity || 0), 0),
     salesByDay,
     salesByEvent,
   };
+}
+
+// In salesService.js - Add this helper function
+function calculateTicketPriceFromEvent(ticket) {
+  try {
+    if (!ticket.event_id || !ticket.event_id.ticket_types || !ticket.ticket_type) {
+      console.warn('Missing event data or ticket type for ticket:', ticket._id);
+      return 0;
+    }
+
+    const ticketType = ticket.event_id.ticket_types.find(
+      tt => tt.type === ticket.ticket_type
+    );
+
+    if (!ticketType) {
+      console.warn(`Ticket type '${ticket.ticket_type}' not found in event:`, ticket.event_id._id);
+      return 0;
+    }
+
+    return ticketType.price * (ticket.quantity || 0);
+  } catch (error) {
+    console.error('Error calculating ticket price:', error);
+    return 0;
+  }
 }
 
 /**
@@ -173,6 +218,7 @@ async function getOrganizerEventIds(userId) {
  */
 function calculateSalesByTicketType(tickets) {
   const salesByTicketType = {};
+  
   tickets.forEach((ticket) => {
     if (!salesByTicketType[ticket.ticket_type]) {
       salesByTicketType[ticket.ticket_type] = {
@@ -180,9 +226,13 @@ function calculateSalesByTicketType(tickets) {
         revenue: 0,
       };
     }
-    salesByTicketType[ticket.ticket_type].count += ticket.quantity;
-    salesByTicketType[ticket.ticket_type].revenue += ticket.price;
+    
+    salesByTicketType[ticket.ticket_type].count += ticket.quantity || 0;
+    
+    const price = calculateTicketPriceFromEvent(ticket);
+    salesByTicketType[ticket.ticket_type].revenue += price;
   });
+  
   return salesByTicketType;
 }
 
@@ -193,6 +243,7 @@ function calculateSalesByTicketType(tickets) {
  */
 function calculateSalesByDay(tickets) {
   const salesByDay = {};
+  
   tickets.forEach((ticket) => {
     const day = ticket.createdAt.toISOString().split("T")[0]; // Format: YYYY-MM-DD
     if (!salesByDay[day]) {
@@ -201,9 +252,10 @@ function calculateSalesByDay(tickets) {
         revenue: 0,
       };
     }
-    salesByDay[day].count += ticket.quantity;
-    salesByDay[day].revenue += ticket.price;
+    salesByDay[day].count += ticket.quantity || 0;
+    salesByDay[day].revenue += ticket.calculatedPrice || 0; // Use calculatedPrice
   });
+  
   return salesByDay;
 }
 
@@ -214,10 +266,11 @@ function calculateSalesByDay(tickets) {
  */
 function calculateSalesByEventFromTickets(tickets) {
   const salesByEvent = {};
+  
   tickets.forEach((ticket) => {
     // Add defensive checks
     if (!ticket.event_id || !ticket.event_id._id) {
-      console.warn("Ticket missing event_id or event_id._id:", ticket);
+      console.warn("Ticket missing event_id or event_id._id:", ticket._id);
       return; // Skip this ticket
     }
 
@@ -232,8 +285,9 @@ function calculateSalesByEventFromTickets(tickets) {
       };
     }
     salesByEvent[eventId].count += ticket.quantity || 0;
-    salesByEvent[eventId].revenue += ticket.price || 0;
+    salesByEvent[eventId].revenue += ticket.calculatedPrice || 0; // Use calculatedPrice
   });
+  
   return salesByEvent;
 }
 
@@ -245,7 +299,10 @@ function calculateSalesByEventFromTickets(tickets) {
 function calculateTotalRevenue(tickets) {
   return tickets
     .filter((ticket) => ticket.payment_status === "paid")
-    .reduce((sum, ticket) => sum + ticket.price, 0);
+    .reduce((sum, ticket) => {
+      const price = calculateTicketPriceFromEvent(ticket);
+      return sum + price;
+    }, 0);
 }
 
 /**
@@ -253,13 +310,14 @@ function calculateTotalRevenue(tickets) {
  * @param {Array} tickets - Array of tickets
  * @returns {Array} Top 5 popular events
  */
+
 function calculatePopularEvents(tickets) {
   const eventPopularity = {};
+  
   tickets.forEach((ticket) => {
-    // Add defensive checks
     if (!ticket.event_id || !ticket.event_id._id) {
       console.warn("Ticket missing event_id or event_id._id:", ticket);
-      return; // Skip this ticket
+      return;
     }
 
     const eventId = ticket.event_id._id.toString();
@@ -270,13 +328,15 @@ function calculatePopularEvents(tickets) {
         revenue: 0,
       };
     }
+    
     eventPopularity[eventId].ticketsSold += ticket.quantity || 0;
+    
     if (ticket.payment_status === "paid") {
-      eventPopularity[eventId].revenue += ticket.price || 0;
+      const price = calculateTicketPriceFromEvent(ticket);
+      eventPopularity[eventId].revenue += price;
     }
   });
 
-  // Sort events by tickets sold and return top 5
   return Object.values(eventPopularity)
     .sort((a, b) => b.ticketsSold - a.ticketsSold)
     .slice(0, 5);
@@ -345,16 +405,19 @@ function calculateSalesOverTime(tickets) {
   tickets
     .filter((ticket) => ticket.createdAt >= sixMonthsAgo)
     .forEach((ticket) => {
-      const month = ticket.createdAt.toISOString().substring(0, 7); // Format: YYYY-MM
+      const month = ticket.createdAt.toISOString().substring(0, 7);
       if (!salesOverTime[month]) {
         salesOverTime[month] = {
           tickets: 0,
           revenue: 0,
         };
       }
-      salesOverTime[month].tickets += ticket.quantity;
+      
+      salesOverTime[month].tickets += ticket.quantity || 0;
+      
       if (ticket.payment_status === "paid") {
-        salesOverTime[month].revenue += ticket.price;
+        const price = calculateTicketPriceFromEvent(ticket);
+        salesOverTime[month].revenue += price;
       }
     });
 
