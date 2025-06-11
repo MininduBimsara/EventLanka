@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const RedesignedTestimonials = () => {
+  const navigate = useNavigate();
   const testimonials = [
     {
       id: 1,
@@ -116,7 +118,10 @@ const RedesignedTestimonials = () => {
             Let us help you bring your vision to life with our expert event
             planning services.
           </p>
-          <button className="px-6 py-2 font-medium text-blue-900 transition-colors bg-pink-400 rounded-md hover:bg-pink-500">
+          <button
+            className="px-6 py-2 font-medium text-blue-900 transition-colors bg-pink-400 rounded-md hover:bg-pink-500"
+            onClick={() => navigate("/contact")}
+          >
             Contact Us Today
           </button>
         </div>
