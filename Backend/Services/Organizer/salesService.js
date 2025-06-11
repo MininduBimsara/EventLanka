@@ -75,9 +75,25 @@ async function getSalesByPeriod(startDate, endDate, userId, userRole) {
   }
 
   // Get tickets in the date range with event population
+  // Make sure the population is working correctly
   const tickets = await TicketRepository.findAll(query, {
-    populate: { event: true },
+    populate: {
+      event_id: true, // Changed from 'event' to 'event_id' to match the field name
+      user_id: true, // Also populate user_id for analytics
+    },
   });
+
+  // Add validation before processing
+  if (!tickets || tickets.length === 0) {
+    return {
+      startDate: startDate || "All time",
+      endDate: endDate || "Present",
+      totalSales: 0,
+      ticketsSold: 0,
+      salesByDay: {},
+      salesByEvent: {},
+    };
+  }
 
   // Calculate sales by day and by event
   const salesByDay = calculateSalesByDay(tickets);
@@ -86,8 +102,11 @@ async function getSalesByPeriod(startDate, endDate, userId, userRole) {
   return {
     startDate: startDate || "All time",
     endDate: endDate || "Present",
-    totalSales: tickets.reduce((sum, ticket) => sum + ticket.price, 0),
-    ticketsSold: tickets.reduce((sum, ticket) => sum + ticket.quantity, 0),
+    totalSales: tickets.reduce((sum, ticket) => sum + (ticket.price || 0), 0),
+    ticketsSold: tickets.reduce(
+      (sum, ticket) => sum + (ticket.quantity || 0),
+      0
+    ),
     salesByDay,
     salesByEvent,
   };
@@ -196,8 +215,14 @@ function calculateSalesByDay(tickets) {
 function calculateSalesByEventFromTickets(tickets) {
   const salesByEvent = {};
   tickets.forEach((ticket) => {
+    // Add defensive checks
+    if (!ticket.event_id || !ticket.event_id._id) {
+      console.warn("Ticket missing event_id or event_id._id:", ticket);
+      return; // Skip this ticket
+    }
+
     const eventId = ticket.event_id._id.toString();
-    const eventTitle = ticket.event_id.title;
+    const eventTitle = ticket.event_id.title || "Unknown Event";
 
     if (!salesByEvent[eventId]) {
       salesByEvent[eventId] = {
@@ -206,8 +231,8 @@ function calculateSalesByEventFromTickets(tickets) {
         revenue: 0,
       };
     }
-    salesByEvent[eventId].count += ticket.quantity;
-    salesByEvent[eventId].revenue += ticket.price;
+    salesByEvent[eventId].count += ticket.quantity || 0;
+    salesByEvent[eventId].revenue += ticket.price || 0;
   });
   return salesByEvent;
 }
@@ -231,17 +256,23 @@ function calculateTotalRevenue(tickets) {
 function calculatePopularEvents(tickets) {
   const eventPopularity = {};
   tickets.forEach((ticket) => {
+    // Add defensive checks
+    if (!ticket.event_id || !ticket.event_id._id) {
+      console.warn("Ticket missing event_id or event_id._id:", ticket);
+      return; // Skip this ticket
+    }
+
     const eventId = ticket.event_id._id.toString();
     if (!eventPopularity[eventId]) {
       eventPopularity[eventId] = {
-        eventTitle: ticket.event_id.title,
+        eventTitle: ticket.event_id.title || "Unknown Event",
         ticketsSold: 0,
         revenue: 0,
       };
     }
-    eventPopularity[eventId].ticketsSold += ticket.quantity;
+    eventPopularity[eventId].ticketsSold += ticket.quantity || 0;
     if (ticket.payment_status === "paid") {
-      eventPopularity[eventId].revenue += ticket.price;
+      eventPopularity[eventId].revenue += ticket.price || 0;
     }
   });
 
@@ -259,6 +290,12 @@ function calculatePopularEvents(tickets) {
 function calculateCustomerRetention(tickets) {
   const userTicketCounts = {};
   tickets.forEach((ticket) => {
+    // Add defensive checks
+    if (!ticket.user_id || !ticket.user_id._id) {
+      console.warn("Ticket missing user_id or user_id._id:", ticket);
+      return; // Skip this ticket
+    }
+
     const userId = ticket.user_id._id.toString();
     if (!userTicketCounts[userId]) {
       userTicketCounts[userId] = 0;
@@ -330,9 +367,12 @@ function calculateSalesOverTime(tickets) {
  * @returns {number} Number of unique events
  */
 function getUniqueEventCount(tickets) {
-  const uniqueEvents = new Set(
-    tickets.map((ticket) => ticket.event_id._id.toString())
-  );
+  const uniqueEvents = new Set();
+  tickets.forEach((ticket) => {
+    if (ticket.event_id && ticket.event_id._id) {
+      uniqueEvents.add(ticket.event_id._id.toString());
+    }
+  });
   return uniqueEvents.size;
 }
 
@@ -342,9 +382,12 @@ function getUniqueEventCount(tickets) {
  * @returns {number} Number of unique customers
  */
 function getUniqueCustomerCount(tickets) {
-  const uniqueCustomers = new Set(
-    tickets.map((ticket) => ticket.user_id._id.toString())
-  );
+  const uniqueCustomers = new Set();
+  tickets.forEach((ticket) => {
+    if (ticket.user_id && ticket.user_id._id) {
+      uniqueCustomers.add(ticket.user_id._id.toString());
+    }
+  });
   return uniqueCustomers.size;
 }
 
